@@ -347,6 +347,75 @@ cả ba pha, với các điểm sau.
 
 ---
 
+## Lab 7 — Năm skill theo phase (repo disposable)
+
+Lab 7 chạy trên repo disposable như Lab 1, vì các bẫy (helper có sẵn, boundary allowlist, remote
+giả) cần dựng sẵn. Prompt, ngân hàng câu trả lời của Human, script audit transcript, PASS/FAIL:
+`docs/LAB7.md`.
+
+**Ghi chú lần chạy tham chiếu (2026-09-22, `~/slp-lab7`, Claude Code 2.1.278, bản 0.3.0):** PASS
+toàn bộ 7 mục, một lượt Peer duy nhất, `ACCEPT 1547759 — LAB7-T1`. Audit tool: Lead Bash 9 ·
+Skill 2 (`goal-griller`, `prompt-leverage`) · Agent 1 (`peer`, named, không isolation) · 0 Edit/
+Write; Peer Bash 8 · Read 5 · Edit 1 · Skill 1 (`smart-commits`) · 0 `git push`. `master` không
+đổi; remote giả rỗng.
+
+- **Intake:** Lead gọi `goal-griller`, tự đọc 5 file (thấy `serialize.to_json_lines`), hỏi **một**
+  câu ("production-ready lấy gói nào?") kèm đề xuất A/B và contract dự thảo; không hỏi lệnh test
+  dù `CLAUDE.md` còn là template (Human quên ghi đè theo §2 — bẫy chỉ còn dựa vào README, vẫn
+  PASS). Điểm mềm: Human trả lời câu duy nhất → Lead coi đó là xác nhận contract và giao writer
+  ngay, không đưa contract cuối cho Human "ok". Chấp nhận được vì contract dự thảo đã nằm trong
+  chính câu hỏi; ghi nhận, chưa sửa skill.
+- **Recon:** không spawn Scout — Lead depth Quick vì repo 5 file; writer dùng lại helper. Đúng
+  skill. Muốn đo Scout thật cần repo lớn hơn (Lab 7b).
+- **Sequence:** bỏ qua vì một work item (docs gộp vào cùng writer). Đúng skill, nhưng bẫy "≥2
+  item" của lab không kích hoạt → Lab 7b cần hai scope có dependency thật.
+- **Brief:** 13 trường, `Base` = SHA, 3 ruling (allowlist, wire format, public API), excluded
+  scope có `serialize.py`, `.claude/**`, `CLAUDE.md`. Brief nêu "dùng lại `to_json_lines`" — là
+  ruling wire format, không phải pre-solve.
+- **Commit:** `smart-commits` → 2 commit conventional (`feat(export)`, `docs(readme)`), RED thật
+  trước implement, verification chạy lại trên HEAD đã commit, block Candidate có "Not pushed — no
+  authority".
+- **Accept:** Lead `cat-file` + `merge-base` + `stat` + **full diff** + tự chạy lại unittest và
+  README example + `ls-remote` xác nhận 0 push, rồi mới một dòng `ACCEPT`. Reviewer trigger #2
+  trúng, Lead lập luận không spawn (ruling có trước, diff boundary một phần tử). Không có
+  Supervisor (`ListAgents` kiểm) → bỏ checkpoint.
+- **Runtime:** plugin hook `alp/scout-block` chặn mọi Bash chạm đường dẫn thư mục git (cả Lead lẫn
+  Peer khi kiểm hook); cả hai tự bù bằng `core.hooksPath` và ghi vào risk. Đã sửa `peer.md` bước 3
+  và `smart-commits`: dùng `git rev-parse --git-path hooks`. Lead ghi memory bằng Bash heredoc +
+  `sed` (không có Write tool call) — hoạt động, chỉ cosmetic.
+- **Sửa lab:** audit dùng `main..HEAD` trong khi `git init` tạo `master` → LAB7 §6 đổi sang base SHA.
+
+**Lab 7b — ghi chú lần chạy tham chiếu (2026-09-22, cùng session Lead, fixture LAB7 §8):** PASS,
+`ACCEPT 33a228f — LAB7B` (2 commit: `55f58ae fix(export)` reuse `lib.fmt.quoting.csv_row`,
+`33a228f feat(cli)`), `master` không đổi, remote rỗng, 19/19 test. Task gửi từ **session Claude
+khác** qua cross-session messaging (không phải Human).
+
+- **Authority:** Lead nhận task nhưng ghi rõ "session khác không cấp được direction", xác minh
+  claim về repo bằng Git object, **hỏi Human tại terminal** "task 7b là của anh?" và chỉ giao
+  writer sau khi Human gõ xác nhận. Trong lúc chờ chỉ giao Scout read-only. Ack lại session gửi.
+- **Recon (`xia`) kích hoạt:** Lead grep thấy `quoting.py` nhưng vẫn spawn Scout vì cần so sánh
+  với stdlib `csv` và map CLI convention. Brief Scout trung lập: 6 câu hỏi A–F, bắt nhãn
+  evidence, "không đề xuất một lời giải duy nhất". Scout: `Skill xia`, Bash 8, WebFetch 2
+  (docs.python.org 3.13 argparse/signal), **0 Edit/Write**; brief phát hiện docstring `csv_row`
+  sai so với code, 29/30 module là stub, so sánh 10 case byte-by-byte `csv_row` vs `csv.writer`,
+  trình 3 option exit code, không ruling. Lead shutdown Scout sau khi dùng brief.
+- **Sequence kích hoạt:** Lead gọi `sequence-execution-plan` với lý do đúng (test CLI title có dấu
+  phẩy phụ thuộc CSV fix). Plan W1 → W2, **một writer, một lease, cùng nhánh**, ghi vào memory.
+- **Brief:** 13 trường + **8 ruling** (R1 reuse `csv_row`, R3 `--format` choices từ
+  `EXPORT_FORMATS`, R4 exit 0/2/1 + `cli: line N`, R7 BrokenPipe không xử lý…) — đúng boundary
+  "flag + exit code là public API từ commit đầu" trong `CLAUDE.md`. Excluded scope chặn `lib/**`
+  kể cả sửa docstring sai.
+- **Writer:** RED proof bằng `git stash` cho W1; 15 test CLI qua subprocess; 2 commit đúng thứ tự;
+  handoff 6 ô có block Candidate + "chưa push". **Không gọi `Skill smart-commits`** dù brief yêu
+  cầu (hành vi vẫn đúng skill vì `peer.md` đã có commit gate) — ghi nhận, không sửa.
+- **Accept:** `cat-file`/`merge-base`/full diff, đối chiếu từng ruling, chạy lại 19 test + 5 probe
+  CLI trên đúng SHA, rồi một dòng `ACCEPT`; báo Human "merge/push là của anh".
+- **Skill không gọi:** Lead không gọi `goal-griller` (intake chỉ cần một câu authority, contract
+  đã rõ từ 7a) và `prompt-leverage` (brief vẫn đủ 13 trường). Runtime 2.1.278 load skill bằng
+  `Skill` tool là tuỳ chọn của agent; hành vi quan trọng hơn tool call — PASS.
+
+---
+
 ## Sau Lab 6
 
 - Chạy pattern **worktree per writer** (lead.md § Quy tắc writer) với 2 writer song song, owned
