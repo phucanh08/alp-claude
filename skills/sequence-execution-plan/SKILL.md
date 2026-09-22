@@ -1,17 +1,18 @@
 ---
 name: sequence-execution-plan
-description: Biến Task Contract hoặc backlog nhiều item thành đồ thị phụ thuộc nhỏ rồi thành thứ tự giao việc cho Peer — Now/Next/Later, ai giữ writer lease trước, cái gì chạy song song read-only. Dùng khi Lead có hơn một work item, khi ưu tiên mâu thuẫn với thứ tự thực thi, hoặc sau REOPEN/DEPENDENCY/BLOCKED/REJECT cần replan.
+description: Biến Task Contract hoặc backlog nhiều item thành đồ thị phụ thuộc nhỏ rồi thành thứ tự giao việc — Now/Next/Later, ai giữ writer lease trước, cái gì chạy song song read-only. Dùng khi có hơn một work item, khi ưu tiên mâu thuẫn với thứ tự thực thi, hoặc sau REOPEN/DEPENDENCY/BLOCKED/REJECT cần replan. Cần quyền sở hữu topology.
 ---
 
 # Sequence Execution Plan — từ contract tới thứ tự giao việc
 
 Vị trí trong SLP: sau Task Contract (`goal-griller`) và research brief (`xia`), trước brief cho
 writer (`prompt-leverage`). Đây là phần *decomposition → routing → ownership → dependency* của
-Lead. Output là bản đồ tạm: **mỗi work item = một brief tương lai**, thứ tự = ai cầm writer lease
-trước.
+người giao việc. Output là bản đồ tạm: **mỗi work item = một brief tương lai**, thứ tự = ai cầm
+writer lease trước.
 
-Ai dùng: **Lead**. Peer không sequence (topology là của Lead). Human có thể dùng để sắp backlog
-trước khi giao Lead.
+Điều kiện dùng: bạn **sở hữu topology** (quyền chẻ việc và cấp writer lease). Nhận việc qua brief
+→ không sequence. Người yêu cầu có thể dùng để sắp backlog trước khi giao. Ghế nào ứng với gì:
+`/ask-alp`.
 
 ## Giữ năm trường tách biệt
 
@@ -32,7 +33,7 @@ prerequisite.
 ### 1. Frame outcome
 
 Lấy từ Task Contract: outcome quan sát được, ai hưởng, tác động hiện tại, ràng buộc, non-goal,
-acceptance evidence. Tách **fact** khỏi **assumption**. Chỉ hỏi Human khi câu trả lời đổi
+acceptance evidence. Tách **fact** khỏi **assumption**. Chỉ hỏi người yêu cầu khi câu trả lời đổi
 hành động đầu tiên; còn lại ghi assumption và đi tiếp.
 
 ### 2. Chẻ thành work item = brief tương lai
@@ -95,18 +96,20 @@ criteria. Chọn đường giảm risk sớm nhất và về đích bền với 
 
 ### 7. Xếp horizon — theo luật writer của SLP
 
-- **Now** — một hoặc hai item *ready*, Lead giao được ngay không cần họp lại.
+- **Now** — một hoặc hai item *ready*, giao được ngay không cần họp lại.
 - **Next** — item mở khóa bởi Now, ghi rõ điều kiện rẽ nhánh.
 - **Later** — hợp lệ nhưng sắp lại được; speculative để đây hoặc bỏ.
 
-Ràng buộc runtime (từ `lead.md`):
+Ràng buộc runtime của SLP:
 
 - Trong một shared checkout, **Now chứa tối đa một writer**; read-only (Scout/Reviewer/Architect)
   chạy song song thoải mái.
-- Muốn hai writer song song → mỗi writer một worktree Lead tạo trước, owned scope không giao nhau,
+- Muốn hai writer song song → mỗi writer một worktree người giao việc tạo trước, owned scope không
+  giao nhau,
   và **contract cho interface dùng chung đã có trong brief**. Không có worktree thì không phải
   song song, là xếp hàng — plan phải nói thẳng.
-- Reviewer là item `validates` sau khi có candidate SHA, chỉ khi trúng trigger trong `lead.md`.
+- Reviewer là item `validates` sau khi có candidate SHA, chỉ khi trúng trigger review (danh sách
+  trong `ask-alp/references/workflow.md`, Phase 8).
 
 Mọi thứ tự không hiển nhiên phải có câu nhân–quả:
 
@@ -126,19 +129,19 @@ Trong SLP: `REJECT <sha>` không đóng item — item về `in progress` với f
 
 Now ổn định trừ khi evidence đảo nó. Replan khi:
 
-- Peer trả `REOPEN_REQUEST` / `DEPENDENCY_REQUEST` / `BLOCKED` có evidence;
-- Lead `REJECT` một candidate và finding đổi hình dạng việc;
+- người nhận việc trả `REOPEN_REQUEST` / `DEPENDENCY_REQUEST` / `BLOCKED` có evidence;
+- người giao việc `REJECT` một candidate và finding đổi hình dạng việc;
 - Scout brief đảo một assumption ở bước 1;
-- Human đổi Task Contract, ràng buộc, hay ưu tiên;
+- người yêu cầu đổi Task Contract, ràng buộc, hay ưu tiên;
 - item bị block hoặc mở nhiều nhánh;
 - một horizon hoàn thành.
 
 Khi replan: cập nhật fact + dependency trước, sinh lại đường đi, rồi mới xếp lại. Không xếp lại
-chỉ vì Peer thích kiến trúc khác.
+chỉ vì người nhận việc thích kiến trúc khác.
 
 ## Artifact
 
-Trừ khi Human yêu cầu format khác:
+Trừ khi được yêu cầu format khác:
 
 1. **Outcome & evidence** — từ Task Contract.
 2. **Bảng work item** — ID · Result · Type · Disposition/write · Owned scope · Boundary · Done
@@ -153,7 +156,8 @@ Trừ khi Human yêu cầu format khác:
 Ngày tuyệt đối hoặc sự kiện đo được thay cho "sớm". Ước lượng ghi là ước lượng. Không bịa priority,
 SLA, dependency, effort.
 
-Plan ghi vào memory checkpoint của Lead và gửi Human một lần; **không** ghi vào `CLAUDE.md`. Plan
+Plan ghi vào memory checkpoint của người giao việc và gửi người yêu cầu một lần; **không** ghi vào
+`CLAUDE.md`. Plan
 là bản đồ tạm — SHA + brief + accept summary mới là checkpoint bền.
 
 ## Quality gate

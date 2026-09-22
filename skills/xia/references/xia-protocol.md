@@ -10,8 +10,7 @@ Chỉ đọc sau khi đã chọn skill `xia`.
 - việc có thể đã được repo hoặc framework hỗ trợ sẵn;
 - change risk cao mà một giả định sai làm mất cả lượt writer.
 
-Không hợp: sửa nhỏ hiển nhiên, rename cơ học, implement khi brief đã được Lead chốt trên research
-cũ.
+Không hợp: sửa nhỏ hiển nhiên, rename cơ học, implement khi brief đã được chốt trên research cũ.
 
 ## 1. Map repo
 
@@ -49,7 +48,7 @@ Chỉ sau khi local rõ. Nguồn ưu tiên: repo framework/library, starter chí
 gần với repo. Mục tiêu là **proof dùng lại được**, không phải cảm hứng chung.
 
 Trên Claude Code: `WebFetch` raw file GitHub, hoặc `gh api` / `gh repo view` nếu có. Không tải cả
-repo về checkout của Lead; cần clone thì clone vào `/tmp`.
+repo về checkout đang làm việc; cần clone thì clone vào `/tmp`.
 
 ## 4. Docs chính thức đúng version
 
@@ -77,9 +76,9 @@ Local và docs mâu thuẫn → local là sự thật hiện hành; ghi mâu thu
 | Docs hiện hành | Context7 / docs-seeker, WebFetch domain chính thức | ưu tiên đúng version |
 | Tổng hợp | research brief | tách Local / Upstream / Docs / Inference |
 
-## Câu hỏi — cho Lead, không cho Human
+## Câu hỏi — cho người giao việc, không cho người yêu cầu
 
-Scout không hỏi Human. Câu hỏi đi vào mục *Follow-up* của brief khi:
+Scout không có kênh hỏi người yêu cầu. Câu hỏi đi vào mục *Follow-up* của brief khi:
 
 - các đường đi khác nhau đáng kể về hành vi sản phẩm, risk vận hành, chi phí migration;
 - evidence repo mâu thuẫn với yêu cầu theo cách đổi đề xuất;

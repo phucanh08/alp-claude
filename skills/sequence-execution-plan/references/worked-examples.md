@@ -44,7 +44,7 @@ hoặc **speculative**, không necessary.
 
 **Sequence.** (1) Scout `xia` Quick: seam encoding ở đâu, fixture nào đang có. (2) Engineer
 writer: thêm fixture tên Việt/Nhật/Ả Rập đang fail, sửa boundary encoding, chạy regression.
-(3) Lead `ACCEPT <sha>`. (4) Y thành proposal riêng với outcome + evidence riêng.
+(3) Người giao việc `ACCEPT <sha>`. (4) Y thành proposal riêng với outcome + evidence riêng.
 
 Nguyên nhân: đường thẳng thỏa X an toàn. Hệ quả: Y không có quyền chặn X chỉ vì kiến trúc đẹp hơn.
 
@@ -59,8 +59,8 @@ chạy.
 **Đúng.** (1) Copy criteria của X vào Y, hoặc giữ X là P0 parent outcome. (2) X ghi *tracked by
 Y*, không *resolved*. (3) Chuyển urgency P0 sang scope tương ứng của Y. (4) Thêm bước xác nhận
 tạm nếu giảm risk thật. (5) Đóng P0 chỉ khi editor mới đã deploy và exposure test pass — trong SLP
-là `ACCEPT <sha>` với `Verification` chứa test đó, và Human accept vì deploy là external side
-effect.
+là `ACCEPT <sha>` với `Verification` chứa test đó, và người yêu cầu accept vì deploy là external
+side effect.
 
 ## 4. Unknown cần nhánh Scout ngắn
 

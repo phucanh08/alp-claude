@@ -232,7 +232,7 @@ python3 .claude/skills/prompt-leverage/scripts/augment_prompt.py "<prompt thô>"
 python3 .claude/skills/prompt-leverage/scripts/test_augment_prompt.py
 ```
 
-Luồng đầy đủ và gate giữa các phase: `docs/WORKFLOW.md`.
+Luồng đầy đủ và gate giữa các phase: `/ask-alp` (router) và `skills/ask-alp/references/workflow.md`.
 
 ## Official references
 

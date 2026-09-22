@@ -10,7 +10,7 @@
 #
 # Cài gì:
 #   <root>/.claude/agents/lead.md, peer.md, supervisor.md   (copy)
-#   <root>/.claude/skills/<name>/                (copy: goal-griller, xia, sequence-execution-plan, prompt-leverage, smart-commits)
+#   <root>/.claude/skills/<name>/                (copy: ask-alp, goal-griller, xia, sequence-execution-plan, prompt-leverage, smart-commits)
 #   <root>/.claude/settings.json                (merge: env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS, teammateMode)
 #   <root>/CLAUDE.md                            (chỉ tạo từ template nếu chưa có; project mode)
 #   <root>/.claude/slp-manifest.json            (ghi lại đúng những gì đã cài, để uninstall gỡ chính xác)
@@ -21,7 +21,7 @@ SLP_REF="${SLP_REF:-main}"
 MODE="project"
 TARGET=""
 FORCE=0
-SKILLS="goal-griller xia sequence-execution-plan prompt-leverage smart-commits"
+SKILLS="ask-alp goal-griller xia sequence-execution-plan prompt-leverage smart-commits"
 
 usage() {
   cat <<'EOF'
@@ -286,7 +286,7 @@ Xong. Bước tiếp theo:
   1. $( [ "$MODE" = "project" ] && echo "Điền CLAUDE.md (contract boundary, lệnh test, path cấm sửa, external side-effect policy)." || echo "Mỗi repo vẫn cần CLAUDE.md riêng — template: $SRC/templates/CLAUDE.template.md" )
   2. cd <repo root> && claude --agent lead --name lead      # header phải hiện @lead
   3. (tuỳ chọn) Supervisor ở worktree riêng: docs/SETUP.md §10
-  4. Quy trình theo phase + skill: docs/WORKFLOW.md. Lab: docs/LAB1.md rồi docs/LABS.md (Lab 2–6).
+  4. Quy trình theo phase + skill: gõ /ask-alp (router; bản dài ở .claude/skills/ask-alp/references/workflow.md). Lab: docs/LAB1.md rồi docs/LABS.md (Lab 2–6).
 
 Gỡ: curl -fsSL https://raw.githubusercontent.com/${SLP_REPO}/${SLP_REF}/uninstall.sh | bash$( [ "$MODE" = "global" ] && echo " -s -- --global" )
 EOF

@@ -78,20 +78,18 @@ thì dựng ở `/tmp`.
 
 ## Skills theo phase
 
-Năm skill trong `.claude/skills/` là *cách làm* cho từng phase; chúng không thêm authority. Thứ tự
-mặc định cho một task từ Human:
+Skill trong `.claude/skills/` là *cách làm* cho từng phase; chúng không thêm authority. Thứ tự
+mặc định cho một task từ Human: `goal-griller` (intake, khi thiếu ô contract) → `xia` giao Peer
+**Scout** (recon, khi việc lạ / mơ hồ / chạm boundary) → `sequence-execution-plan` (khi hơn một
+work item) → `prompt-leverage` (mọi brief) → Peer writer tự `smart-commits` ở commit gate (bạn
+chỉ dùng khi `LEAD-WROTE`).
 
-| Phase | Skill | Bạn dùng khi | Không dùng khi |
-|---|---|---|---|
-| Intake | `goal-griller` | yêu cầu của Human thiếu một trong sáu ô: outcome, proof, scope, context, validation loop, stop/pause | Human đã đưa Task Contract đủ ô |
-| Recon | `xia` — giao Peer **Scout** | việc lạ, mơ hồ, nhạy version, chạm boundary `CLAUDE.md`; cần dữ liệu điền ô contract | Human waive research; sửa nhỏ, seam rõ |
-| Sequence | `sequence-execution-plan` | hơn một work item; ưu tiên mâu thuẫn thứ tự; sau `REOPEN` / `DEPENDENCY` / `BLOCKED` / `REJECT` | đúng một item, không dependency |
-| Brief | `prompt-leverage` | mọi brief cho Peer: điền 13 trường, trung lập về cách làm, có ruling boundary | — |
-| Commit | `smart-commits` | chỉ khi bạn tự viết (`LEAD-WROTE`); Peer writer tự dùng ở commit gate | — |
+Skill nói bằng từ vựng authority, không gọi tên ghế: bạn là **người giao việc**; Human là *người
+yêu cầu*; Peer là *người nhận việc*. Chưa chắc phase kế tiếp, skill nào hợp, ghế nào bị cấm gì →
+`Skill(ask-alp)`: router của bộ SLP, luồng đầy đủ trong `references/workflow.md` của nó.
 
 Gate giữa các phase: chưa có Task Contract → không giao writer; owned scope chạm boundary chưa
-ruling → brief bắt Peer `BLOCKED` khi chạm; Now chỉ một writer mỗi checkout. Luồng đầy đủ:
-`docs/WORKFLOW.md` của bộ SLP.
+ruling → brief bắt Peer `BLOCKED` khi chạm; Now chỉ một writer mỗi checkout.
 
 ## Delegation
 

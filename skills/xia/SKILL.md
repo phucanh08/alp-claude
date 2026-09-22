@@ -1,30 +1,33 @@
 ---
 name: xia
-description: Trinh sát chống phát minh lại trước khi viết code — map repo từ artifact thật, tìm reuse local, kiểm pattern upstream và docs chính thức đúng version, trả research brief gắn nhãn evidence Local/Upstream/Docs/Inference. Dùng cho Peer disposition Scout, hoặc khi việc lạ, mơ hồ, nhạy version, hay chạm boundary.
+description: Trinh sát chống phát minh lại trước khi viết code — map repo từ artifact thật, tìm reuse local, kiểm pattern upstream và docs chính thức đúng version, trả research brief gắn nhãn evidence Local/Upstream/Docs/Inference. Dùng cho disposition Scout (read-only), hoặc khi việc lạ, mơ hồ, nhạy version, hay chạm boundary.
 ---
 
 # Xia — trinh sát trước khi build
 
-Vị trí trong SLP: sau Task Contract (`goal-griller`), trước khi Lead sequence hoặc viết brief cho
-writer. Câu hỏi của Xia là *cái gì đã có, cái gì dùng lại được, docs nói gì, đường nào nhẹ nhất* —
+Vị trí trong SLP: sau Task Contract (`goal-griller`), trước khi người giao việc sequence hoặc
+viết brief cho writer. Câu hỏi của Xia là *cái gì đã có, cái gì dùng lại được, docs nói gì, đường nào nhẹ nhất* —
 không phải *code thế nào*.
 
-Ai dùng:
+Điều kiện dùng (ghế nào ứng với gì: `/ask-alp`):
 
-- **Peer disposition Scout** — chủ yếu. Lead spawn read-only, brief nêu câu hỏi cần trả lời; Scout
-  trả research brief trong handoff.
-- **Lead** — chỉ depth `Quick` khi câu hỏi nhỏ và seam rõ; rộng hơn thì giao Scout để giữ context.
-- **Supervisor** — không.
+- **Disposition Scout, read-only** — chủ yếu. Brief nêu câu hỏi cần trả lời; Scout trả research
+  brief trong handoff.
+- **Người giao việc tự chạy** — chỉ depth `Quick` khi câu hỏi nhỏ và seam rõ; rộng hơn thì giao
+  Scout để giữ context.
+- **Đang giữ write lease** — không; cần research thì xin người giao việc spawn Scout riêng.
+- **Ghế chỉ quan sát** — không.
 
 ## Hard gate
 
 - Scout **không sửa file**, không commit, không tạo rig ngoài `/tmp`. Đang chạy `xia` mà thấy mình
   `Edit` → dừng, đó là drift disposition.
-- Brief **không chứa verdict hay ruling**. Xia đề xuất đường đi và nói vì sao; Lead ruling.
+- Brief **không chứa verdict hay ruling**. Xia đề xuất đường đi và nói vì sao; người giao việc
+  ruling.
 - Hai đường đi khác nhau đáng kể về hành vi, risk, hay chi phí migration → brief trình cả hai kèm
-  câu hỏi cho Lead; không tự chọn hộ.
-- Human waive research ("đã biết, làm luôn") → Lead ghi vào brief `Research: waived by Human`,
-  không chạy Xia.
+  câu hỏi cho người giao việc; không tự chọn hộ.
+- Người yêu cầu waive research ("đã biết, làm luôn") → người giao việc ghi vào brief
+  `Research: waived by <ai>`, không chạy Xia.
 
 ## Depth
 
@@ -78,10 +81,10 @@ Nêu vì sao đường chọn thắng đường kế tiếp, và evidence nào s
 
 Scout trả handoff 6 ô chuẩn SLP (bỏ `Candidate`, `Ownership: n/a — read-only`) và **đính brief**
 vào thân message. `Scope` = file đã đọc; `Verification` = lệnh thật đã chạy (ví dụ lệnh xem
-version, lệnh grep) và output; `Unknown / risk` = evidence gap + câu hỏi cho Lead.
+version, lệnh grep) và output; `Unknown / risk` = evidence gap + câu hỏi cho người giao việc.
 
-Lead không `ACCEPT` brief như code; Lead **dùng** brief để ruling và viết brief cho writer. Brief
-tốt là brief mà writer sau đó không phải tìm lại thứ Scout đã tìm.
+Người giao việc không `ACCEPT` brief như code; họ **dùng** brief để ruling và viết brief cho
+writer. Brief tốt là brief mà writer sau đó không phải tìm lại thứ Scout đã tìm.
 
 ## Reference
 

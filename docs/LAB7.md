@@ -1,6 +1,6 @@
 # Lab 7 — Năm skill theo phase: từ prompt mơ hồ tới `ACCEPT <sha>`
 
-**Đo:** `docs/WORKFLOW.md` trên runtime thật. Một task cố tình mơ hồ đi hết intake → recon →
+**Đo:** `skills/ask-alp/references/workflow.md` (trước v0.4.0 là `docs/WORKFLOW.md`) trên runtime thật. Một task cố tình mơ hồ đi hết intake → recon →
 sequence → brief → implement → commit → handoff → accept. Mỗi phase có một bẫy; mỗi bẫy đo đúng
 một skill.
 

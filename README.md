@@ -2,7 +2,8 @@
 
 Bộ cài **SLP** (Supervisor / Lead / Peer separation-of-judgment) cho Claude Code Agent Teams
 native. Không cần Paseo. Một `install.sh`, một `uninstall.sh`, ba agent definition, **năm skill
-theo phase**, một template `CLAUDE.md`, và 5 lab đã chạy thật + 1 lab cho Supervisor definition.
+theo phase + một router `ask-alp`**, một template `CLAUDE.md`, và 5 lab đã chạy thật + 1 lab cho
+Supervisor definition.
 
 ```text
 Human ──────────────────────────────┐
@@ -96,7 +97,8 @@ handoff 6 ô (candidate SHA + base); Lead `git diff base sha` rồi `ACCEPT`/`RE
 Không dùng `claude -p` (teammate cần interactive session). Không dùng
 `--dangerously-skip-permissions` cho lab đầu.
 
-Luồng một task đi qua phase nào, skill nào, gate nào: `docs/WORKFLOW.md`.
+Luồng một task đi qua phase nào, skill nào, gate nào: gõ `/ask-alp` (router, Lead/Peer gọi được
+qua `Skill`); bản dài trong `skills/ask-alp/references/workflow.md`.
 
 ## Skills theo phase
 
@@ -104,16 +106,20 @@ Năm skill viết lại từ [`hoangnb24/skills`](https://github.com/hoangnb24/s
 (plugin `khuym`, gốc cho Codex) sang Claude Code + SLP: bỏ `/goal`, hook Codex, DeepWiki/Exa;
 thêm ánh xạ vào Task Contract, brief 13 trường, handoff 6 ô, luật một writer, không push.
 
-| Skill | Phase | Ai | Vào → Ra |
-|---|---|---|---|
-| `goal-griller` | intake | Lead (Human tự chạy được) | prompt mơ hồ → **Task Contract** 6 ô; chưa đủ ô thì không giao writer |
-| `xia` | recon | Peer **Scout** (read-only) | câu hỏi của Lead → research brief nhãn Local/Upstream/Docs/Inference, trong handoff 6 ô |
-| `sequence-execution-plan` | sequence | Lead | contract + brief → work item, dependency, Now/Next/Later, **writer lease** (Now ≤1 writer/checkout) |
-| `prompt-leverage` | brief | Lead (Human → Lead cũng được) | work item → **brief 13 trường**; trung lập cách làm, có ruling boundary, không seed verdict; `scripts/augment_prompt.py` nháp khung |
-| `smart-commits` | commit gate | Peer writer, Lead (`LEAD-WROTE`) | working tree → commit logic trong owned scope, **không push**, block Candidate `base..head` |
+| Skill | Phase | Vào → Ra |
+|---|---|---|
+| `goal-griller` | intake | prompt mơ hồ → **Task Contract** 6 ô; chưa đủ ô thì không giao writer |
+| `xia` | recon | câu hỏi → research brief nhãn Local/Upstream/Docs/Inference, trong handoff 6 ô |
+| `sequence-execution-plan` | sequence | contract + brief → work item, dependency, Now/Next/Later, **writer lease** (Now ≤1 writer/checkout) |
+| `prompt-leverage` | brief | work item → **brief 13 trường**; trung lập cách làm, có ruling boundary, không seed verdict; `scripts/augment_prompt.py` nháp khung |
+| `smart-commits` | commit gate | working tree → commit logic trong owned scope, **không push**, block Candidate `base..head` |
 
-Peer không dùng `goal-griller` / `sequence-execution-plan` / `prompt-leverage`; Supervisor không
-dùng skill nào. Skill không cấp authority.
+Năm skill này **không gọi tên ghế**: chúng nói bằng từ vựng authority (*người yêu cầu* / *người
+giao việc* / *người nhận việc* / *người quan sát*) và điều kiện dùng (có kênh hỏi người yêu cầu,
+sở hữu topology, có write authority…). Ánh xạ ghế ↔ từ vựng, luồng chính, on-ramp và bảng "ghế
+nào cấm skill nào" nằm ở một chỗ duy nhất: router **`ask-alp`** (`skills/ask-alp/SKILL.md`, bản
+dài `references/workflow.md`). Nhờ vậy đổi ghế, đổi tên agent hay dùng skill ngoài SLP không phải
+sửa skill. Skill không cấp authority.
 
 ## Cấu trúc repo
 
@@ -122,13 +128,14 @@ agents/lead.md              Lead — framing, delegation, review, acceptance (AC
 agents/peer.md              Peer — bounded co-worker; disposition trong brief; handoff = candidate
 agents/supervisor.md        Supervisor — governance; session riêng; DRIFT / ESCALATE / NOTE
 skills/<name>/SKILL.md      5 skill theo phase (+ references/, scripts/ cho prompt-leverage)
+skills/ask-alp/             router: ghế ↔ từ vựng authority, luồng, on-ramp, bảng cấm; references/workflow.md
 templates/CLAUDE.template.md  khung repo-specific contract
 templates/settings.json     env + teammateMode
 docs/SETUP.md               setup chi tiết + cơ chế runtime cần biết
 docs/LAB1.md                Lab 1 trên repo disposable (Python stdlib)
 docs/LABS.md                Lab 2–6: prompt + PASS/FAIL + ghi chú từ lần chạy tham chiếu
 docs/LAB7.md                Lab 7: 5 skill theo phase trên repo disposable (bẫy mỗi phase, audit script)
-docs/WORKFLOW.md            quy trình end-to-end: phase → role → skill → artifact → gate; vòng replan
+docs/WORKFLOW.md            con trỏ → skills/ask-alp/references/workflow.md
 install.sh / uninstall.sh
 VERSION
 ```
@@ -150,6 +157,11 @@ Chi tiết và prompt trong `docs/LABS.md`; Lab 7 có repo dựng sẵn trong `d
 
 ## Tuning đã đưa vào `lead.md` từ lab
 
+- v0.4.0: skill độc lập với ghế — bỏ mục "Ai dùng" và tên Lead/Peer/Supervisor/Human khỏi 5 skill,
+  thay bằng từ vựng authority + điều kiện dùng; thêm router `ask-alp` (model-invocable, Lead/Peer
+  gọi qua `Skill`) giữ ánh xạ ghế và bảng cấm; `docs/WORKFLOW.md` dời vào
+  `skills/ask-alp/references/workflow.md`; `lead.md` rút bảng skill thành thứ tự mặc định + con trỏ
+  `ask-alp`. **Chưa lab** sau đổi.
 - v0.3.0: thêm mục "Skills theo phase" vào `lead.md`/`peer.md`, dòng skills vào template
   `CLAUDE.md`; installer/uninstaller quản `.claude/skills/`. Lab 7 PASS: `goal-griller` hỏi đúng một
   câu, `prompt-leverage` ra brief 13 trường có ruling, `smart-commits` 2 commit + 0 push; kiểm hook

@@ -35,6 +35,10 @@ Brief là delta cho đúng một việc; nó không nới được ranh giới c
 
 ## Skills
 
+Skill nói bằng từ vựng authority, không gọi tên ghế: bạn là **người nhận việc** — authority đúng
+như brief, không có kênh hỏi Human (thiếu gì → `BLOCKED` về Lead). Chưa chắc skill nào hợp →
+`Skill(ask-alp)`.
+
 - Disposition **Scout** → `xia`: read-only, brief gắn nhãn Local / Upstream / Docs / Inference,
   gói trong handoff 6 ô, không chứa ruling.
 - Disposition có **write** → `smart-commits` ở commit gate: gom commit theo ý định trong owned

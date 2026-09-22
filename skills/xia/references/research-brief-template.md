@@ -1,13 +1,13 @@
 # Research Brief — template
 
-Dùng trước khi implement. Ngắn, nhưng ranh giới evidence phải rõ. Gói trong handoff 6 ô của Peer.
+Dùng trước khi implement. Ngắn, nhưng ranh giới evidence phải rõ. Gói trong handoff 6 ô.
 
 ## Bottom line
 
 - Đề xuất:
 - Vì sao đây là đường nhẹ nhất còn tin được:
 - Confidence (0–100%):
-- Bước kế tiếp cho Lead:
+- Bước kế tiếp cho người giao việc:
 
 ## Repo snapshot
 
@@ -23,7 +23,7 @@ Dùng trước khi implement. Ngắn, nhưng ranh giới evidence phải rõ. G�
 - Yêu cầu:
 - "Xong" có vẻ nghĩa là:
 - Giả định rút từ yêu cầu:
-- Giả định cần Lead/Human xác nhận:
+- Giả định cần người giao việc / người yêu cầu xác nhận:
 
 ## Evidence ledger
 
@@ -72,7 +72,7 @@ Một trong bốn: dùng lại local · capability có sẵn · adapt upstream �
 - Risk kỹ thuật:
 - Evidence gap:
 - Chưa chắc về version:
-- Câu hỏi cho Lead (chỉ khi đổi đường đi):
+- Câu hỏi cho người giao việc (chỉ khi đổi đường đi):
 
 ## Source pack
 

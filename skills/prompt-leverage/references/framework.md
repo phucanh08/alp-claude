@@ -8,7 +8,7 @@ verification, tiêu chí dừng). SLP thêm lớp thứ ba: *authority control* 
 
 ## Bảy khối
 
-| Khối | Nội dung | Khi Human → Lead | Khi Lead → Peer (brief 13 trường) |
+| Khối | Nội dung | Khi viết prompt cho session khác | Khi viết brief 13 trường |
 |---|---|---|---|
 | Objective | việc + thành công quan sát được | một câu outcome + proof | `Objective` |
 | Context | file, URL, ràng buộc, giả định, ranh giới thông tin; khi nào phải tra thay vì đoán | link Task Contract / issue / log | `Repository root`, `Base`, `Excluded scope`, Scout brief đính kèm |
@@ -18,7 +18,7 @@ verification, tiêu chí dừng). SLP thêm lớp thứ ba: *authority control* 
 | Verification | đúng, có căn cứ, đủ, side effect, phương án tốt hơn | lệnh proof | `Verification` (lệnh + tài nguyên độc quyền) |
 | Done | điều phải đúng trước khi dừng | "xong khi …" | `Outcome` trong handoff + `Ownership: released` |
 
-Trường brief không có khối tương ứng — `Project / Task ID`, `Owned scope` — Lead điền từ
+Trường brief không có khối tương ứng — `Project / Task ID`, `Owned scope` — người giao việc điền từ
 `sequence-execution-plan`.
 
 ## Depth
@@ -36,10 +36,10 @@ Dùng mức thấp nhất khớp việc.
 - **Architect** — outcome + ràng buộc + trade-off; nêu ownership/lifecycle của mỗi abstraction;
   write chỉ khi brief cấp.
 - **Reviewer** — đọc đúng SHA (`git show sha:path`, `git diff base sha`), không working tree;
-  finding theo severity kèm `path:line`; **không** được seed verdict của Lead.
+  finding theo severity kèm `path:line`; **không** được seed verdict của người giao việc.
 - **Scout** — read-only; nhãn evidence Local/Upstream/Docs/Inference; trả brief theo `xia`.
 
-Loại việc khi Human → Lead: coding (như Engineer), research (nguồn, evidence, unknown, trích dẫn),
+Loại việc khi viết prompt: coding (như Engineer), research (nguồn, evidence, unknown, trích dẫn),
 review (mắt mới, failure mode, severity), planning (outcome trước implementation), writing (đối
 tượng, giọng, cấu trúc, tiêu chí sửa).
 
@@ -49,7 +49,7 @@ tượng, giọng, cấu trúc, tiêu chí sửa).
 - Không biến yêu cầu một dòng thành spec khổng lồ trừ khi việc thật sự phức tạp.
 - Giữ ngôn từ của người viết để prompt vẫn "nghe như của họ".
 - Tiêu chí hoàn thành cụ thể thay cho tính từ chất lượng mơ hồ.
-- Với brief: mọi chỗ Lead chưa biết ghi `<TODO: …>` thay vì đoán; `Base` không bao giờ là
+- Với brief: mọi chỗ người giao việc chưa biết ghi `<TODO: …>` thay vì đoán; `Base` không bao giờ là
   `HEAD` chữ — là SHA.
 
 ## Rubric
