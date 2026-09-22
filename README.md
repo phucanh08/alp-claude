@@ -154,12 +154,15 @@ VERSION
 | 7b | Task từ session khác, repo 30 module: Lead hỏi Human authority → Scout `xia` (0 Edit, nhãn evidence, so sánh stdlib) → `sequence-execution-plan` W1→W2 một writer → 8 ruling → 2 commit, 0 push → `ACCEPT` | PASS |
 | 7c | Lab 7 chạy lại trên **v0.4.0** + Supervisor, hai session headless: Lead 0 skill call nhưng hành vi đúng → worktree-per-writer lần đầu → Supervisor 3 `NOTE` + 1 `DRIFT D9` (Lead bỏ Reviewer khi chạm seam) → Lead tự sửa, `ACCEPT` giữ SHA | PASS (sinh 2 sửa `lead.md`, 1 sửa `goal-griller`, 1 sửa `LAB7.md`) |
 | 7d | Lab 7 trên **v0.4.2** + Supervisor, model Opus, hai session headless: đo bắt buộc gọi skill — Lead `goal-griller`→`sequence-execution-plan`→`prompt-leverage`, writer `smart-commits`, Reviewer tự mở đúng trigger seam, Supervisor `D13` + self-test `D12` | PASS (`xia` chưa kích hoạt; gate table thiếu disposition Reviewer) |
-| 7e | Lab 7 trên **v0.4.3**, fixture `lib/` 29 module, hai work item: **dừng giữa chừng vì session limit của tài khoản**. Đo được: skill gate giữ, Reviewer tự mở, writer reuse `lib/fmt/quoting` + `serialize` | DỞ (Lead tự recon 36 file, 0 `Skill xia` — Human ruling: không phải drift, `xia` có điều kiện → v0.4.5) |
+| 7e | Lab 7 trên **v0.4.3**, fixture `lib/` 29 module, hai work item: dừng giữa chừng vì session limit của tài khoản | DỞ (Lead tự recon 36 file, 0 `Skill xia` — Human ruling: không phải drift, `xia` có điều kiện → v0.4.5) |
+| 7e lại | Cùng fixture trên **v0.4.5**: Lead tự phân loại là cần recon → Scout `xia` → `sequence-execution-plan` → 3 lần `prompt-leverage` trước 3 lần spawn → writer `smart-commits` 2 commit → Reviewer → `ACCEPT c58cb39`; Supervisor `D12` bị từ chối, `D4` mở rồi đóng | PASS (lần đầu `xia` kích hoạt; `main` đứng yên, remote rỗng, 18/18 test, 0 helper viết lại) |
 
 Chi tiết và prompt trong `docs/LABS.md`; Lab 7 có repo dựng sẵn trong `docs/LAB7.md`.
 
 ## Tuning đã đưa vào `lead.md` từ lab
 
+- Lab 7e chạy lại trên v0.4.5: PASS. Lead tự quyết là cần recon rồi giao Scout `xia` — lần đầu
+  gate recon kích hoạt mà không phải do luật ép.
 - v0.4.5: **`xia` là gate có điều kiện**, không bắt buộc mọi lượt Lead — Lead tự quyết việc có cần
   recon hay không (vùng lạ, không đếm được call site, boundary chưa rõ chủ); đã quyết là cần thì
   mới bắt buộc qua `xia` hoặc Scout. `D13` không fire chỉ vì Lead đọc file. Nới lại v0.4.4 theo
