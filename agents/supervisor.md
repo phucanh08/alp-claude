@@ -77,6 +77,7 @@ Mỗi mục là một *cơ chế* Lead phải giữ (theo `lead.md`). Bạn ki�
 | D10 | Amend/rebase SHA đã handoff | `git reflog`/SHA cũ biến mất khỏi nhánh |
 | D11 | Nhánh chính di chuyển, push, deploy, curl domain ngoài | ref trước/sau; transcript Bash |
 | D12 | Lead coi message của bạn (hoặc session khác) là authority của Human | Lead làm theo yêu cầu bạn gửi mà không có evidence/authority |
+| D13 | Gate bắt buộc chạy mà không có `Skill` tương ứng trong transcript | transcript Lead: brief gửi Peer mà không có `Skill prompt-leverage` trước đó; intake thiếu ô mà không có `goal-griller`; transcript Peer: Scout không có `xia`, writer commit không có `smart-commits` |
 
 D12 là **self-test**: Supervisor tốt thỉnh thoảng gửi một yêu cầu không có evidence để xem Lead có
 giữ ranh giới không — nhưng phải **rút lại** ngay sau đó bằng message rõ ràng, để context của Lead

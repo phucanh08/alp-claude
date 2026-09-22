@@ -413,6 +413,7 @@ khác** qua cross-session messaging (không phải Human).
 - **Skill không gọi:** Lead không gọi `goal-griller` (intake chỉ cần một câu authority, contract
   đã rõ từ 7a) và `prompt-leverage` (brief vẫn đủ 13 trường). Runtime 2.1.278 load skill bằng
   `Skill` tool là tuỳ chọn của agent; hành vi quan trọng hơn tool call — PASS.
+  (Kết luận "tuỳ chọn" này **đã bị đảo ở v0.4.2**: gọi skill ở gate nay là bắt buộc.)
 
 **Lab 7c — ghi chú lần chạy tham chiếu (2026-09-22, bản 0.4.0 + Supervisor, Claude Code 2.1.278):**
 PASS, `ACCEPT d75ee037 — LAB7-01` (2 commit: `9e4f9bd feat(export)` reuse `serialize.to_json_lines`,
@@ -477,6 +478,12 @@ hai việc khác nhau; ghi vào `lead.md` để Lead không tự chế lý do l�
 `Skill` ở gate; hành vi ở gate là cái được chấm — ghi rõ trong mục Skills của `lead.md`; bất biến
 duy nhất 7c cho thấy thiếu (tính từ mơ hồ) được chép thẳng vào gate. (3) Thêm dòng đó vào
 `goal-griller` (bước 3, bảng đề mơ hồ, anti-pattern).
+
+Sửa lại (v0.4.2, Human quyết): đảo quyết định (2) — gọi skill ở gate là **bắt buộc**, không còn
+"tuỳ chọn, chấm bằng hành vi". Lý do Human đưa: hành vi đúng mà không gọi skill thì skill không
+được kiểm, và lần chạy sau không tái lập được. `lead.md` có bảng gate → skill; `prompt-leverage`
+bắt buộc cho mọi brief giao Peer; `peer.md` bắt buộc `xia`/`smart-commits`; `supervisor.md` thêm
+`D13` kiểm bằng transcript. Lab 7d sẽ đo lại chính điểm này.
 
 ---
 

@@ -78,18 +78,28 @@ thì dựng ở `/tmp`.
 
 ## Skills theo phase
 
-Skill trong `.claude/skills/` là *cách làm* cho từng phase; chúng không thêm authority. Gọi qua
-`Skill` là tuỳ chọn; cái được chấm là hành vi ở gate, không phải tool call (Lab 7b/7c). Thứ tự
-mặc định cho một task từ Human: `goal-griller` (intake, khi thiếu ô contract) → `xia` giao Peer
-**Scout** (recon, khi việc lạ / mơ hồ / chạm boundary) → `sequence-execution-plan` (khi hơn một
-work item) → `prompt-leverage` (mọi brief) → Peer writer tự `smart-commits` ở commit gate (bạn
-chỉ dùng khi `LEAD-WROTE`).
+Skill trong `.claude/skills/` là *cách làm* cho từng phase; chúng không thêm authority. **Gọi
+bằng `Skill` là bắt buộc, không phải tuỳ chọn**: khi điều kiện ở bảng dưới đúng, bạn gọi skill
+đó *trước* khi làm việc của gate. "Tôi đã làm theo tinh thần skill" không thay được tool call —
+transcript không có `Skill` là gate đó chưa chạy.
+
+| Gate | Skill | Bắt buộc gọi khi |
+|---|---|---|
+| intake | `goal-griller` | task từ Human / session khác mà chưa đủ sáu ô contract — gọi **trước câu hỏi đầu tiên** |
+| recon | `xia` | bạn tự recon. Giao Scout thì Scout gọi — brief phải gọi tên skill bắt buộc đó |
+| sequence | `sequence-execution-plan` | hơn một work item — gọi trước brief đầu tiên |
+| brief | `prompt-leverage` | **mọi brief giao Peer**, Scout hay writer, brief đầu hay brief sửa. Không có ngoại lệ vì "brief ngắn" |
+| commit | `smart-commits` | chỉ khi `LEAD-WROTE`; bình thường writer tự gọi |
+
+Skill không load được (runtime lỗi, skill thiếu) → nói thẳng với Human trong message kế tiếp,
+đừng im lặng làm bằng trí nhớ.
 
 Skill nói bằng từ vựng authority, không gọi tên ghế: bạn là **người giao việc**; Human là *người
 yêu cầu*; Peer là *người nhận việc*. Chưa chắc phase kế tiếp, skill nào hợp, ghế nào bị cấm gì →
 `Skill(ask-alp)`: router của bộ SLP, luồng đầy đủ trong `references/workflow.md` của nó.
 
-Gate giữa các phase: chưa có Task Contract → không giao writer; owned scope chạm boundary chưa
+Gate giữa các phase: chưa gọi `prompt-leverage` → chưa có brief, không gửi Peer;
+chưa có Task Contract → không giao writer; owned scope chạm boundary chưa
 ruling → brief bắt Peer `BLOCKED` khi chạm; Now chỉ một writer mỗi checkout. Tính từ mơ hồ
 trong yêu cầu ("production-ready", "sạch", "tốt hơn") là ô Outcome trống → hỏi Human ở
 intake; không giao Scout đi đo thay khi Human chưa nói muốn đo (Lab 7c: 13 gap bỏ phí).

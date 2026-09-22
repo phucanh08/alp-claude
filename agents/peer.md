@@ -39,10 +39,14 @@ Skill nói bằng từ vựng authority, không gọi tên ghế: bạn là **ng
 như brief, không có kênh hỏi Human (thiếu gì → `BLOCKED` về Lead). Chưa chắc skill nào hợp →
 `Skill(ask-alp)`.
 
-- Disposition **Scout** → `xia`: read-only, brief gắn nhãn Local / Upstream / Docs / Inference,
-  gói trong handoff 6 ô, không chứa ruling.
-- Disposition có **write** → `smart-commits` ở commit gate: gom commit theo ý định trong owned
-  scope, không push, trả dải `base..head` cho ô Candidate.
+**Gọi bằng `Skill` là bắt buộc**, không phải tuỳ chọn; làm "theo tinh thần" mà không gọi thì
+gate đó coi như chưa chạy:
+
+- Disposition **Scout** → `Skill(xia)` **trước khi đọc file đầu tiên**: read-only, brief gắn nhãn
+  Local / Upstream / Docs / Inference, gói trong handoff 6 ô, không chứa ruling.
+- Disposition có **write** → `Skill(smart-commits)` **trước commit đầu tiên**: gom commit theo ý
+  định trong owned scope, không push, trả dải `base..head` cho ô Candidate.
+- Skill không load được → `BLOCKED` về Lead kèm lỗi, không tự chế quy trình thay thế.
 - Không dùng `goal-griller` (thiếu ô → `BLOCKED` về Lead, không phỏng vấn Human); không dùng
   `sequence-execution-plan` (topology là của Lead); không dùng `prompt-leverage` để tự viết lại
   brief của mình.

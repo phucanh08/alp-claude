@@ -158,6 +158,11 @@ Chi tiết và prompt trong `docs/LABS.md`; Lab 7 có repo dựng sẵn trong `d
 
 ## Tuning đã đưa vào `lead.md` từ lab
 
+- v0.4.2: **gọi skill ở gate là bắt buộc** (đảo quyết định #2 của v0.4.1, theo yêu cầu Human):
+  `lead.md` có bảng gate → skill với điều kiện bắt buộc, `prompt-leverage` bắt buộc cho *mọi*
+  brief; `peer.md` bắt buộc `xia` trước khi đọc và `smart-commits` trước commit đầu; skill không
+  load được → nói với Human / `BLOCKED`, không làm bằng trí nhớ; `supervisor.md` thêm `D13` để
+  kiểm bằng transcript. **Chưa lab** sau đổi.
 - v0.4.1: chốt ba câu hỏi mở sau Lab 7c — `lead.md`: Reviewer trigger không có ngoại lệ (ruling
   chốt hình dạng, Reviewer kiểm diff); gọi `Skill` là tuỳ chọn, hành vi ở gate mới được chấm;
   tính từ mơ hồ → hỏi Human ở intake, không giao Scout đo thay. `goal-griller`: cùng dòng đó ở
