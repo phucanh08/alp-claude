@@ -154,16 +154,20 @@ VERSION
 | 7b | Task từ session khác, repo 30 module: Lead hỏi Human authority → Scout `xia` (0 Edit, nhãn evidence, so sánh stdlib) → `sequence-execution-plan` W1→W2 một writer → 8 ruling → 2 commit, 0 push → `ACCEPT` | PASS |
 | 7c | Lab 7 chạy lại trên **v0.4.0** + Supervisor, hai session headless: Lead 0 skill call nhưng hành vi đúng → worktree-per-writer lần đầu → Supervisor 3 `NOTE` + 1 `DRIFT D9` (Lead bỏ Reviewer khi chạm seam) → Lead tự sửa, `ACCEPT` giữ SHA | PASS (sinh 2 sửa `lead.md`, 1 sửa `goal-griller`, 1 sửa `LAB7.md`) |
 | 7d | Lab 7 trên **v0.4.2** + Supervisor, model Opus, hai session headless: đo bắt buộc gọi skill — Lead `goal-griller`→`sequence-execution-plan`→`prompt-leverage`, writer `smart-commits`, Reviewer tự mở đúng trigger seam, Supervisor `D13` + self-test `D12` | PASS (`xia` chưa kích hoạt; gate table thiếu disposition Reviewer) |
-| 7e | Lab 7 trên **v0.4.3**, fixture `lib/` 29 module, hai work item: **dừng giữa chừng vì session limit của tài khoản**. Đo được: skill gate giữ, Reviewer tự mở, writer reuse `lib/fmt/quoting` + `serialize` | DỞ (lộ drift `xia`: Lead tự recon 36 file, 0 `Skill`, `D13` không bắt → sửa ở v0.4.4) |
+| 7e | Lab 7 trên **v0.4.3**, fixture `lib/` 29 module, hai work item: **dừng giữa chừng vì session limit của tài khoản**. Đo được: skill gate giữ, Reviewer tự mở, writer reuse `lib/fmt/quoting` + `serialize` | DỞ (Lead tự recon 36 file, 0 `Skill xia` — Human ruling: không phải drift, `xia` có điều kiện → v0.4.5) |
 
 Chi tiết và prompt trong `docs/LABS.md`; Lab 7 có repo dựng sẵn trong `docs/LAB7.md`.
 
 ## Tuning đã đưa vào `lead.md` từ lab
 
+- v0.4.5: **`xia` là gate có điều kiện**, không bắt buộc mọi lượt Lead — Lead tự quyết việc có cần
+  recon hay không (vùng lạ, không đếm được call site, boundary chưa rõ chủ); đã quyết là cần thì
+  mới bắt buộc qua `xia` hoặc Scout. `D13` không fire chỉ vì Lead đọc file. Nới lại v0.4.4 theo
+  ruling của Human; bốn gate còn lại vẫn bắt buộc vô điều kiện.
 - v0.4.4: tách **bootstrap** khỏi **recon** trong `lead.md` — đọc `CLAUDE.md`/`git log`/cây file
   không cần skill, nhưng đọc code để trả lời câu hỏi mở của task là recon và phải `xia` hoặc giao
   Scout; `D13` kiểm đúng chỗ đó. Lộ ra ở Lab 7e: Lead đọc `lib/` 36 file, ra 5 phát hiện + 4
-  ruling, 0 `Skill xia`, Supervisor vẫn ghi no drift.
+  ruling, 0 `Skill xia`, Supervisor vẫn ghi no drift. **Siết quá tay — nới lại ở v0.4.5.**
 - v0.4.3: đóng hai gap Lab 7d — bảng gate của `lead.md` + `peer.md` nói rõ bốn disposition
   (`Scout`/`Architect` → `xia`; write → `smart-commits`; **Reviewer miễn skill**, thay bằng ràng
   buộc đọc theo SHA), `D13` không fire nhầm vào Reviewer; `D5` kiểm cả Bash ghi file chứ không

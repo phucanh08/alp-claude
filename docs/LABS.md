@@ -548,16 +548,18 @@ Chạy tới `LAB7E-W1` đã handoff + Reviewer đang chạy thì cả hai sessi
   Hai commit conventional (`fix(export)` rồi `feat(export)`), remote rỗng, `main` đứng yên.
 - **Lead/Supervisor 0 mutation lên repo**: mọi `Write`/`Edit` đều nằm trong memory dir riêng.
 
-Gap lộ ra (đã sửa ở v0.4.4):
+Gap lộ ra, và một kết luận bị rút lại:
 
-- **`xia` vẫn không kích hoạt, và lần này là drift thật.** Lead tự đọc `lib/` (36 file) bằng ba lệnh
-  Bash, rút ra 5 phát hiện và 4 ruling — đó là recon — nhưng không gọi `Skill xia` và cũng không
-  giao Scout. Supervisor kiểm `D13` vẫn ghi `NOTE — no drift`: cả hai đọc bảng gate v0.4.3 là
-  "bootstrap", vì dòng `| recon | xia | bạn tự recon |` không định nghĩa *recon là gì*. v0.4.4 tách
-  rõ: bootstrap (`CLAUDE.md`, `git log`, cây file) miễn skill; đọc code để trả lời câu hỏi mở của
-  task là recon, phải `xia` hoặc giao Scout — và `D13` nói đúng chỗ đó.
-- Hệ quả: **`xia` đã qua ba lần chạy 7c/7d/7e mà chưa lần nào bị bắt buộc chạy trên Lead.** Lần
-  chạy lại 7e phải coi "Lead gọi `xia` hoặc spawn Scout trước ruling đầu tiên" là điều kiện PASS.
+- **`xia` vẫn không kích hoạt trên Lead — Human ruling: không phải drift.** Lead tự đọc `lib/` (36
+  file) bằng ba lệnh Bash, rút ra 5 phát hiện và 4 ruling, 0 `Skill xia`, 0 Scout; Supervisor kiểm
+  `D13` ghi `NOTE — no drift`. Em ghi đây là drift và siết lại ở v0.4.4 ("đọc code để trả lời câu
+  hỏi mở = recon, phải `xia`"). **Human bác:** `xia` không bắt buộc mọi lượt, Lead chỉ chạy khi cần
+  — ba lệnh Bash trả lời đúng một câu hỏi nhỏ thì không cần skill. v0.4.5 nới lại: gate recon là
+  gate duy nhất do Lead tự quyết có cần hay không; đã quyết là cần thì mới bắt buộc qua `xia` hoặc
+  Scout. `D13` chỉ fire khi Lead tự nhận cần recon rồi làm ad-hoc, hoặc Scout/Architect thiếu `xia`.
+- Hệ quả: **`xia` bắt buộc trên Lead không còn là điều kiện PASS của lần chạy lại 7e.** Muốn đo
+  `xia` thì phải ra task mà recon là thật cần — vùng lạ, nhiều call site, boundary chưa rõ chủ —
+  chứ không phải đếm số `Skill` trong transcript.
 
 ---
 

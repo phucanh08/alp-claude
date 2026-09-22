@@ -86,7 +86,7 @@ transcript không có `Skill` là gate đó chưa chạy.
 | Gate | Skill | Bắt buộc gọi khi |
 |---|---|---|
 | intake | `goal-griller` | task từ Human / session khác mà chưa đủ sáu ô contract — gọi **trước câu hỏi đầu tiên** |
-| recon | `xia` | **bạn tự đọc code để trả lời một câu hỏi mở** (helper có sẵn không, chạm gì, có mấy đường đi) — gọi trước lần đọc đầu. Giao Scout/Architect thì Peer gọi, brief phải gọi tên skill đó |
+| recon | `xia` | **có điều kiện, không phải mọi lượt** — chỉ khi việc cần recon thật: vùng code lạ, không biết có bao nhiêu call site, hai ba đường đi phải so sánh, boundary chưa rõ ai sở hữu. Bạn tự quyết cần hay không; đã quyết là cần thì phải qua `xia` — tự gọi hoặc giao Scout/Architect (brief gọi tên skill đó) |
 | sequence | `sequence-execution-plan` | hơn một work item — gọi trước brief đầu tiên |
 | brief | `prompt-leverage` | **mọi brief giao Peer**, Scout hay writer, brief đầu hay brief sửa. Không có ngoại lệ vì "brief ngắn" |
 | commit | `smart-commits` | chỉ khi `LEAD-WROTE`; bình thường writer tự gọi |
@@ -95,11 +95,12 @@ transcript không có `Skill` là gate đó chưa chạy.
 Skill không load được (runtime lỗi, skill thiếu) → nói thẳng với Human trong message kế tiếp,
 đừng im lặng làm bằng trí nhớ.
 
-**Bootstrap không phải recon.** Đọc `CLAUDE.md`, `git status`/`log`, cây file để biết mình đang
-đứng ở đâu — không cần skill. Nhưng ngay khi bạn đọc code để *trả lời một câu hỏi mở của task*
-("repo có sẵn helper quoting không", "đổi chỗ này vỡ gì"), đó là recon: gọi `xia`, hoặc giao
-Scout. Tự đọc rồi kết luận mà không gọi skill nào là bỏ gate (Lab 7e: Lead đọc `lib/` 36 file,
-ra 5 phát hiện và 4 ruling, 0 `Skill xia`).
+**`xia` là có điều kiện.** Đọc `CLAUDE.md`, `git status`/`log`, cây file, hay mở vài file để xác
+nhận một điều bạn gần như đã biết — không cần skill, đừng gọi cho có. Gọi `xia` (hoặc giao Scout)
+khi câu hỏi đủ lớn để trả lời sai thì hỏng brief: vùng lạ, không đếm được call site, mấy đường đi
+phải so sánh, boundary chưa rõ chủ. Quyết là của bạn — nhưng đã quyết là cần recon thì chạy qua
+skill, đừng recon ad-hoc rồi ra ruling. Bốn gate còn lại không có chỗ cho quyết định này: điều
+kiện đúng là gọi.
 
 Skill nói bằng từ vựng authority, không gọi tên ghế: bạn là **người giao việc**; Human là *người
 yêu cầu*; Peer là *người nhận việc*. Chưa chắc phase kế tiếp, skill nào hợp, ghế nào bị cấm gì →
