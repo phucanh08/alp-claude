@@ -30,12 +30,14 @@ Khuyến nghị project-local setting để không làm thay đổi mọi repo.
 
 ## 1. Agent definitions
 
-`install.sh` copy `agents/lead.md`, `peer.md`, `supervisor.md` → `.claude/agents/`. Làm tay:
+`install.sh` copy `agents/lead.md`, `peer.md`, `supervisor.md` → `.claude/agents/` và năm thư mục
+`skills/<name>/` → `.claude/skills/`. Làm tay:
 
 ```bash
-mkdir -p .claude/agents
+mkdir -p .claude/agents .claude/skills
 cp agents/lead.md agents/peer.md agents/supervisor.md .claude/agents/
-claude plugin validate .claude/agents
+cp -R skills/goal-griller skills/xia skills/sequence-execution-plan skills/prompt-leverage skills/smart-commits .claude/skills/
+claude plugin validate .claude/agents && claude plugin validate .claude/skills
 ```
 
 `name` + `description` là frontmatter bắt buộc. Main session chạy một definition trực tiếp bằng
@@ -143,6 +145,8 @@ nhận `[Cross-session delivery notice]`; Human phải approve ở session nhậ
 2. `docs/LABS.md` — Lab 2 → 6 trên repo thật, tăng dần: tầng BLOCKED/REOPEN → lane mù +
    messaging → Reviewer đúng SHA → Supervisor cross-session (session thường) → Supervisor với
    definition riêng.
+3. `docs/LAB7.md` — năm skill theo phase, repo disposable dựng sẵn; chạy sau khi Lab 1–2 ổn và đã
+   cài bản ≥ 0.3.0 (có `.claude/skills/`).
 
 Không thêm Supervisor trước khi Lab 1–2 ổn; nếu không sẽ khó biết lỗi nằm ở policy hay runtime.
 
@@ -202,6 +206,33 @@ NOTE và không lách.
 
 **Worktree + `CLAUDE.md` chưa commit:** installer (≥ 0.2.1) phát hiện target là linked worktree và
 copy `CLAUDE.md` từ main worktree thay vì template.
+
+## 11. Skills theo phase
+
+Năm skill trong `.claude/skills/` được Lead/Peer gọi qua tool `Skill` (cả hai definition có
+`Skill` trong `tools:`; Supervisor không có — cố ý). Skill là *cách làm* cho từng phase, không
+phải authority:
+
+| Phase | Skill | Seat |
+|---|---|---|
+| intake | `goal-griller` | Lead |
+| recon | `xia` | Peer Scout |
+| sequence | `sequence-execution-plan` | Lead |
+| brief | `prompt-leverage` | Lead |
+| commit gate | `smart-commits` | Peer writer / Lead khi `LEAD-WROTE` |
+
+Kiểm skill đã được load: trong session Lead gõ `/` — năm tên phải hiện trong danh sách; hoặc
+`claude plugin validate .claude/skills`. Skill dir bị sửa tay → lần `install.sh` sau backup thành
+`<name>.bak-<timestamp>` rồi ghi bản mới.
+
+Script `prompt-leverage/scripts/augment_prompt.py` chỉ cần python3 stdlib:
+
+```bash
+python3 .claude/skills/prompt-leverage/scripts/augment_prompt.py "<prompt thô>" --task-id T-1
+python3 .claude/skills/prompt-leverage/scripts/test_augment_prompt.py
+```
+
+Luồng đầy đủ và gate giữa các phase: `docs/WORKFLOW.md`.
 
 ## Official references
 

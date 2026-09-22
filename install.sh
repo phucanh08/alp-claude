@@ -10,6 +10,7 @@
 #
 # Cài gì:
 #   <root>/.claude/agents/lead.md, peer.md, supervisor.md   (copy)
+#   <root>/.claude/skills/<name>/                (copy: goal-griller, xia, sequence-execution-plan, prompt-leverage, smart-commits)
 #   <root>/.claude/settings.json                (merge: env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS, teammateMode)
 #   <root>/CLAUDE.md                            (chỉ tạo từ template nếu chưa có; project mode)
 #   <root>/.claude/slp-manifest.json            (ghi lại đúng những gì đã cài, để uninstall gỡ chính xác)
@@ -20,13 +21,14 @@ SLP_REF="${SLP_REF:-main}"
 MODE="project"
 TARGET=""
 FORCE=0
+SKILLS="goal-griller xia sequence-execution-plan prompt-leverage smart-commits"
 
 usage() {
   cat <<'EOF'
 Usage: install.sh [--global] [--dir <path>] [--force]
   --global      cài vào ~/.claude (agents dùng chung mọi repo, không tạo CLAUDE.md)
   --dir <path>  repo root cần cài (mặc định: thư mục hiện tại)
-  --force       ghi đè agent file đã có mà không backup
+  --force       ghi đè agent file / skill dir đã có mà không backup
 Env: SLP_REPO (mặc định phucanh08/alp-claude), SLP_REF (branch/tag, mặc định main)
 EOF
 }
@@ -136,6 +138,7 @@ else
   SRC="$TMP"
 fi
 for a in lead peer supervisor; do [ -f "$SRC/agents/$a.md" ] || die "bundle thiếu agents/$a.md"; done
+for s in $SKILLS; do [ -f "$SRC/skills/$s/SKILL.md" ] || die "bundle thiếu skills/$s/SKILL.md"; done
 VERSION="$(cat "$SRC/VERSION" 2>/dev/null || echo unknown)"
 
 # ---- resolve target ------------------------------------------------------------
@@ -151,6 +154,7 @@ else
   fi
 fi
 AGENTS_DIR="$CLAUDE_DIR/agents"
+SKILLS_DIR="$CLAUDE_DIR/skills"
 SETTINGS="$CLAUDE_DIR/settings.json"
 MANIFEST="$CLAUDE_DIR/slp-manifest.json"
 
@@ -177,6 +181,28 @@ for name in lead peer supervisor; do
   cp "$SRC/agents/$name.md" "$dst"
   installed_agents+=("agents/$name.md")
   ok "agents/$name.md"
+done
+
+# ---- 1b. skills -----------------------------------------------------------------
+# Mỗi skill là một thư mục (SKILL.md + references/ + scripts/). Khác nội dung → backup cả thư mục.
+mkdir -p "$SKILLS_DIR"
+installed_skills=()
+for name in $SKILLS; do
+  src="$SRC/skills/$name"; dst="$SKILLS_DIR/$name"
+  if [ -d "$dst" ] && ! diff -rq -x __pycache__ "$src" "$dst" >/dev/null 2>&1; then
+    if [ "$FORCE" -eq 1 ]; then
+      warn "ghi đè $dst (--force)"
+    else
+      bak="$dst.bak-$(date +%Y%m%d%H%M%S)"
+      cp -R "$dst" "$bak"
+      warn "$dst đã tồn tại và khác bản mới → backup $bak"
+    fi
+  fi
+  rm -rf "$dst"
+  cp -R "$src" "$dst"
+  find "$dst" -type d -name __pycache__ -prune -exec rm -rf {} + 2>/dev/null || true
+  installed_skills+=("skills/$name")
+  ok "skills/$name"
 done
 
 # ---- 2. settings.json -------------------------------------------------------------
@@ -230,6 +256,9 @@ fi
   printf '  "agents": ['
   first=1; for a in "${installed_agents[@]}"; do [ $first -eq 1 ] || printf ', '; printf '"%s"' "$a"; first=0; done
   printf '],\n'
+  printf '  "skills": ['
+  first=1; for k in "${installed_skills[@]}"; do [ $first -eq 1 ] || printf ', '; printf '"%s"' "$k"; first=0; done
+  printf '],\n'
   printf '  "settings": { "created": %s, "keys": [' "$settings_created"
   first=1; for k in "${settings_keys[@]+"${settings_keys[@]}"}"; do [ $first -eq 1 ] || printf ', '; printf '"%s"' "$k"; first=0; done
   printf '] },\n'
@@ -240,11 +269,13 @@ ok "manifest: $MANIFEST"
 
 # ---- 5. validate ------------------------------------------------------------------
 if have claude; then
-  if claude plugin validate "$AGENTS_DIR" >/dev/null 2>&1; then
-    ok "claude plugin validate: passed"
-  else
-    warn "claude plugin validate báo lỗi — chạy: claude plugin validate $AGENTS_DIR"
-  fi
+  for d in "$AGENTS_DIR" "$SKILLS_DIR"; do
+    if claude plugin validate "$d" >/dev/null 2>&1; then
+      ok "claude plugin validate $(basename "$d"): passed"
+    else
+      warn "claude plugin validate báo lỗi — chạy: claude plugin validate $d"
+    fi
+  done
 else
   warn "không thấy lệnh 'claude' trong PATH — bỏ qua validate"
 fi
@@ -255,7 +286,7 @@ Xong. Bước tiếp theo:
   1. $( [ "$MODE" = "project" ] && echo "Điền CLAUDE.md (contract boundary, lệnh test, path cấm sửa, external side-effect policy)." || echo "Mỗi repo vẫn cần CLAUDE.md riêng — template: $SRC/templates/CLAUDE.template.md" )
   2. cd <repo root> && claude --agent lead --name lead      # header phải hiện @lead
   3. (tuỳ chọn) Supervisor ở worktree riêng: docs/SETUP.md §10
-  4. Chạy Lab 1 theo docs/LAB1.md, rồi docs/LABS.md (Lab 2–6).
+  4. Quy trình theo phase + skill: docs/WORKFLOW.md. Lab: docs/LAB1.md rồi docs/LABS.md (Lab 2–6).
 
 Gỡ: curl -fsSL https://raw.githubusercontent.com/${SLP_REPO}/${SLP_REF}/uninstall.sh | bash$( [ "$MODE" = "global" ] && echo " -s -- --global" )
 EOF

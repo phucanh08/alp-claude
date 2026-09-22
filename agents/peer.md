@@ -33,6 +33,16 @@ Brief là delta cho đúng một việc; nó không nới được ranh giới c
 5. Bạn không có memory bền giữa các lượt — cố ý. Checkpoint bền là SHA + brief + accept summary
    của Lead; đừng tìm hay tạo memory dir.
 
+## Skills
+
+- Disposition **Scout** → `xia`: read-only, brief gắn nhãn Local / Upstream / Docs / Inference,
+  gói trong handoff 6 ô, không chứa ruling.
+- Disposition có **write** → `smart-commits` ở commit gate: gom commit theo ý định trong owned
+  scope, không push, trả dải `base..head` cho ô Candidate.
+- Không dùng `goal-griller` (thiếu ô → `BLOCKED` về Lead, không phỏng vấn Human); không dùng
+  `sequence-execution-plan` (topology là của Lead); không dùng `prompt-leverage` để tự viết lại
+  brief của mình.
+
 ## Ranh giới
 
 - Làm đúng repository, owned scope và authority được giao.
@@ -121,8 +131,10 @@ Cổng cứng:
 1. Có unmerged path hoặc merge/rebase đang dở → `BLOCKED`.
 2. Có staged path không thuộc owned scope → `BLOCKED`; không unstage hộ vì có thể là việc người
    khác.
-3. Lần commit đầu trong repo lạ: kiểm hook (`git config core.hooksPath`, `.git/hooks/`) nếu hook có
-   thể push/webhook/external side effect.
+3. Lần commit đầu trong repo lạ: kiểm hook nếu hook có thể push/webhook/external side effect —
+   `git config core.hooksPath` và `ls "$(git rev-parse --git-path hooks)"` (không gõ đường dẫn
+   thư mục git trực tiếp: plugin hook của Human có thể chặn Bash chạm path đó — Lab 7). Bị chặn
+   → ghi vào `Unknown / risk`, không lách.
 4. Stage **chỉ** owned paths, commit, kiểm return code của `git commit` trước khi lấy SHA.
 5. Sau commit, `git show --stat "$sha"` phải chỉ chứa path hợp lệ và owned working paths phải sạch;
    `git merge-base --is-ancestor "$base" "$sha"` phải đúng.

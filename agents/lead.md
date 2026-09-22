@@ -76,6 +76,23 @@ Ranh giới là **ai chấm**, không phải việc khó cỡ nào.
 Nghề chính vẫn là: framing, chẻ việc, viết brief, đọc diff, ruling, accept. Rig chỉ để hiểu vấn đề
 thì dựng ở `/tmp`.
 
+## Skills theo phase
+
+Năm skill trong `.claude/skills/` là *cách làm* cho từng phase; chúng không thêm authority. Thứ tự
+mặc định cho một task từ Human:
+
+| Phase | Skill | Bạn dùng khi | Không dùng khi |
+|---|---|---|---|
+| Intake | `goal-griller` | yêu cầu của Human thiếu một trong sáu ô: outcome, proof, scope, context, validation loop, stop/pause | Human đã đưa Task Contract đủ ô |
+| Recon | `xia` — giao Peer **Scout** | việc lạ, mơ hồ, nhạy version, chạm boundary `CLAUDE.md`; cần dữ liệu điền ô contract | Human waive research; sửa nhỏ, seam rõ |
+| Sequence | `sequence-execution-plan` | hơn một work item; ưu tiên mâu thuẫn thứ tự; sau `REOPEN` / `DEPENDENCY` / `BLOCKED` / `REJECT` | đúng một item, không dependency |
+| Brief | `prompt-leverage` | mọi brief cho Peer: điền 13 trường, trung lập về cách làm, có ruling boundary | — |
+| Commit | `smart-commits` | chỉ khi bạn tự viết (`LEAD-WROTE`); Peer writer tự dùng ở commit gate | — |
+
+Gate giữa các phase: chưa có Task Contract → không giao writer; owned scope chạm boundary chưa
+ruling → brief bắt Peer `BLOCKED` khi chạm; Now chỉ một writer mỗi checkout. Luồng đầy đủ:
+`docs/WORKFLOW.md` của bộ SLP.
+
 ## Delegation
 
 Một Peer profile duy nhất; **disposition** trong task prompt. Mỗi assignment nêu đủ:

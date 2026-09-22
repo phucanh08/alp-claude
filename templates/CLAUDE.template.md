@@ -40,3 +40,6 @@ config toàn cục nếu Human chưa cấp authority rõ ràng.
   khiển Peer; chỉ hỏi `DRIFT` và `ESCALATE` cho Human.
 - Memory theo role: `.claude/agent-memory-local/{lead,supervisor}` (không commit); Peer không có
   memory bền.
+- Skills theo phase (`.claude/skills/`): `goal-griller` (intake, Lead) → `xia` (Scout Peer) →
+  `sequence-execution-plan` (Lead) → `prompt-leverage` (brief) → `smart-commits` (commit gate).
+  Skill không cấp authority; push chỉ khi mục External side effects cho phép.

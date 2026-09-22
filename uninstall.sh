@@ -8,6 +8,7 @@
 #
 # Gỡ đúng những gì install.sh đã ghi trong .claude/slp-manifest.json:
 #   - agent files đã cài
+#   - skill dirs đã cài (.claude/skills/<name>)
 #   - key trong settings.json do SLP thêm (không đụng key khác); xóa file nếu SLP tạo và giờ rỗng
 #   - CLAUDE.md chỉ khi SLP tạo từ template VÀ chưa ai sửa (sha256 khớp)
 set -euo pipefail
@@ -15,13 +16,14 @@ set -euo pipefail
 MODE="project"
 TARGET=""
 FORCE=0
+SKILLS="goal-griller xia sequence-execution-plan prompt-leverage smart-commits"
 
 usage() {
   cat <<'EOF'
 Usage: uninstall.sh [--global] [--dir <path>] [--force]
   --global      gỡ khỏi ~/.claude
   --dir <path>  repo root (mặc định: thư mục hiện tại)
-  --force       không có manifest vẫn gỡ agents/{lead,peer,supervisor}.md; xóa CLAUDE.md kể cả đã sửa;
+  --force       không có manifest vẫn gỡ agents/{lead,peer,supervisor}.md + 5 skill dir; xóa CLAUDE.md kể cả đã sửa;
                 xóa luôn agent memory (.claude/agent-memory-local/{lead,supervisor})
 EOF
 }
@@ -129,6 +131,7 @@ else
   CLAUDE_DIR="$ROOT/.claude"
 fi
 AGENTS_DIR="$CLAUDE_DIR/agents"
+SKILLS_DIR="$CLAUDE_DIR/skills"
 SETTINGS="$CLAUDE_DIR/settings.json"
 MANIFEST="$CLAUDE_DIR/slp-manifest.json"
 
@@ -138,13 +141,17 @@ printf '\nSLP uninstall ← %s (%s)\n\n' "$CLAUDE_DIR" "$MODE"
 if [ ! -f "$MANIFEST" ]; then
   if [ "$FORCE" -ne 1 ]; then
     warn "không thấy $MANIFEST — không biết SLP đã cài gì ở đây."
-    log  "Dùng --force để gỡ agents/{lead,peer,supervisor}.md (không đụng settings.json, CLAUDE.md)."
+    log  "Dùng --force để gỡ agents/{lead,peer,supervisor}.md + skills/{$(echo $SKILLS | tr ' ' ',')} (không đụng settings.json, CLAUDE.md)."
     exit 1
   fi
   for name in lead peer supervisor; do
     if [ -f "$AGENTS_DIR/$name.md" ]; then rm -f "$AGENTS_DIR/$name.md"; ok "xóa agents/$name.md"; fi
   done
   rmdir "$AGENTS_DIR" 2>/dev/null && ok "xóa thư mục agents/ (rỗng)" || true
+  for name in $SKILLS; do
+    if [ -d "$SKILLS_DIR/$name" ]; then rm -rf "$SKILLS_DIR/$name"; ok "xóa skills/$name"; fi
+  done
+  rmdir "$SKILLS_DIR" 2>/dev/null && ok "xóa thư mục skills/ (rỗng)" || true
   log "settings.json và CLAUDE.md giữ nguyên (không có manifest để biết SLP đã thêm gì)."
   exit 0
 fi
@@ -156,6 +163,19 @@ while IFS= read -r rel; do
   if [ -f "$f" ]; then rm -f "$f"; ok "xóa $rel"; else log "$rel đã không còn"; fi
 done <<<"$(manifest_get "$MANIFEST" agents)"
 rmdir "$AGENTS_DIR" 2>/dev/null && ok "xóa thư mục agents/ (rỗng)" || true
+
+# ---- 1b. skills (manifest ≥ 0.3.0; manifest cũ không có key → bỏ qua) ------------
+while IFS= read -r rel; do
+  [ -z "$rel" ] && continue
+  case "$rel" in
+    skills/*/*|skills/|skills/..*) warn "manifest có path lạ '$rel' → bỏ qua"; continue ;;
+    skills/*) ;;
+    *) warn "manifest có path lạ '$rel' → bỏ qua"; continue ;;
+  esac
+  d="$CLAUDE_DIR/$rel"
+  if [ -d "$d" ]; then rm -rf "$d"; ok "xóa $rel"; else log "$rel đã không còn"; fi
+done <<<"$(manifest_get "$MANIFEST" skills)"
+rmdir "$SKILLS_DIR" 2>/dev/null && ok "xóa thư mục skills/ (rỗng)" || true
 
 # agent memory (memory: local) — dữ liệu của seat, chỉ xóa khi --force
 for name in lead supervisor; do
