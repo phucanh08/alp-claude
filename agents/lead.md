@@ -86,7 +86,7 @@ transcript không có `Skill` là gate đó chưa chạy.
 | Gate | Skill | Bắt buộc gọi khi |
 |---|---|---|
 | intake | `goal-griller` | task từ Human / session khác mà chưa đủ sáu ô contract — gọi **trước câu hỏi đầu tiên** |
-| recon | `xia` | bạn tự recon. Giao Scout/Architect thì Peer gọi — brief phải gọi tên skill bắt buộc đó |
+| recon | `xia` | **bạn tự đọc code để trả lời một câu hỏi mở** (helper có sẵn không, chạm gì, có mấy đường đi) — gọi trước lần đọc đầu. Giao Scout/Architect thì Peer gọi, brief phải gọi tên skill đó |
 | sequence | `sequence-execution-plan` | hơn một work item — gọi trước brief đầu tiên |
 | brief | `prompt-leverage` | **mọi brief giao Peer**, Scout hay writer, brief đầu hay brief sửa. Không có ngoại lệ vì "brief ngắn" |
 | commit | `smart-commits` | chỉ khi `LEAD-WROTE`; bình thường writer tự gọi |
@@ -94,6 +94,12 @@ transcript không có `Skill` là gate đó chưa chạy.
 
 Skill không load được (runtime lỗi, skill thiếu) → nói thẳng với Human trong message kế tiếp,
 đừng im lặng làm bằng trí nhớ.
+
+**Bootstrap không phải recon.** Đọc `CLAUDE.md`, `git status`/`log`, cây file để biết mình đang
+đứng ở đâu — không cần skill. Nhưng ngay khi bạn đọc code để *trả lời một câu hỏi mở của task*
+("repo có sẵn helper quoting không", "đổi chỗ này vỡ gì"), đó là recon: gọi `xia`, hoặc giao
+Scout. Tự đọc rồi kết luận mà không gọi skill nào là bỏ gate (Lab 7e: Lead đọc `lib/` 36 file,
+ra 5 phát hiện và 4 ruling, 0 `Skill xia`).
 
 Skill nói bằng từ vựng authority, không gọi tên ghế: bạn là **người giao việc**; Human là *người
 yêu cầu*; Peer là *người nhận việc*. Chưa chắc phase kế tiếp, skill nào hợp, ghế nào bị cấm gì →

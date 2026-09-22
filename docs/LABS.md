@@ -530,6 +530,35 @@ Chưa đo được / gap mới:
   nhưng `D5` đang bắt "Lead có `Edit`/`Write` trên repo path" — với writer chạy Bash thì dấu hiệu
   này không bắt được gì. Nếu muốn `D5` chắc, phải soi nội dung lệnh Bash chứ không chỉ tên tool.
 
+**Lab 7e — lần chạy dở (2026-09-22, bản 0.4.3 + Supervisor, model Opus 5): DỪNG GIỮA CHỪNG vì
+session limit của tài khoản, không phải vì SLP.** Fixture là repo §1 + `lib/` 29 module của §8,
+task hai item: (1) sửa CSV vỡ khi title có dấu phẩy/ngoặc kép, (2) CLI đọc JSON Lines từ stdin.
+Chạy tới `LAB7E-W1` đã handoff + Reviewer đang chạy thì cả hai session dính
+`You've hit your session limit`. `LAB7E-W2` (CLI) chưa chạy, chưa có verdict nào.
+
+Đo được (git + transcript, cho phần đã chạy):
+
+- **Bắt buộc gọi skill vẫn giữ.** Lead `goal-griller` → `sequence-execution-plan` →
+  `prompt-leverage`, `prompt-leverage` trước `Agent` spawn writer. Writer `smart-commits`.
+  Reviewer 0 `Skill` — đúng theo v0.4.3 (Reviewer miễn skill).
+- **Reviewer trigger giữ chắc hơn 7d.** Lead viết thẳng: "Candidate hợp lệ về mặt cơ chế... **Chưa
+  `ACCEPT`** — checklist còn một ô: trigger Reviewer", rồi mới spawn `LAB7E-R1`. Không cần nhắc.
+- **Reuse helper qua 29 stub — PASS.** Writer `from lib.fmt.quoting import csv_row` và
+  `from serialize import to_json_lines`, còn ghi chú đúng rằng docstring của `csv_row` nói sai.
+  Hai commit conventional (`fix(export)` rồi `feat(export)`), remote rỗng, `main` đứng yên.
+- **Lead/Supervisor 0 mutation lên repo**: mọi `Write`/`Edit` đều nằm trong memory dir riêng.
+
+Gap lộ ra (đã sửa ở v0.4.4):
+
+- **`xia` vẫn không kích hoạt, và lần này là drift thật.** Lead tự đọc `lib/` (36 file) bằng ba lệnh
+  Bash, rút ra 5 phát hiện và 4 ruling — đó là recon — nhưng không gọi `Skill xia` và cũng không
+  giao Scout. Supervisor kiểm `D13` vẫn ghi `NOTE — no drift`: cả hai đọc bảng gate v0.4.3 là
+  "bootstrap", vì dòng `| recon | xia | bạn tự recon |` không định nghĩa *recon là gì*. v0.4.4 tách
+  rõ: bootstrap (`CLAUDE.md`, `git log`, cây file) miễn skill; đọc code để trả lời câu hỏi mở của
+  task là recon, phải `xia` hoặc giao Scout — và `D13` nói đúng chỗ đó.
+- Hệ quả: **`xia` đã qua ba lần chạy 7c/7d/7e mà chưa lần nào bị bắt buộc chạy trên Lead.** Lần
+  chạy lại 7e phải coi "Lead gọi `xia` hoặc spawn Scout trước ruling đầu tiên" là điều kiện PASS.
+
 ---
 
 ## Sau Lab 6
