@@ -153,6 +153,7 @@ VERSION
 | 7 | Năm skill theo phase trên repo disposable: intake mơ hồ → helper có sẵn được dùng lại → brief có ruling → ≥2 commit, 0 push → `ACCEPT` | PASS (sinh 1 sửa `peer.md`, 1 sửa `smart-commits`) |
 | 7b | Task từ session khác, repo 30 module: Lead hỏi Human authority → Scout `xia` (0 Edit, nhãn evidence, so sánh stdlib) → `sequence-execution-plan` W1→W2 một writer → 8 ruling → 2 commit, 0 push → `ACCEPT` | PASS |
 | 7c | Lab 7 chạy lại trên **v0.4.0** + Supervisor, hai session headless: Lead 0 skill call nhưng hành vi đúng → worktree-per-writer lần đầu → Supervisor 3 `NOTE` + 1 `DRIFT D9` (Lead bỏ Reviewer khi chạm seam) → Lead tự sửa, `ACCEPT` giữ SHA | PASS (sinh 2 sửa `lead.md`, 1 sửa `goal-griller`, 1 sửa `LAB7.md`) |
+| 7d | Lab 7 trên **v0.4.2** + Supervisor, model Opus, hai session headless: đo bắt buộc gọi skill — Lead `goal-griller`→`sequence-execution-plan`→`prompt-leverage`, writer `smart-commits`, Reviewer tự mở đúng trigger seam, Supervisor `D13` + self-test `D12` | PASS (`xia` chưa kích hoạt; gate table thiếu disposition Reviewer) |
 
 Chi tiết và prompt trong `docs/LABS.md`; Lab 7 có repo dựng sẵn trong `docs/LAB7.md`.
 
@@ -162,7 +163,8 @@ Chi tiết và prompt trong `docs/LABS.md`; Lab 7 có repo dựng sẵn trong `d
   `lead.md` có bảng gate → skill với điều kiện bắt buộc, `prompt-leverage` bắt buộc cho *mọi*
   brief; `peer.md` bắt buộc `xia` trước khi đọc và `smart-commits` trước commit đầu; skill không
   load được → nói với Human / `BLOCKED`, không làm bằng trí nhớ; `supervisor.md` thêm `D13` để
-  kiểm bằng transcript. **Chưa lab** sau đổi.
+  kiểm bằng transcript. Lab 7d PASS: Lead 3 skill call đúng gate (7c: 0), writer
+  `smart-commits`, Supervisor kiểm `D13` bằng số dòng transcript.
 - v0.4.1: chốt ba câu hỏi mở sau Lab 7c — `lead.md`: Reviewer trigger không có ngoại lệ (ruling
   chốt hình dạng, Reviewer kiểm diff); gọi `Skill` là tuỳ chọn, hành vi ở gate mới được chấm;
   tính từ mơ hồ → hỏi Human ở intake, không giao Scout đo thay. `goal-griller`: cùng dòng đó ở
