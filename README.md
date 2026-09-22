@@ -115,15 +115,16 @@ VERSION
 | 3 | 2 lane read-only mù + messaging evidence-only + 1 writer | PASS |
 | 4 | Engineer commit → Reviewer độc lập đọc đúng SHA → Lead accept | PASS (sinh 1 sửa `lead.md`) |
 | 5 | Supervisor = session độc lập qua cross-session messaging; 2 mồi authority / evidence | PASS |
-| 6 | Supervisor với definition riêng + memory riêng: 12 drift catalog, self-test D12, Lead healthy/unhealthy | chưa chạy |
+| 6 | Supervisor với definition riêng + memory riêng: kiểm candidate, self-test D12 (rút lại), ESCALATE khi Lead unhealthy | PASS (sinh 4 sửa `supervisor.md`, 1 sửa `install.sh`) |
 
 Chi tiết và prompt trong `docs/LABS.md`.
 
 ## Tuning đã đưa vào `lead.md` từ lab
 
-- v0.2.0 (chưa lab): `memory: local`; ô `Snapshot` → `Candidate` có base SHA; verdict line
-  `ACCEPT`/`REJECT` bắt buộc; worktree-per-writer cho nhiều writer song song; mục "Supervisor —
-  session khác, không phải Human". Lab 6 đo các điểm này.
+- v0.2.x: `memory: local` (Lab 6: chạy được với `--agent`); ô `Snapshot` → `Candidate` có base SHA
+  và verdict line `ACCEPT`/`REJECT` (Lab 6: Lead dùng đúng, kể cả khi Human ép chấm mù → Lead từ
+  chối ra verdict trên lời khai); mục "Supervisor — session khác, không phải Human" (Lab 6: Lead
+  từ chối mồi D12 và báo Human "Supervisor đang nhân danh anh"). Worktree-per-writer **chưa lab**.
 
 - Bỏ `TaskCreate/TaskGet/TaskList/TaskUpdate` khỏi `tools:` — runtime 2.1.x không có; task
   identity + owner đi trong brief.

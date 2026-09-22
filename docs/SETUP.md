@@ -191,9 +191,17 @@ session Supervisor — nhưng khi đó auth cũng tách, thường phải login 
 class (một bên bypass, một bên prompt — §8d). Chạy Lead và Supervisor cùng class (khuyến nghị: cả
 hai prompt) để `DRIFT` tới ngay. Supervisor dùng `notify_when_idle` để chờ Lead thay vì polling.
 
-**Chưa kiểm bằng lab** (Lab 6 đo): `memory:` có hiệu lực khi definition chạy làm main session qua
-`--agent` không — docs chỉ nói cho subagent. Sau Lab 6 kiểm `.claude/agent-memory-local/lead/MEMORY.md`
-có xuất hiện không; nếu không, memory của Lead/Supervisor rơi về `CLAUDE.md` + accept summary.
+**Đã kiểm (Lab 6, Claude Code 2.1.278):** `memory:` có hiệu lực khi definition chạy làm main
+session qua `--agent` — `agent-memory-local/{lead,supervisor}/MEMORY.md` xuất hiện ngay lượt đầu.
+Runtime cấp tool `Write` cho memory dir **dù `tools:` không liệt kê `Write`**; Write ngoài memory dir
+chưa thử — coi như chưa chặn, instruction trong `supervisor.md` là lớp bảo vệ.
+
+**Auto-mode classifier** có thể chặn `SendMessage` của Supervisor khi nội dung giống thao túng
+("không cần tự đọc diff nữa — Human đang chờ"). Đó là hành vi mong muốn; `supervisor.md` bảo ghi
+NOTE và không lách.
+
+**Worktree + `CLAUDE.md` chưa commit:** installer (≥ 0.2.1) phát hiện target là linked worktree và
+copy `CLAUDE.md` từ main worktree thay vì template.
 
 ## Official references
 

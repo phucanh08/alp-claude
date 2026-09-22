@@ -200,10 +200,21 @@ if [ "$MODE" = "project" ]; then
   if [ -f "$ROOT/CLAUDE.md" ]; then
     log "CLAUDE.md đã có — giữ nguyên. Kiểm nó có đủ 4 mục: contract boundaries, verification, generated/cấm sửa, external side effects."
   else
-    cp "$SRC/templates/CLAUDE.template.md" "$ROOT/CLAUDE.md"
-    claude_md_created=true
-    claude_md_sha="$(sha256 "$ROOT/CLAUDE.md")"
-    ok "CLAUDE.md tạo từ template — ĐIỀN repo-specific contract trước khi chạy Lead"
+    # linked worktree (vd. worktree của Supervisor) mà repo chưa commit CLAUDE.md → lấy bản thật từ main worktree
+    common="$(git -C "$ROOT" rev-parse --path-format=absolute --git-common-dir 2>/dev/null || true)"
+    main_root=""
+    [ -n "$common" ] && [ "$common" != "$ROOT/.git" ] && main_root="$(dirname "$common")"
+    if [ -n "$main_root" ] && [ -f "$main_root/CLAUDE.md" ]; then
+      cp "$main_root/CLAUDE.md" "$ROOT/CLAUDE.md"
+      claude_md_created=true
+      claude_md_sha="$(sha256 "$ROOT/CLAUDE.md")"
+      ok "CLAUDE.md copy từ main worktree $main_root (linked worktree, file chưa commit)"
+    else
+      cp "$SRC/templates/CLAUDE.template.md" "$ROOT/CLAUDE.md"
+      claude_md_created=true
+      claude_md_sha="$(sha256 "$ROOT/CLAUDE.md")"
+      ok "CLAUDE.md tạo từ template — ĐIỀN repo-specific contract trước khi chạy Lead"
+    fi
   fi
 fi
 
