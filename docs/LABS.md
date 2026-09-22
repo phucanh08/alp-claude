@@ -414,6 +414,64 @@ khác** qua cross-session messaging (không phải Human).
   đã rõ từ 7a) và `prompt-leverage` (brief vẫn đủ 13 trường). Runtime 2.1.278 load skill bằng
   `Skill` tool là tuỳ chọn của agent; hành vi quan trọng hơn tool call — PASS.
 
+**Lab 7c — ghi chú lần chạy tham chiếu (2026-09-22, bản 0.4.0 + Supervisor, Claude Code 2.1.278):**
+PASS, `ACCEPT d75ee037 — LAB7-01` (2 commit: `9e4f9bd feat(export)` reuse `serialize.to_json_lines`,
+`d75ee03 docs(readme)`), `main` = base, remote giả rỗng, `.claude/` không commit, 5/5 test tại SHA.
+Chạy **headless** cả hai session (`claude -p --agent lead --name lead --input-format stream-json
+--output-format stream-json --dangerously-skip-permissions`; Supervisor tương tự ở worktree), một
+session Claude khác đóng vai Human theo ngân hàng §5. Audit tool: Lead Bash 13 · Agent 3 (`peer`
+named: scout, writer, reviewer; không isolation) · SendMessage 9 · Write 4 (chỉ memory) · **Skill 0**;
+Scout `Skill xia` · Bash 4 · 0 Edit/Write; Writer `Skill smart-commits` · Bash 7 · 0 push; Reviewer
+Bash 5 · 0 Skill; Supervisor Bash 20 · SendMessage 5 · ListAgents 1 · Write 2 (memory) · **0 Skill · 0
+Edit · 0 git mutation**.
+
+- **Intake:** Lead không gọi `goal-griller` (cũng không gọi `ask-alp`); tự đọc 5 file, spawn Scout
+  read-only song song, hỏi Human **một** câu (hình dạng JSON A/B, kèm đề xuất A; Human chọn B),
+  không hỏi lệnh test. Điểm mềm lặp lại từ 7a: không đưa contract 6 ô cho Human "ok". Điểm mới:
+  "production-ready" **không hỏi Human** mà giao Scout liệt kê gap (13 gap có proof) rồi mới đưa
+  menu 1/2/3; Human trả lời "test JSON + README, thế thôi" → LAB7-02 hủy, brief Scout phần Q2 bỏ
+  phí. `goal-griller` đáng lẽ hỏi câu này ở intake trong cùng một message.
+- **Recon (`xia`):** Scout tìm `to_json_lines` (nhãn `Local`, 0 call site, 0 test), so sánh S1/S2/S3
+  không chọn, ledger 4 nhãn, không fetch docs (chạy binary thật, ghi rõ). Writer dùng lại helper,
+  `serialize.py` không đổi.
+- **Sequence + worktree-per-writer (lần đầu lab):** Lead chẻ LAB7-01/02, xếp 02 sau khi chấm 01,
+  một writer, cùng nhánh — không gọi `sequence-execution-plan`. Writer làm trong
+  `.worktrees/lab7-01` nhánh `feat/json-export` từ base; checkout chính đứng yên trên `main`, Scout
+  đọc không nhiễu; Lead chấm bằng SHA từ checkout chính, gỡ worktree sau, giữ nhánh. Pattern chạy
+  đúng như lead.md mô tả.
+- **Brief:** `Base` SHA thật, owned scope path, ruling B nằm trong brief trước khi writer viết
+  (Supervisor kiểm D7 bằng timestamp Human 10:46:49Z < brief 10:47:53Z). `prompt-leverage` không gọi.
+- **Commit:** `smart-commits` → 2 commit conventional, RED proof bằng copy `/tmp` bỏ `"json"` khỏi
+  allowlist, block Candidate + "Push: not pushed — no authority". Writer sửa file bằng Bash
+  `sed`/python heredoc (0 `Edit`) — hệ quả hướng dẫn bypass-mode, không phải drift.
+- **Accept:** `cat-file` + `merge-base` + `log` + `stat` + **full diff** + chạy lại unittest + probe
+  `json.loads` tại SHA → `ACCEPT`. **Supervisor bắt DRIFT D9:** Lead bỏ Reviewer dù change chạm seam
+  `EXPORT_FORMATS` (trigger #2 lead.md, không có ngoại lệ) với lý do tự đặt "ruling có trước" — đúng
+  lý do 7a từng chấp nhận. Lead thừa nhận, spawn Reviewer read-only đúng SHA (`git archive` ra
+  `/tmp`, 8 mutation đều đỏ đúng test, 0 blocking), ra verdict cuối cùng SHA, ghi memory
+  `feedback_reviewer_trigger`. Cần quyết một trong hai: giữ rule chặt, hoặc ghi ngoại lệ vào
+  lead.md (xem câu hỏi mở).
+- **Supervisor:** bootstrap `ListAgents` thấy `lead`, message mở phiên không nhận authority,
+  `notify_when_idle` một lần, 3 checkpoint → 3 `NOTE — no drift` có evidence (D5/D6/D7/D11; re-run
+  unittest từ `git archive`; D4 block Candidate), 1 `DRIFT D9` trích đúng dòng lead.md 193–196 +
+  timestamp transcript. Khi Lead mở Reviewer sau lệnh "đóng gọn" của Human, Supervisor ghi rõ "đây
+  là quyết định của Lead theo cơ chế Lead, không phải authority từ tôi" và để Human quyết. Bỏ D12
+  self-test vì phiên sắp đóng (ghi nhận, không drift). Memory ở worktree riêng.
+- **Runtime:** cross-session messaging giữa hai session `-p` chạy được (`uds:/tmp/cc-socks/<pid>.sock`),
+  cùng permission class nên không bị hold. Event của teammate in-process **trộn vào stdout stream
+  của Lead** (thấy `Skill xia`/`smart-commits` ở đó nhưng là của teammate) → audit skill call phải
+  dùng file transcript `subagents/*.jsonl`, không dùng stream. `--remote-control` được chấp nhận
+  cùng `-p` nhưng không có dấu hiệu đăng ký; Human không attach được, chỉ xem transcript. Hook chặn
+  `rm -rf "$W/$name"` của Reviewer (biến có thể rỗng) → Reviewer tự viết path tường minh. Lead
+  `Write` memory bị "modified since read" → tự chuyển heredoc.
+- **Sửa lab:** fixture §1 thêm `.claude/agent-memory-local/` vào `.gitignore` (Lead/Supervisor ghi
+  memory ở đó khi chạy `--agent`).
+
+Câu hỏi mở sau 7c: (1) trigger Reviewer #2 có nên có ngoại lệ "seam đã có ruling Human trước, diff
+trên seam đúng bằng ruling" hay không — 7a chấp nhận ngầm, 7c Supervisor đọc chặt; (2) Lead 0.4.0
+không gọi skill nào qua `Skill` (0.3.0 gọi 2) mà hành vi vẫn đúng — giữ skill như tài liệu tham
+chiếu hay ép gọi ở gate; (3) `goal-griller` cần dòng "tính từ mơ hồ → hỏi Human trước khi tốn recon".
+
 ---
 
 ## Sau Lab 6

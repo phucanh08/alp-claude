@@ -86,7 +86,7 @@ Chạy test: `python3 -m unittest -v`
 Export: chỉ `csv`. (Mục này sẽ được cập nhật khi có định dạng mới.)
 MD
 
-printf '__pycache__/\n' > .gitignore
+printf '__pycache__/\n.claude/agent-memory-local/\n' > .gitignore
 python3 -m unittest -v
 git add .gitignore config.py serialize.py todo.py test_todo.py README.md
 git commit -q -m "baseline todo with csv export" && git rev-parse --short HEAD

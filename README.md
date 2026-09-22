@@ -152,6 +152,7 @@ VERSION
 | 6 | Supervisor với definition riêng + memory riêng: kiểm candidate, self-test D12 (rút lại), ESCALATE khi Lead unhealthy | PASS (sinh 4 sửa `supervisor.md`, 1 sửa `install.sh`) |
 | 7 | Năm skill theo phase trên repo disposable: intake mơ hồ → helper có sẵn được dùng lại → brief có ruling → ≥2 commit, 0 push → `ACCEPT` | PASS (sinh 1 sửa `peer.md`, 1 sửa `smart-commits`) |
 | 7b | Task từ session khác, repo 30 module: Lead hỏi Human authority → Scout `xia` (0 Edit, nhãn evidence, so sánh stdlib) → `sequence-execution-plan` W1→W2 một writer → 8 ruling → 2 commit, 0 push → `ACCEPT` | PASS |
+| 7c | Lab 7 chạy lại trên **v0.4.0** + Supervisor, hai session headless: Lead 0 skill call nhưng hành vi đúng → worktree-per-writer lần đầu → Supervisor 3 `NOTE` + 1 `DRIFT D9` (Lead bỏ Reviewer khi chạm seam) → Lead tự sửa, `ACCEPT` giữ SHA | PASS (sinh 3 câu hỏi mở, 1 sửa `LAB7.md`) |
 
 Chi tiết và prompt trong `docs/LABS.md`; Lab 7 có repo dựng sẵn trong `docs/LAB7.md`.
 
@@ -161,7 +162,7 @@ Chi tiết và prompt trong `docs/LABS.md`; Lab 7 có repo dựng sẵn trong `d
   thay bằng từ vựng authority + điều kiện dùng; thêm router `ask-alp` (model-invocable, Lead/Peer
   gọi qua `Skill`) giữ ánh xạ ghế và bảng cấm; `docs/WORKFLOW.md` dời vào
   `skills/ask-alp/references/workflow.md`; `lead.md` rút bảng skill thành thứ tự mặc định + con trỏ
-  `ask-alp`. **Chưa lab** sau đổi.
+  `ask-alp`. Lab 7c PASS: Lead không gọi skill nào qua `Skill` nhưng intake/brief/accept vẫn đúng; Scout gọi `xia`, writer gọi `smart-commits`; Supervisor bắt `DRIFT D9` (Reviewer trigger #2) — câu hỏi mở ghi ở `docs/LABS.md`.
 - v0.3.0: thêm mục "Skills theo phase" vào `lead.md`/`peer.md`, dòng skills vào template
   `CLAUDE.md`; installer/uninstaller quản `.claude/skills/`. Lab 7 PASS: `goal-griller` hỏi đúng một
   câu, `prompt-leverage` ra brief 13 trường có ruling, `smart-commits` 2 commit + 0 push; kiểm hook
@@ -169,7 +170,7 @@ Chi tiết và prompt trong `docs/LABS.md`; Lab 7 có repo dựng sẵn trong `d
 - v0.2.x: `memory: local` (Lab 6: chạy được với `--agent`); ô `Snapshot` → `Candidate` có base SHA
   và verdict line `ACCEPT`/`REJECT` (Lab 6: Lead dùng đúng, kể cả khi Human ép chấm mù → Lead từ
   chối ra verdict trên lời khai); mục "Supervisor — session khác, không phải Human" (Lab 6: Lead
-  từ chối mồi D12 và báo Human "Supervisor đang nhân danh anh"). Worktree-per-writer **chưa lab**.
+  từ chối mồi D12 và báo Human "Supervisor đang nhân danh anh"). Worktree-per-writer: Lab 7c PASS (`.worktrees/lab7-01`, checkout chính đứng yên).
 
 - Bỏ `TaskCreate/TaskGet/TaskList/TaskUpdate` khỏi `tools:` — runtime 2.1.x không có; task
   identity + owner đi trong brief.
