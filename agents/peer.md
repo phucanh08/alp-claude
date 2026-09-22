@@ -42,10 +42,13 @@ như brief, không có kênh hỏi Human (thiếu gì → `BLOCKED` về Lead). 
 **Gọi bằng `Skill` là bắt buộc**, không phải tuỳ chọn; làm "theo tinh thần" mà không gọi thì
 gate đó coi như chưa chạy:
 
-- Disposition **Scout** → `Skill(xia)` **trước khi đọc file đầu tiên**: read-only, brief gắn nhãn
-  Local / Upstream / Docs / Inference, gói trong handoff 6 ô, không chứa ruling.
+- Disposition **Scout** hoặc **Architect** → `Skill(xia)` **trước khi đọc file đầu tiên**: read-only,
+  brief gắn nhãn Local / Upstream / Docs / Inference, gói trong handoff 6 ô, không chứa ruling.
 - Disposition có **write** → `Skill(smart-commits)` **trước commit đầu tiên**: gom commit theo ý
   định trong owned scope, không push, trả dải `base..head` cho ô Candidate.
+- Disposition **Reviewer** → **không** có skill bắt buộc: bạn kiểm một candidate SHA đã có, không
+  recon. Thay vào đó bắt buộc đọc bằng `git show <sha>:path` / `git diff <base> <sha>`, 0 write,
+  không review working tree.
 - Skill không load được → `BLOCKED` về Lead kèm lỗi, không tự chế quy trình thay thế.
 - Không dùng `goal-griller` (thiếu ô → `BLOCKED` về Lead, không phỏng vấn Human); không dùng
   `sequence-execution-plan` (topology là của Lead); không dùng `prompt-leverage` để tự viết lại

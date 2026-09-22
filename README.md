@@ -159,6 +159,10 @@ Chi tiết và prompt trong `docs/LABS.md`; Lab 7 có repo dựng sẵn trong `d
 
 ## Tuning đã đưa vào `lead.md` từ lab
 
+- v0.4.3: đóng hai gap Lab 7d — bảng gate của `lead.md` + `peer.md` nói rõ bốn disposition
+  (`Scout`/`Architect` → `xia`; write → `smart-commits`; **Reviewer miễn skill**, thay bằng ràng
+  buộc đọc theo SHA), `D13` không fire nhầm vào Reviewer; `D5` kiểm cả Bash ghi file chứ không
+  chỉ tên tool `Edit`/`Write`.
 - v0.4.2: **gọi skill ở gate là bắt buộc** (đảo quyết định #2 của v0.4.1, theo yêu cầu Human):
   `lead.md` có bảng gate → skill với điều kiện bắt buộc, `prompt-leverage` bắt buộc cho *mọi*
   brief; `peer.md` bắt buộc `xia` trước khi đọc và `smart-commits` trước commit đầu; skill không

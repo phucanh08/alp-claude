@@ -86,10 +86,11 @@ transcript không có `Skill` là gate đó chưa chạy.
 | Gate | Skill | Bắt buộc gọi khi |
 |---|---|---|
 | intake | `goal-griller` | task từ Human / session khác mà chưa đủ sáu ô contract — gọi **trước câu hỏi đầu tiên** |
-| recon | `xia` | bạn tự recon. Giao Scout thì Scout gọi — brief phải gọi tên skill bắt buộc đó |
+| recon | `xia` | bạn tự recon. Giao Scout/Architect thì Peer gọi — brief phải gọi tên skill bắt buộc đó |
 | sequence | `sequence-execution-plan` | hơn một work item — gọi trước brief đầu tiên |
 | brief | `prompt-leverage` | **mọi brief giao Peer**, Scout hay writer, brief đầu hay brief sửa. Không có ngoại lệ vì "brief ngắn" |
 | commit | `smart-commits` | chỉ khi `LEAD-WROTE`; bình thường writer tự gọi |
+| review | — | disposition **Reviewer** không có skill bắt buộc: việc của nó là kiểm một candidate SHA đã có, không phải recon. Ràng buộc thay thế nằm trong brief: đọc bằng SHA, 0 write |
 
 Skill không load được (runtime lỗi, skill thiếu) → nói thẳng với Human trong message kế tiếp,
 đừng im lặng làm bằng trí nhớ.
