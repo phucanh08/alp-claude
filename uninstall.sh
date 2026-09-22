@@ -21,7 +21,8 @@ usage() {
 Usage: uninstall.sh [--global] [--dir <path>] [--force]
   --global      gỡ khỏi ~/.claude
   --dir <path>  repo root (mặc định: thư mục hiện tại)
-  --force       không có manifest vẫn gỡ agents/lead.md + peer.md; xóa CLAUDE.md kể cả đã sửa
+  --force       không có manifest vẫn gỡ agents/{lead,peer,supervisor}.md; xóa CLAUDE.md kể cả đã sửa;
+                xóa luôn agent memory (.claude/agent-memory-local/{lead,supervisor})
 EOF
 }
 
@@ -137,10 +138,10 @@ printf '\nSLP uninstall ← %s (%s)\n\n' "$CLAUDE_DIR" "$MODE"
 if [ ! -f "$MANIFEST" ]; then
   if [ "$FORCE" -ne 1 ]; then
     warn "không thấy $MANIFEST — không biết SLP đã cài gì ở đây."
-    log  "Dùng --force để gỡ agents/lead.md + agents/peer.md (không đụng settings.json, CLAUDE.md)."
+    log  "Dùng --force để gỡ agents/{lead,peer,supervisor}.md (không đụng settings.json, CLAUDE.md)."
     exit 1
   fi
-  for name in lead peer; do
+  for name in lead peer supervisor; do
     if [ -f "$AGENTS_DIR/$name.md" ]; then rm -f "$AGENTS_DIR/$name.md"; ok "xóa agents/$name.md"; fi
   done
   rmdir "$AGENTS_DIR" 2>/dev/null && ok "xóa thư mục agents/ (rỗng)" || true
@@ -155,6 +156,15 @@ while IFS= read -r rel; do
   if [ -f "$f" ]; then rm -f "$f"; ok "xóa $rel"; else log "$rel đã không còn"; fi
 done <<<"$(manifest_get "$MANIFEST" agents)"
 rmdir "$AGENTS_DIR" 2>/dev/null && ok "xóa thư mục agents/ (rỗng)" || true
+
+# agent memory (memory: local) — dữ liệu của seat, chỉ xóa khi --force
+for name in lead supervisor; do
+  m="$CLAUDE_DIR/agent-memory-local/$name"
+  [ -d "$m" ] || continue
+  if [ "$FORCE" -eq 1 ]; then rm -rf "$m"; ok "xóa agent-memory-local/$name"
+  else warn "giữ $m (memory của seat $name; --force để xóa)"; fi
+done
+rmdir "$CLAUDE_DIR/agent-memory-local" 2>/dev/null || true
 
 # ---- 2. settings.json -------------------------------------------------------------
 settings_created="$(manifest_get "$MANIFEST" settings.created)"

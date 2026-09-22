@@ -1,19 +1,31 @@
 # alp-claude — SLP trên Claude Code Agent Teams
 
-Bộ cài **SLP** (Lead / Peer separation-of-judgment) cho Claude Code Agent Teams native.
-Không cần Paseo. Một `install.sh`, một `uninstall.sh`, hai agent definition, một template
-`CLAUDE.md`, và 5 lab đã chạy thật để kiểm chứng.
+Bộ cài **SLP** (Supervisor / Lead / Peer separation-of-judgment) cho Claude Code Agent Teams
+native. Không cần Paseo. Một `install.sh`, một `uninstall.sh`, ba agent definition, một template
+`CLAUDE.md`, và 5 lab đã chạy thật + 1 lab cho Supervisor definition.
 
 ```text
-Human
-  ↓
-Claude Code main session   claude --agent lead
-  ↓  Agent(subagent_type=peer, name=...)
-Peer teammate(s)           Engineer | Architect | Reviewer | Scout
+Human ──────────────────────────────┐
+  ↓                                 ↓
+Lead session    claude --agent lead --name lead        Supervisor session (worktree riêng)
+  ↓  Agent(subagent_type=peer, name=...)         ←──   claude --agent supervisor --name supervisor
+Peer teammate(s)  Engineer | Architect | Reviewer | Scout     cross-session messaging, chỉ DRIFT/ESCALATE
 ```
 
-Nguyên tắc lõi: **ai chấm** mới là ranh giới. Peer viết → Lead accept bằng cách đọc diff từ Git
-object của đúng SHA. Lead viết → Human accept. Capability không phải authority.
+Nguyên tắc lõi: **ai chấm** mới là ranh giới. Peer viết → Lead `ACCEPT`/`REJECT` bằng cách đọc
+diff `base..sha` từ Git object. Lead viết → Human accept. Supervisor không chấm ai — chỉ phát hiện
+drift và hỏi. Capability không phải authority.
+
+## Sáu bất biến và cách hiện thực trên Claude Code
+
+| # | Bất biến | Hiện thực |
+|---|---|---|
+| 1 | **Tách role**: Supervisor = governance, Lead = technical owner, Peer = một bounded outcome | 3 definition; `tools:` của Supervisor không có `Agent/Edit/Write`; Peer không có `Agent`; chỉ Lead có `Agent(peer)` |
+| 2 | **Bộ nhớ riêng theo role**, auth/skills/plugins chung | `memory: local` → `.claude/agent-memory-local/{lead,supervisor}` (không commit); Peer **không** memory (memory `peer` dùng chung mọi instance sẽ phá lane mù); Supervisor chạy trong worktree riêng nên transcript + memory + index tách hẳn; `~/.claude` chung |
+| 3 | **Một source of truth cho topology** | Lead là native team lead duy nhất; Supervisor là session ngoài team, runtime không cho session khác reach teammate của Lead; không nested team |
+| 4 | **Write ownership rõ** | mỗi moving scope một writer + commit lease; nhiều writer song song = Lead cấp worktree riêng mỗi writer, contract cho shared interface phải có trong brief trước |
+| 5 | **Candidate + evidence, không phải DONE** | handoff 6 ô: `Candidate` = SHA + base, `Scope`, `Verification` (command + output thật), `Unknown/risk`, `Ownership`; Lead bắt buộc một dòng `ACCEPT <sha>` / `REJECT <sha> — finding` |
+| 6 | **Supervisor không giành quyền Lead** | output chỉ `DRIFT` (evidence + một câu hỏi) / `ESCALATE` (Human) / `NOTE`; định nghĩa "Lead healthy" cụ thể; unhealthy → escalate, vẫn không điều khiển Peer |
 
 ## Cài
 
@@ -40,7 +52,7 @@ Installer làm đúng 4 việc và ghi lại trong `.claude/slp-manifest.json`:
 
 | Việc | Hành vi |
 |---|---|
-| `.claude/agents/lead.md`, `peer.md` | copy; file cũ khác nội dung → backup `.bak-<timestamp>` (`--force` để bỏ backup) |
+| `.claude/agents/lead.md`, `peer.md`, `supervisor.md` | copy; file cũ khác nội dung → backup `.bak-<timestamp>` (`--force` để bỏ backup) |
 | `.claude/settings.json` | **merge**: thêm `env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` và `teammateMode=in-process` nếu chưa có; key khác giữ nguyên |
 | `CLAUDE.md` | chỉ tạo từ template nếu **chưa có**; có rồi thì không đụng |
 | validate | `claude plugin validate .claude/agents` nếu có lệnh `claude` |
@@ -56,7 +68,8 @@ curl -fsSL https://raw.githubusercontent.com/phucanh08/alp-claude/main/uninstall
 
 Uninstaller đọc manifest và gỡ **đúng những gì đã cài**: agent files; chỉ các key trong
 `settings.json` do SLP thêm (xóa file nếu SLP tạo và giờ rỗng); `CLAUDE.md` chỉ khi SLP tạo **và**
-chưa ai sửa (so sha256). Không có manifest → từ chối, trừ `--force` (khi đó chỉ gỡ 2 agent file).
+chưa ai sửa (so sha256). Memory `.claude/agent-memory-local/{lead,supervisor}` giữ lại, `--force`
+mới xóa. Không có manifest → từ chối, trừ `--force` (khi đó chỉ gỡ 3 agent file).
 
 ## Dùng
 
@@ -64,12 +77,16 @@ chưa ai sửa (so sha256). Không có manifest → từ chối, trừ `--force`
 cd <repo root>
 # 1. Điền CLAUDE.md: contract boundaries, lệnh test, path cấm sửa, external side-effect policy.
 # 2.
-claude --agent lead          # header phải hiện @lead
+claude --agent lead --name lead          # header phải hiện @lead
+# 3. (tuỳ chọn) Supervisor — terminal khác, worktree riêng:
+git worktree add ../<repo>-supervisor <nhánh>
+cd ../<repo>-supervisor && claude --agent supervisor --name supervisor
 ```
 
 Lead nhận task từ Human, chẻ việc, spawn Peer bằng `Agent` với `subagent_type: peer` **và một
 `name`** (named call = teammate; có `isolation` = rơi về ordinary subagent). Peer commit local,
-handoff 6 ô + SHA; Lead `git diff sha^ sha` rồi accept hoặc trả finding.
+handoff 6 ô (candidate SHA + base); Lead `git diff base sha` rồi `ACCEPT`/`REJECT`. Supervisor
+(nếu chạy) nhận checkpoint từ Lead, kiểm Git object + transcript, gửi `DRIFT` khi lệch.
 
 Không dùng `claude -p` (teammate cần interactive session). Không dùng
 `--dangerously-skip-permissions` cho lab đầu.
@@ -77,13 +94,14 @@ Không dùng `claude -p` (teammate cần interactive session). Không dùng
 ## Cấu trúc repo
 
 ```text
-agents/lead.md              Lead — framing, delegation, review, acceptance
-agents/peer.md              Peer — bounded co-worker; disposition trong brief
+agents/lead.md              Lead — framing, delegation, review, acceptance (ACCEPT/REJECT)
+agents/peer.md              Peer — bounded co-worker; disposition trong brief; handoff = candidate
+agents/supervisor.md        Supervisor — governance; session riêng; DRIFT / ESCALATE / NOTE
 templates/CLAUDE.template.md  khung repo-specific contract
 templates/settings.json     env + teammateMode
 docs/SETUP.md               setup chi tiết + cơ chế runtime cần biết
 docs/LAB1.md                Lab 1 trên repo disposable (Python stdlib)
-docs/LABS.md                Lab 2–5: prompt + PASS/FAIL + ghi chú từ lần chạy tham chiếu
+docs/LABS.md                Lab 2–6: prompt + PASS/FAIL + ghi chú từ lần chạy tham chiếu
 install.sh / uninstall.sh
 VERSION
 ```
@@ -97,10 +115,15 @@ VERSION
 | 3 | 2 lane read-only mù + messaging evidence-only + 1 writer | PASS |
 | 4 | Engineer commit → Reviewer độc lập đọc đúng SHA → Lead accept | PASS (sinh 1 sửa `lead.md`) |
 | 5 | Supervisor = session độc lập qua cross-session messaging; 2 mồi authority / evidence | PASS |
+| 6 | Supervisor với definition riêng + memory riêng: 12 drift catalog, self-test D12, Lead healthy/unhealthy | chưa chạy |
 
 Chi tiết và prompt trong `docs/LABS.md`.
 
 ## Tuning đã đưa vào `lead.md` từ lab
+
+- v0.2.0 (chưa lab): `memory: local`; ô `Snapshot` → `Candidate` có base SHA; verdict line
+  `ACCEPT`/`REJECT` bắt buộc; worktree-per-writer cho nhiều writer song song; mục "Supervisor —
+  session khác, không phải Human". Lab 6 đo các điểm này.
 
 - Bỏ `TaskCreate/TaskGet/TaskList/TaskUpdate` khỏi `tools:` — runtime 2.1.x không có; task
   identity + owner đi trong brief.

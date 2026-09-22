@@ -31,7 +31,12 @@ Mặc định agent không được push, deploy, publish, gọi production serv
 config toàn cục nếu Human chưa cấp authority rõ ràng.
 
 ## SLP team policy
-- Lead là owner của topology và acceptance.
-- Peer writer cần `exclusive-writer` + commit lease.
+- Lead là owner của topology và acceptance; chỉ Lead spawn Peer.
+- Peer writer cần `exclusive-writer` + commit lease + `Base` SHA; mỗi moving scope một writer.
 - Peer không tự claim task khác trừ khi brief cho phép.
-- Shared task status không đồng nghĩa acceptance.
+- Handoff là candidate (SHA + base + changed paths + verification output + risk); Lead chấm bằng
+  dòng `ACCEPT <sha>` / `REJECT <sha>`. Shared task status không đồng nghĩa acceptance.
+- Supervisor (nếu có) là session riêng, không có authority của Human, không accept, không điều
+  khiển Peer; chỉ hỏi `DRIFT` và `ESCALATE` cho Human.
+- Memory theo role: `.claude/agent-memory-local/{lead,supervisor}` (không commit); Peer không có
+  memory bền.

@@ -1,20 +1,21 @@
 # Setup SLP trên Claude Code Agent Teams
 
-Bộ này chuyển hai instruction SLP `LEAD.md` / `PEER.md` sang Claude Code Agent Teams native.
+Bộ này chuyển ba instruction SLP `SUPERVISOR.md` / `LEAD.md` / `PEER.md` sang Claude Code Agent
+Teams native.
 Không cần Paseo. Cài bằng `install.sh` (xem README) hoặc làm tay theo mục 1–3 dưới đây.
 
 ## Kiến trúc
 
 ```text
 Human
-  ↓
-Claude Code main session chạy --agent lead
+  ↓                                        Supervisor session (--agent supervisor, worktree riêng)
+Claude Code main session chạy --agent lead   ←── cross-session messaging (DRIFT / ESCALATE / NOTE)
   ↓  named Agent(subagent_type=peer)
 Peer teammate(s)
 ```
 
 Lab đầu chỉ dùng **1 writer Peer**. Read-only Peer có thể chạy song song. Không dùng Supervisor ở
-bước đầu.
+bước đầu — thêm ở §10 sau khi Lab 1–2 ổn.
 
 ## 0. Yêu cầu runtime
 
@@ -29,11 +30,11 @@ Khuyến nghị project-local setting để không làm thay đổi mọi repo.
 
 ## 1. Agent definitions
 
-`install.sh` copy `agents/lead.md`, `agents/peer.md` → `.claude/agents/`. Làm tay:
+`install.sh` copy `agents/lead.md`, `peer.md`, `supervisor.md` → `.claude/agents/`. Làm tay:
 
 ```bash
 mkdir -p .claude/agents
-cp agents/lead.md agents/peer.md .claude/agents/
+cp agents/lead.md agents/peer.md agents/supervisor.md .claude/agents/
 claude plugin validate .claude/agents
 ```
 
@@ -73,10 +74,10 @@ là proof, tài nguyên nào độc quyền, việc gì cấm làm ra ngoài má
 
 ```bash
 cd <repo root>
-claude --agent lead
+claude --agent lead --name lead
 ```
 
-Header phải hiện `@lead`. `--agent` làm main thread dùng system prompt, tool restriction và model
+Header phải hiện `@lead`. `--name lead` để session khác (Supervisor) message tới đúng tên. `--agent` làm main thread dùng system prompt, tool restriction và model
 của definition; `CLAUDE.md` vẫn được load. **Không dùng `claude -p`**: teammate spawning cần
 interactive session.
 
@@ -139,10 +140,60 @@ nhận `[Cross-session delivery notice]`; Human phải approve ở session nhậ
 ## 9. Thứ tự lab
 
 1. `docs/LAB1.md` — repo disposable, chuỗi cơ bản.
-2. `docs/LABS.md` — Lab 2 → 5 trên repo thật, tăng dần: tầng BLOCKED/REOPEN → lane mù +
-   messaging → Reviewer đúng SHA → Supervisor cross-session.
+2. `docs/LABS.md` — Lab 2 → 6 trên repo thật, tăng dần: tầng BLOCKED/REOPEN → lane mù +
+   messaging → Reviewer đúng SHA → Supervisor cross-session (session thường) → Supervisor với
+   definition riêng.
 
 Không thêm Supervisor trước khi Lab 1–2 ổn; nếu không sẽ khó biết lỗi nằm ở policy hay runtime.
+
+## 10. Supervisor — session riêng, worktree riêng, memory riêng
+
+Supervisor **không phải teammate**. Nó là một session Claude Code độc lập chạy definition
+`supervisor.md`, nói chuyện với Lead qua cross-session messaging (`ListAgents` + `SendMessage`).
+Runtime không cho session khác reach teammate của Lead → Supervisor không thể điều khiển Peer dù
+muốn; đó là ranh giới native, không phải chỉ instruction.
+
+**Chạy:**
+
+```bash
+# terminal 1 — Lead, checkout chính
+cd <repo root> && claude --agent lead --name lead
+
+# terminal 2 — Supervisor, worktree riêng (index/working tree tách, object DB chung nên đọc được SHA của Lead)
+git worktree add ../<repo>-supervisor <nhánh chính>
+cd ../<repo>-supervisor
+claude --agent supervisor --name supervisor
+```
+
+Worktree cần thấy `.claude/agents/supervisor.md`: nếu repo **commit** `.claude/agents` thì có sẵn;
+nếu không, cài `--global` một lần hoặc `install.sh --dir ../<repo>-supervisor`.
+
+**Isolation theo role — cái gì tách, cái gì chung:**
+
+| | Lead | Peer (teammate) | Supervisor |
+|---|---|---|---|
+| Transcript / context | riêng | riêng (`subagents/*.jsonl`) | riêng (session khác) |
+| Memory bền | `.claude/agent-memory-local/lead/` | **không** (cố ý) | `.claude/agent-memory-local/supervisor/` trong worktree của nó |
+| Git index / working tree | checkout chính | chung với Lead (→ 1 writer, hoặc worktree per writer) | worktree riêng |
+| Git object DB | chung | chung | chung → đọc candidate bằng SHA |
+| Auth / skills / plugins / `~/.claude` | chung | chung | chung |
+| `CLAUDE.md`, project settings | chung | chung | chung |
+
+Peer không có memory vì `memory:` gắn theo **tên agent**: mọi Peer instance (hai lane mù của Lab 3,
+Engineer và Reviewer của Lab 4) sẽ đọc/ghi cùng một `MEMORY.md` — đó chính là state leak SLP muốn
+tránh. Checkpoint bền của Peer là SHA + brief + accept summary.
+
+`memory: local` không được commit: thêm `.claude/agent-memory-local/` vào `.gitignore` nếu Claude
+Code chưa tự thêm. Muốn tách luôn config/auth (không khuyến nghị) thì `CLAUDE_CONFIG_DIR` riêng cho
+session Supervisor — nhưng khi đó auth cũng tách, thường phải login lại.
+
+**Permission class:** cross-session message bị **hold** chờ Human approve khi hai session khác
+class (một bên bypass, một bên prompt — §8d). Chạy Lead và Supervisor cùng class (khuyến nghị: cả
+hai prompt) để `DRIFT` tới ngay. Supervisor dùng `notify_when_idle` để chờ Lead thay vì polling.
+
+**Chưa kiểm bằng lab** (Lab 6 đo): `memory:` có hiệu lực khi definition chạy làm main session qua
+`--agent` không — docs chỉ nói cho subagent. Sau Lab 6 kiểm `.claude/agent-memory-local/lead/MEMORY.md`
+có xuất hiện không; nếu không, memory của Lead/Supervisor rơi về `CLAUDE.md` + accept summary.
 
 ## Official references
 

@@ -9,7 +9,7 @@
 #   curl -fsSL .../install.sh | SLP_REF=v0.1.0 bash
 #
 # Cài gì:
-#   <root>/.claude/agents/lead.md, peer.md      (copy)
+#   <root>/.claude/agents/lead.md, peer.md, supervisor.md   (copy)
 #   <root>/.claude/settings.json                (merge: env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS, teammateMode)
 #   <root>/CLAUDE.md                            (chỉ tạo từ template nếu chưa có; project mode)
 #   <root>/.claude/slp-manifest.json            (ghi lại đúng những gì đã cài, để uninstall gỡ chính xác)
@@ -115,14 +115,14 @@ sha256() {
 # ---- resolve source: local clone hay tarball ---------------------------------
 SRC=""
 TMP=""
-cleanup() { [ -n "$TMP" ] && rm -rf "$TMP"; }
+cleanup() { [ -z "$TMP" ] || rm -rf "$TMP"; }
 trap cleanup EXIT
 
 script_dir=""
 if [ -n "${BASH_SOURCE[0]:-}" ] && [ -f "${BASH_SOURCE[0]}" ]; then
   script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 fi
-if [ -n "$script_dir" ] && [ -f "$script_dir/agents/lead.md" ] && [ -f "$script_dir/agents/peer.md" ]; then
+if [ -n "$script_dir" ] && [ -f "$script_dir/agents/lead.md" ] && [ -f "$script_dir/agents/peer.md" ] && [ -f "$script_dir/agents/supervisor.md" ]; then
   SRC="$script_dir"
   log "nguồn: local clone $SRC"
 else
@@ -135,7 +135,7 @@ else
     || die "không tải/giải nén được $url (repo/ref đúng chưa?)"
   SRC="$TMP"
 fi
-[ -f "$SRC/agents/lead.md" ] && [ -f "$SRC/agents/peer.md" ] || die "bundle thiếu agents/lead.md hoặc agents/peer.md"
+for a in lead peer supervisor; do [ -f "$SRC/agents/$a.md" ] || die "bundle thiếu agents/$a.md"; done
 VERSION="$(cat "$SRC/VERSION" 2>/dev/null || echo unknown)"
 
 # ---- resolve target ------------------------------------------------------------
@@ -163,7 +163,7 @@ fi
 # ---- 1. agents ------------------------------------------------------------------
 mkdir -p "$AGENTS_DIR"
 installed_agents=()
-for name in lead peer; do
+for name in lead peer supervisor; do
   dst="$AGENTS_DIR/$name.md"
   if [ -f "$dst" ] && ! cmp -s "$SRC/agents/$name.md" "$dst"; then
     if [ "$FORCE" -eq 1 ]; then
@@ -242,8 +242,9 @@ cat <<EOF
 
 Xong. Bước tiếp theo:
   1. $( [ "$MODE" = "project" ] && echo "Điền CLAUDE.md (contract boundary, lệnh test, path cấm sửa, external side-effect policy)." || echo "Mỗi repo vẫn cần CLAUDE.md riêng — template: $SRC/templates/CLAUDE.template.md" )
-  2. cd <repo root> && claude --agent lead      # header phải hiện @lead
-  3. Chạy Lab 1 theo docs/LAB1.md, rồi docs/LABS.md (Lab 2–5).
+  2. cd <repo root> && claude --agent lead --name lead      # header phải hiện @lead
+  3. (tuỳ chọn) Supervisor ở worktree riêng: docs/SETUP.md §10
+  4. Chạy Lab 1 theo docs/LAB1.md, rồi docs/LABS.md (Lab 2–6).
 
 Gỡ: curl -fsSL https://raw.githubusercontent.com/${SLP_REPO}/${SLP_REF}/uninstall.sh | bash$( [ "$MODE" = "global" ] && echo " -s -- --global" )
 EOF
