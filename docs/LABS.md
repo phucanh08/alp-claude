@@ -472,6 +472,12 @@ trên seam đúng bằng ruling" hay không — 7a chấp nhận ngầm, 7c Supe
 không gọi skill nào qua `Skill` (0.3.0 gọi 2) mà hành vi vẫn đúng — giữ skill như tài liệu tham
 chiếu hay ép gọi ở gate; (3) `goal-griller` cần dòng "tính từ mơ hồ → hỏi Human trước khi tốn recon".
 
+Quyết (v0.4.1): (1) giữ rule chặt, không ngoại lệ — ruling chốt hình dạng, Reviewer kiểm diff,
+hai việc khác nhau; ghi vào `lead.md` để Lead không tự chế lý do lần thứ ba. (2) Không ép gọi
+`Skill` ở gate; hành vi ở gate là cái được chấm — ghi rõ trong mục Skills của `lead.md`; bất biến
+duy nhất 7c cho thấy thiếu (tính từ mơ hồ) được chép thẳng vào gate. (3) Thêm dòng đó vào
+`goal-griller` (bước 3, bảng đề mơ hồ, anti-pattern).
+
 ---
 
 ## Sau Lab 6

@@ -152,12 +152,16 @@ VERSION
 | 6 | Supervisor với definition riêng + memory riêng: kiểm candidate, self-test D12 (rút lại), ESCALATE khi Lead unhealthy | PASS (sinh 4 sửa `supervisor.md`, 1 sửa `install.sh`) |
 | 7 | Năm skill theo phase trên repo disposable: intake mơ hồ → helper có sẵn được dùng lại → brief có ruling → ≥2 commit, 0 push → `ACCEPT` | PASS (sinh 1 sửa `peer.md`, 1 sửa `smart-commits`) |
 | 7b | Task từ session khác, repo 30 module: Lead hỏi Human authority → Scout `xia` (0 Edit, nhãn evidence, so sánh stdlib) → `sequence-execution-plan` W1→W2 một writer → 8 ruling → 2 commit, 0 push → `ACCEPT` | PASS |
-| 7c | Lab 7 chạy lại trên **v0.4.0** + Supervisor, hai session headless: Lead 0 skill call nhưng hành vi đúng → worktree-per-writer lần đầu → Supervisor 3 `NOTE` + 1 `DRIFT D9` (Lead bỏ Reviewer khi chạm seam) → Lead tự sửa, `ACCEPT` giữ SHA | PASS (sinh 3 câu hỏi mở, 1 sửa `LAB7.md`) |
+| 7c | Lab 7 chạy lại trên **v0.4.0** + Supervisor, hai session headless: Lead 0 skill call nhưng hành vi đúng → worktree-per-writer lần đầu → Supervisor 3 `NOTE` + 1 `DRIFT D9` (Lead bỏ Reviewer khi chạm seam) → Lead tự sửa, `ACCEPT` giữ SHA | PASS (sinh 2 sửa `lead.md`, 1 sửa `goal-griller`, 1 sửa `LAB7.md`) |
 
 Chi tiết và prompt trong `docs/LABS.md`; Lab 7 có repo dựng sẵn trong `docs/LAB7.md`.
 
 ## Tuning đã đưa vào `lead.md` từ lab
 
+- v0.4.1: chốt ba câu hỏi mở sau Lab 7c — `lead.md`: Reviewer trigger không có ngoại lệ (ruling
+  chốt hình dạng, Reviewer kiểm diff); gọi `Skill` là tuỳ chọn, hành vi ở gate mới được chấm;
+  tính từ mơ hồ → hỏi Human ở intake, không giao Scout đo thay. `goal-griller`: cùng dòng đó ở
+  bước 3 + anti-pattern.
 - v0.4.0: skill độc lập với ghế — bỏ mục "Ai dùng" và tên Lead/Peer/Supervisor/Human khỏi 5 skill,
   thay bằng từ vựng authority + điều kiện dùng; thêm router `ask-alp` (model-invocable, Lead/Peer
   gọi qua `Skill`) giữ ánh xạ ghế và bảng cấm; `docs/WORKFLOW.md` dời vào

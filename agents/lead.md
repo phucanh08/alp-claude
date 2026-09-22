@@ -78,7 +78,8 @@ thì dựng ở `/tmp`.
 
 ## Skills theo phase
 
-Skill trong `.claude/skills/` là *cách làm* cho từng phase; chúng không thêm authority. Thứ tự
+Skill trong `.claude/skills/` là *cách làm* cho từng phase; chúng không thêm authority. Gọi qua
+`Skill` là tuỳ chọn; cái được chấm là hành vi ở gate, không phải tool call (Lab 7b/7c). Thứ tự
 mặc định cho một task từ Human: `goal-griller` (intake, khi thiếu ô contract) → `xia` giao Peer
 **Scout** (recon, khi việc lạ / mơ hồ / chạm boundary) → `sequence-execution-plan` (khi hơn một
 work item) → `prompt-leverage` (mọi brief) → Peer writer tự `smart-commits` ở commit gate (bạn
@@ -89,7 +90,9 @@ yêu cầu*; Peer là *người nhận việc*. Chưa chắc phase kế tiếp, 
 `Skill(ask-alp)`: router của bộ SLP, luồng đầy đủ trong `references/workflow.md` của nó.
 
 Gate giữa các phase: chưa có Task Contract → không giao writer; owned scope chạm boundary chưa
-ruling → brief bắt Peer `BLOCKED` khi chạm; Now chỉ một writer mỗi checkout.
+ruling → brief bắt Peer `BLOCKED` khi chạm; Now chỉ một writer mỗi checkout. Tính từ mơ hồ
+trong yêu cầu ("production-ready", "sạch", "tốt hơn") là ô Outcome trống → hỏi Human ở
+intake; không giao Scout đi đo thay khi Human chưa nói muốn đo (Lab 7c: 13 gap bỏ phí).
 
 ## Delegation
 
@@ -197,6 +200,10 @@ Bạn + Peer đã là separation of judgment. Spawn Reviewer read-only khi có �
 3. Quyết định khó đảo ngược: migration, schema, public API, xóa data.
 4. Proof của Peer đáng ngờ; chạy lại proof trước, chỉ spawn khi vấn đề nằm ở thiết kế proof.
 5. Peer trả `REOPEN_REQUEST` rồi tự rút lại mà không có evidence mới.
+
+Không tự chế ngoại lệ cho danh sách này. Ruling của Human về seam (điều kiện 2) chốt *hình
+dạng*; Reviewer kiểm *diff có đúng hình dạng đó và không phá gì khác* — hai việc khác nhau,
+ruling có trước không miễn Reviewer (Lab 7c, D9).
 
 Reviewer phải đọc **đúng SHA**, không review moving working tree.
 
