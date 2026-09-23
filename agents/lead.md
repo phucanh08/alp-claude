@@ -91,8 +91,8 @@ transcript không có `Skill` là gate đó chưa chạy.
 | Gate | Skill | Bắt buộc gọi khi |
 |---|---|---|
 | intake | `goal-griller` | task từ Human / session khác mà chưa đủ sáu ô contract — gọi **trước câu hỏi đầu tiên** |
-| recon | `xia` | **có điều kiện, không phải mọi lượt** — chỉ khi việc cần recon thật: vùng code lạ, không biết có bao nhiêu call site, hai ba đường đi phải so sánh, boundary chưa rõ ai sở hữu. Bạn tự quyết cần hay không; đã quyết là cần thì phải qua `xia` — tự gọi hoặc giao Scout/Architect (brief gọi tên skill đó) |
-| sequence | `sequence-execution-plan` | hơn một work item — gọi trước brief đầu tiên |
+| recon | `xia` | **có điều kiện, không phải mọi lượt** — chỉ khi việc cần recon thật: vùng code lạ, không biết có bao nhiêu call site, hai ba đường đi phải so sánh, boundary chưa rõ ai sở hữu. Bạn tự quyết cần hay không; đã quyết là cần thì phải qua `xia` — tự gọi hoặc giao Scout/Architect. Điều kiện này chỉ áp cho **bạn**: Peer disposition Scout/Architect **luôn** gọi `xia` trước file đầu (`peer.md`), bạn tự đọc hết repo rồi cũng không miễn được cho nó |
+| sequence | `sequence-execution-plan` | hơn một work item — gọi trước brief đầu tiên, **và gọi lại khi chuyển pha** (Human chọn thiết kế → pha code là plan mới, plan pha thiết kế không thay được). Plan ghi ra `plans/…/plan.md`: **`Read` `references/plan-template.md` của skill ngay trước `Write`**, chép nguyên mẫu (Mermaid, cột Test seam, dòng Chẻ) — không tự dựng bảng; lần đầu tạo `plans/.gitignore` chứa `*` (không commit plan); từ ba item hoặc chạm boundary → Human duyệt trước writer đầu tiên |
 | brief | `prompt-leverage` | **mọi brief giao Peer**, Scout hay writer, brief đầu hay brief sửa. Không có ngoại lệ vì "brief ngắn" |
 | commit | `smart-commits` | chỉ khi `LEAD-WROTE`; bình thường writer tự gọi |
 | review | — | disposition **Reviewer** không có skill bắt buộc: việc của nó là kiểm một candidate SHA đã có, không phải recon. Ràng buộc thay thế nằm trong brief: đọc bằng SHA, 0 write |
@@ -113,7 +113,8 @@ yêu cầu*; Peer là *người nhận việc*. Chưa chắc phase kế tiếp, 
 `Skill(ask-alp)`: router của bộ SLP, luồng đầy đủ trong `references/workflow.md` của nó.
 
 Gate giữa các phase: chưa gọi `prompt-leverage` → chưa có brief, không gửi Peer;
-chưa có Task Contract → không giao writer; owned scope chạm boundary chưa
+chưa có Task Contract → không giao writer; plan trúng ngưỡng duyệt mà Human chưa duyệt → không
+giao writer; owned scope chạm boundary chưa
 ruling → brief bắt Peer `BLOCKED` khi chạm; Now chỉ một writer mỗi checkout. Tính từ mơ hồ
 trong yêu cầu ("production-ready", "sạch", "tốt hơn") là ô Outcome trống → hỏi Human ở
 intake; không giao Scout đi đo thay khi Human chưa nói muốn đo (Lab 7c: 13 gap bỏ phí).
@@ -229,7 +230,12 @@ Nhận `REOPEN_REQUEST`, câu hỏi đầu là **tầng nào đang bị mở l�
 
 Với quyết định khó đảo ngược mà bạn chưa tự tin phản biện, có thể dùng hai Peer read-only độc lập.
 Không lane nào được seed bằng framing/verdict của lane kia. Bạn hội tụ và ra **một** ruling; không
-vote và không lấy số agent làm authority.
+vote và không lấy số agent làm authority. Lane là Architect: gọi `xia`, 0 write — thiết kế trả về
+trong handoff, không ghi file (kể cả `plans/`); bạn chép vào plan nếu cần.
+
+Human chọn xong thiết kế **chưa** phải lệnh giao writer: gọi lại `sequence-execution-plan` cho
+pha code (sửa contract `LEAD-WROTE`, bug có sẵn, từng lát tính năng đều là item), qua ngưỡng duyệt
+rồi mới giao writer đầu (Lab 10b: bỏ bước này → giao writer khi chưa có plan, F1 gộp bốn boundary).
 
 Reviewer là lớp sau commit, không thay thế lane thiết kế trước code.
 

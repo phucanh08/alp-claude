@@ -15,7 +15,7 @@ Bảng "ghế nào cấm skill nào" nằm trong `SKILL.md` của `ask-alp`, kh�
 | 0 | Ý định | Human | (`prompt-leverage` nếu muốn) | prompt thô hoặc prompt 7 khối | — |
 | 1 | Intake | Lead | `goal-griller` | **Task Contract** (6 ô) | đủ 6 ô; boundary có ruling hoặc lệnh dừng; Human xác nhận nếu Lead suy diễn |
 | 2 | Recon | Peer **Scout** (Lead spawn) | `xia` | **Research brief** trong handoff 6 ô | brief có nhãn evidence; câu hỏi cho Lead đã được Lead ruling |
-| 3 | Sequence | Lead | `sequence-execution-plan` | **Plan**: work item, dependency, Now/Next/Later, writer lease | Now ≤1 writer/checkout; item đầu ready |
+| 3 | Sequence | Lead | `sequence-execution-plan` | **Plan** `plans/…/plan.md`: work item lát dọc, test seam, dependency, Now/Next/Later, writer lease | Now ≤1 writer/checkout; item đầu ready; ≥3 item hoặc chạm boundary → Human duyệt |
 | 4 | Brief | Lead | `prompt-leverage` | **Brief 13 trường** cho một Peer | `Base` là SHA thật; owned scope là path; boundary có ruling hoặc `BLOCKED`-khi-chạm |
 | 5 | Implement | Peer Engineer/Architect | (peer.md); `Required skills` nếu brief khai (bug → `bug-loop`) | thay đổi trong owned scope | verification chạy thật; claim hành vi có proof ≥ L2 |
 | 6 | Commit | Peer writer (hoặc Lead nếu `LEAD-WROTE`) | `smart-commits` | **Candidate** `base..head` | commit gate pass; không path ngoài scope |
@@ -80,7 +80,13 @@ Luật SLP đè lên plan:
   Chưa có worktree → là xếp hàng, plan nói thẳng.
 - Mitigation không được gọi là resolution; outcome mở tới khi có `ACCEPT <sha>`.
 
-Plan ghi vào memory của Lead và gửi Human một lần. Không ghi vào `CLAUDE.md`.
+- Mỗi item là lát dọc vừa một context, có test seam. Ruling chưa chốt → chẻ hoặc chốt trước khi
+  giao writer; chạm >1 boundary / nhiều nhóm hành vi mà ruling đã chốt → được gộp, dòng Chẻ ghi lý do.
+
+Plan ghi ra `plans/<YYMMDD-HHmm>-<slug>/plan.md` (sơ đồ Mermaid + bảng + Now/Next), cập nhật mỗi
+`ACCEPT`/`REJECT`/replan; không commit (`plans/.gitignore` chứa `*`), không ghi vào `CLAUDE.md`.
+Từ ba item hoặc chạm boundary → Human duyệt file này trước writer đầu tiên. Chuyển từ thiết kế
+sang code là plan mới, qua lại Phase 3.
 
 Khi nào bỏ qua: đúng một work item, không dependency, không boundary — đi thẳng Phase 4.
 
@@ -132,6 +138,7 @@ Phase 3 (hoặc Phase 1 nếu contract sai):
 | `DEPENDENCY_REQUEST` | 3 | cần owner/scope khác → đồ thị đổi |
 | `BLOCKED` thiếu authority/giá trị boundary | 1 → Human | chỉ Human cấp được |
 | `REJECT` với finding đổi hình dạng việc | 3 | item có thể phải chẻ lại |
+| `REJECT` thứ hai cùng item, finding ở nhóm hành vi khác nhau | 3 | item quá to → chẻ lại, không rework tiếp |
 | Scout brief đảo assumption | 1 hoặc 3 | fact đổi trước, thứ tự đổi sau |
 | Human đổi ưu tiên / ràng buộc | 1 | contract là nguồn |
 

@@ -7,7 +7,8 @@ description: Biến những ý tưởng mơ hồ thành Task Contract kiểm ch�
 
 Vị trí trong SLP: **cổng vào** (intake). Người yêu cầu nói ý; người giao việc không chẻ việc,
 không viết brief, không giao writer khi chưa trả lời được *xong là gì* và *chứng minh bằng gì*.
-Skill này là cuộc phỏng vấn ngắn: mỗi lần một câu, kèm đáp án đề xuất, tự tra repo trước khi hỏi.
+Skill này là cuộc phỏng vấn ngắn theo vòng: mỗi vòng hỏi hết các câu hỏi được ngay, mỗi câu kèm đáp
+án đề xuất, tự tra repo trước khi hỏi.
 
 Điều kiện dùng (ghế nào ứng với gì: `/ask-alp`):
 
@@ -37,16 +38,19 @@ Chưa đủ sáu ô → chưa có Task Contract. Chưa có Task Contract → kh�
 ## Vòng phỏng vấn
 
 1. Nhắc lại ý định trong **một câu**.
-2. Chọn ô **yếu nhất** còn thiếu.
+2. Liệt kê các ô còn thiếu; câu nào **không phụ thuộc** câu trả lời chưa có là câu hỏi được ngay.
 3. Tra được từ repo thì tra, không hỏi: `CLAUDE.md`, README, test hiện có, script, log,
    `git log`. Cần đọc rộng hơn vài file → giao một **Scout** read-only với skill `xia`; không
    tự đọc cả repo để điền ô. Tính từ mơ hồ ("production-ready", "sạch", "chuẩn") **không
    phải việc recon**: đó là ô Outcome trống → hỏi người yêu cầu trước, chỉ giao Scout đo khi
    họ nói muốn đo (Lab 7c: Scout liệt kê 13 gap, người yêu cầu chỉ muốn test + README).
-4. Hỏi **đúng một câu**. Kèm đáp án đề xuất và vì sao đáp án đó có lẽ đúng.
+4. Hỏi **cả vòng** trong một message: đánh số, mỗi câu một ý, kèm đáp án đề xuất và vì sao đáp án
+   đó có lẽ đúng. Câu phụ thuộc câu khác trong vòng → để vòng sau.
 5. Người yêu cầu trả lời → cập nhật contract → quay lại bước 2.
 
-Ba câu sắc hơn mười câu chung. Đủ sáu ô thì dừng hỏi ngay.
+Ba câu sắc hơn mười câu chung — vòng nào quá năm câu thì bỏ câu tra được hoặc để sau. Đủ sáu ô
+thì dừng hỏi ngay. Lý do hỏi theo vòng: câu hỏi lộ dần giữa việc buộc người yêu cầu trả lời
+nhiều lượt và writer phải dừng chờ (Lab 10: 5 câu ở intake, thêm 5 câu giữa item thứ hai).
 
 ## Thứ tự câu hỏi
 
@@ -98,7 +102,8 @@ qua `prompt-leverage` (khi một item).
 
 ## Anti-pattern
 
-- Hỏi ba câu một lượt → câu trả lời lửng, ô nào cũng nửa vời.
+- Gộp câu phụ thuộc nhau vào một vòng → câu trả lời lửng, ô nào cũng nửa vời.
+- Hỏi nhỏ giọt một câu mỗi lượt khi các câu độc lập → người yêu cầu trả lời năm lượt thay vì một.
 - Hỏi thứ `grep` ra được.
 - Giao Scout đi định nghĩa tính từ mơ hồ thay người yêu cầu → recon bỏ phí.
 - Coi "test pass" là Proof khi test đó chưa tồn tại và contract chưa nói ai viết.

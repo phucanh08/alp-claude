@@ -41,16 +41,36 @@ hành động đầu tiên; còn lại ghi assumption và đi tiếp.
 Item nhỏ nhất tạo được tiến độ **kiểm chứng độc lập**. Investigation chỉ là item khi nó giải một
 unknown có tên (→ Scout `xia`).
 
-Mỗi item ghi:
+**Lát dọc, vừa một context.** Mỗi item cắt trọn một đường từ input tới hành vi quan sát được
+(dữ liệu + logic + test), không chẻ theo tầng ("viết ledger", "viết test"). Một Peer mới làm xong
+trong một context. Soát ba dấu hiệu cho từng item:
+
+- **cần ruling chưa chốt** — ruling của người yêu cầu chưa có trong `CLAUDE.md`/brief → **bắt buộc**
+  chẻ, hoặc chốt đủ ruling trước khi giao writer;
+- **chạm hơn một boundary** trong `CLAUDE.md` → chẻ, *trừ khi* mọi ruling của các boundary đó đã
+  chốt (commit/brief). Giữ gộp thì dòng Chẻ ghi lý do: "chạm C1, C3, C5 — không chẻ, ruling ở
+  `<sha>`";
+- **done evidence gồm nhiều nhóm hành vi độc lập** — mỗi nhóm có thể bị `REJECT` riêng → chẻ, trừ
+  khi mọi nhóm đã có expected cụ thể trong brief; giữ gộp thì ghi lý do như trên.
+
+`REJECT` đến từ ruling Lead tự quyết giữa chừng, không từ số boundary. Lab 10: item "hoàn một phần"
+gộp bốn nhóm, ruling chưa chốt → 4 `REJECT`. Lab 10b: chẻ rồi nhưng Lead tự ruling giữa chừng → vẫn
+4. Lab 10c: không chẻ, ruling chốt trước trong `CLAUDE.md` + brief → 1. Lưới an toàn là trigger
+`REJECT` thứ hai ở mục 9.
+
+Mỗi item ghi — đây là các cột của mẫu plan:
 
 - **Result** — trạng thái quan sát được sau khi xong.
-- **Type** — outcome · mitigation · prerequisite · implementation · validation · rollout · cleanup.
 - **Disposition** — Engineer · Architect · Reviewer · Scout; **write?** yes/no.
 - **Owned scope** — path/glob; hai writer không được giao nhau.
 - **Boundary** — chạm boundary `CLAUDE.md` nào; ruling có sẵn chưa.
+- **Test seam** — hàm/API cao nhất mà test gọi để kiểm hành vi; dùng seam có sẵn, càng ít seam
+  càng tốt. Seam mới → nêu trong plan cho người yêu cầu thấy. Đổ vào `Verification` của brief.
 - **Done evidence** — lệnh/artifact; sẽ thành `Verification` của brief.
-- **Uncertainty** — low/medium/high + unknown là gì.
 - **State** — ready · blocked · in progress · candidate · accepted.
+
+Type (mitigation, prerequisite, validation…) và uncertainty ghi ở Result hoặc mục Risk khi đáng nói,
+không thành cột riêng.
 
 Cấm item kiểu "cải thiện kiến trúc", "xử lý edge case", "test hết".
 
@@ -131,6 +151,8 @@ Now ổn định trừ khi evidence đảo nó. Replan khi:
 
 - người nhận việc trả `REOPEN_REQUEST` / `DEPENDENCY_REQUEST` / `BLOCKED` có evidence;
 - người giao việc `REJECT` một candidate và finding đổi hình dạng việc;
+- `REJECT` thứ hai của cùng item mà các finding nằm ở nhóm hành vi khác nhau → item quá to,
+  chẻ lại thay vì rework tiếp;
 - Scout brief đảo một assumption ở bước 1;
 - người yêu cầu đổi Task Contract, ràng buộc, hay ưu tiên;
 - item bị block hoặc mở nhiều nhánh;
@@ -139,26 +161,33 @@ Now ổn định trừ khi evidence đảo nó. Replan khi:
 Khi replan: cập nhật fact + dependency trước, sinh lại đường đi, rồi mới xếp lại. Không xếp lại
 chỉ vì người nhận việc thích kiến trúc khác.
 
-## Artifact
+## Artifact — file `plan.md`, chép mẫu rồi điền
 
-Trừ khi được yêu cầu format khác:
+Artifact **là** file `plans/<YYMMDD-HHmm>-<slug>/plan.md` ở gốc repo (không ghi vào `CLAUDE.md`);
+memory checkpoint chỉ trỏ tới đường dẫn này. Mỗi pha một file (thiết kế, code); không nối pha mới
+vào đuôi file pha cũ. Mẫu: **`references/plan-template.md`** — `Read` file này ngay trước `Write`
+plan, chép nguyên rồi điền; không viết plan từ trí nhớ, không tự dựng bố cục khác, không đổi tên
+cột, không bỏ sơ đồ; ô chưa biết ghi `?` chứ không xoá.
 
-1. **Outcome & evidence** — từ Task Contract.
-2. **Bảng work item** — ID · Result · Type · Disposition/write · Owned scope · Boundary · Done
-   evidence · Uncertainty · State.
-3. **Dependency** — câu quan hệ, hoặc graph gọn.
-4. **Đường đi** — các phương án với thời gian tới mitigation / resolution và trade-off chính.
-5. **Sequence** — Now / Next / Later; nhánh song song + join point; **writer lease** thuộc item nào.
-6. **Lý do** — nhân–quả cho thứ tự gây ngạc nhiên.
-7. **Risk & traceability** — risk mở, item gộp, biện pháp tạm, cleanup.
-8. **Trigger replan.**
+Node ghi trạng thái + SHA (`accepted a1b2c3d`); cạnh = `blocks`. Dòng **Chẻ** bắt buộc: soát ba
+dấu hiệu ở mục 2 cho từng item và ghi kết quả — item chạm hai boundary mà ghi "không dấu hiệu"
+là sai; giữ gộp phải kèm ruling đã chốt ở đâu. Ngày tuyệt đối hoặc sự kiện đo được thay cho "sớm"; ước lượng ghi là ước lượng; không bịa
+priority, SLA, dependency, effort.
 
-Ngày tuyệt đối hoặc sự kiện đo được thay cho "sớm". Ước lượng ghi là ước lượng. Không bịa priority,
-SLA, dependency, effort.
+Cập nhật trạng thái + SHA mỗi lần `ACCEPT`/`REJECT`/replan — sửa dòng, không viết lại cả file.
+Plan là bản đồ, không phải candidate: không commit. Lần đầu ghi, tạo `plans/.gitignore` chứa đúng
+một dòng `*` (tự bỏ qua cả thư mục lẫn chính nó; không đụng `.gitignore` của repo, không cần chạm
+`.git/`) rồi `git status --short` không còn `plans/` — writer không stage nhầm.
 
-Plan ghi vào memory checkpoint của người giao việc và gửi người yêu cầu một lần; **không** ghi vào
-`CLAUDE.md`. Plan
-là bản đồ tạm — SHA + brief + accept summary mới là checkpoint bền.
+### Duyệt plan
+
+Plan có **từ ba item** hoặc có item **chạm boundary** `CLAUDE.md` → gửi người yêu cầu đường dẫn
+file và hỏi một lần: độ chẻ (thô quá / vụn quá), cạnh phụ thuộc, test seam. Ngưỡng tính trên
+plan của **pha đang vào**: pha thiết kế read-only dưới ngưỡng không miễn duyệt cho pha code. **Chờ duyệt rồi mới
+giao writer đầu tiên**; item read-only (Scout/Architect) chạy trước được. Dưới ngưỡng → gửi một
+lần, không chờ. Replan đổi item hoặc cạnh → hỏi lại theo cùng ngưỡng; chỉ đổi trạng thái thì không.
+
+Plan là bản đồ tạm — SHA + brief + accept summary mới là checkpoint bền.
 
 ## Quality gate
 
@@ -169,6 +198,10 @@ là bản đồ tạm — SHA + brief + accept summary mới là checkpoint bề
 - [ ] Không mitigation/thay thế nào bị ghi là resolved.
 - [ ] Now có ≤1 writer mỗi checkout; writer song song có worktree + contract shared interface.
 - [ ] Item đầu tiên ready và đủ nhỏ để viết brief ngay.
+- [ ] Mỗi item là lát dọc; không còn ruling chưa chốt; item gộp nhiều boundary có lý do ở dòng Chẻ;
+  mỗi item có test seam.
+- [ ] Plan nằm ở `plans/…/plan.md` theo đúng mẫu (sơ đồ, cột Test seam, dòng Chẻ); trúng ngưỡng →
+  đã được người yêu cầu duyệt.
 - [ ] Nền tảng speculative nằm ngoài horizon cam kết.
 - [ ] Plan nói evidence nào sẽ đổi thứ tự.
 
