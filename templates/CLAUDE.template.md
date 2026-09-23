@@ -38,8 +38,10 @@ config toàn cục nếu Human chưa cấp authority rõ ràng.
   dòng `ACCEPT <sha>` / `REJECT <sha>`. Shared task status không đồng nghĩa acceptance.
 - Supervisor (nếu có) là session riêng, không có authority của Human, không accept, không điều
   khiển Peer; chỉ hỏi `DRIFT` và `ESCALATE` cho Human.
-- Memory theo role: `.claude/agent-memory-local/{lead,supervisor}` (không commit); Peer không có
-  memory bền.
+- Memory theo role: Lead ở `.claude/agent-memory-local/lead/` (không commit); Supervisor ở
+  `~/.claude/agent-memory/supervisor/` (scope user, một file mỗi workspace); Peer không có memory bền.
+- Repo nằm trong workspace nhiều repo → cross-repo contract ở `CLAUDE.md` của workspace
+  (`templates/WORKSPACE.CLAUDE.template.md`); Lead session tên `lead-<repo>`.
 - Skills theo phase (`.claude/skills/`): `goal-griller` (intake) → `xia` (Scout) →
   `sequence-execution-plan` → `prompt-leverage` (brief) → `smart-commits` (commit gate); router
   `ask-alp` trả lời ghế nào dùng gì, cấm gì. Skill không cấp authority; push chỉ khi mục External

@@ -1,5 +1,14 @@
 # Lab 1 — Human → Lead → 1 Peer Engineer → commit → Lead accept
 
+[← Mục lục lab](README.md) · [Quy ước chung](common.md)
+
+> **Đo:** runtime Agent Teams + tách người viết / người chấm, chuỗi cơ bản nhất · **Trạng thái:** PASS · **Fixture:** repo disposable Python stdlib (dựng ở §1) · **Chạy đầu tiên**
+>
+> **Kết luận nhanh**
+>
+> - Named `Agent(subagent_type=peer)` thành teammate; Peer commit local, handoff SHA; Lead đọc diff rồi mới accept.
+> - Đây là nền cho mọi lab sau — chưa ổn thì chưa thêm Reviewer/Supervisor.
+
 Mục tiêu: kiểm runtime Agent Teams và separation of judgment trước khi thêm Reviewer/Supervisor.
 
 ## 1. Tạo repo disposable

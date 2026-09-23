@@ -1,0 +1,29 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//**)",
+      "Edit(~/.claude/agent-memory/supervisor/**)"
+    ],
+    "deny": [
+      "NotebookEdit"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 -c \"import json,os,sys; i=json.load(sys.stdin).get('tool_input',{}); p=os.path.realpath(os.path.expanduser(i.get('file_path') or i.get('notebook_path') or '')); m=os.path.realpath(os.path.expanduser('~/.claude/agent-memory/supervisor')); ok=p==m or p.startswith(m+os.sep); ok or print('SLP Supervisor: chỉ được ghi memory dir của chính mình (~/.claude/agent-memory/supervisor/). Đọc thì mọi nơi, ghi thì không.', file=sys.stderr); sys.exit(0 if ok else 2)\""
+          }
+        ]
+      }
+    ]
+  },
+  "sandbox": {
+    "enabled": true,
+    "autoAllowBashIfSandboxed": true,
+    "allowUnsandboxedCommands": false
+  }
+}

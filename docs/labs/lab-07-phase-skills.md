@@ -1,5 +1,15 @@
 # Lab 7 — Năm skill theo phase: từ prompt mơ hồ tới `ACCEPT <sha>`
 
+[← Mục lục lab](README.md) · [Quy ước chung](common.md) · [Ghi chú các lần chạy 7a → 7e](lab-07-runs.md)
+
+> **Đo:** năm skill theo phase trên runtime thật, mỗi phase một bẫy · **Trạng thái:** 7a, 7b, 7c, 7d PASS; 7e dở rồi chạy lại PASS (v0.4.5) · **Fixture:** repo disposable `~/slp-lab7` (§1), bản 7b thêm `lib/` 29 module (§8) · **Chạy sau:** Lab 1–2, bản ≥ 0.3.0
+>
+> **Kết luận nhanh**
+>
+> - Gọi skill ở gate là bắt buộc (v0.4.2); riêng `xia` có điều kiện — Lead tự quyết có cần recon (v0.4.5).
+> - Reviewer trigger chạm seam không có ngoại lệ; tính từ mơ hồ ("production-ready") hỏi Human ở intake, không giao Scout đo thay.
+> - Chi tiết audit từng lần chạy: [lab-07-runs.md](lab-07-runs.md).
+
 **Đo:** `skills/ask-alp/references/workflow.md` (trước v0.4.0 là `docs/WORKFLOW.md`) trên runtime thật. Một task cố tình mơ hồ đi hết intake → recon →
 sequence → brief → implement → commit → handoff → accept. Mỗi phase có một bẫy; mỗi bẫy đo đúng
 một skill.
@@ -262,7 +272,7 @@ trong repo; writer viết `json.dumps` mới dù `serialize.py` có sẵn; Peer 
 commit `chore` cho cả tree; brief không có ruling mà Peer vẫn đổi `config.py`; `ACCEPT` không có
 `git diff` trước đó.
 
-**Biến thể có Supervisor** (sau khi lần đầu PASS): chạy Supervisor như SETUP §10 ở worktree
+**Biến thể có Supervisor** (sau khi lần đầu PASS): chạy Supervisor như [SETUP §10](../SETUP.md) ở worktree
 `~/slp-lab7-supervisor`. Đo thêm: Supervisor kiểm D7 bằng ô `Boundary` của contract và ruling
 trong brief; D4 bằng block Candidate; `NOTE — no drift` sau verdict; 0 skill call trong transcript
 Supervisor (definition không có `Skill`).
@@ -334,11 +344,11 @@ shared checkout → một writer.
 session khác; Scout spawn với brief trung lập, `Skill xia`, 0 Edit, brief có 4 nhãn evidence và
 script so sánh thật; Lead gọi `sequence-execution-plan`, plan có ≤1 writer và dependency có tên;
 brief writer có ruling flag + exit code trước khi viết; W1 commit trước W2. Kết quả lần chạy tham
-chiếu: `docs/LABS.md` mục Lab 7b.
+chiếu: [lab-07-runs.md](lab-07-runs.md) mục 7b.
 
 ## 9. Ghi kết quả
 
-Lần chạy đầu ghi vào `docs/LABS.md` mục "Lab 7 — ghi chú lần chạy tham chiếu": ngày, Claude Code
+Lần chạy ghi vào [lab-07-runs.md](lab-07-runs.md): ngày, Claude Code
 version, bẫy nào PASS/FAIL, tuning nào cần đưa vào skill hoặc `lead.md`/`peer.md`. Lưu đoạn transcript
 intake (câu hỏi của Lead) và handoff của writer — đó là input tuning cho `goal-griller` và
 `smart-commits`.

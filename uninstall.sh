@@ -24,7 +24,7 @@ Usage: uninstall.sh [--global] [--dir <path>] [--force]
   --global      gỡ khỏi ~/.claude
   --dir <path>  repo root (mặc định: thư mục hiện tại)
   --force       không có manifest vẫn gỡ agents/{lead,peer,supervisor}.md + 6 skill dir; xóa CLAUDE.md kể cả đã sửa;
-                xóa luôn agent memory (.claude/agent-memory-local/{lead,supervisor})
+                xóa luôn agent memory (.claude/agent-memory-local/{lead,supervisor}; --global: ~/.claude/agent-memory/supervisor)
 EOF
 }
 
@@ -152,6 +152,7 @@ if [ ! -f "$MANIFEST" ]; then
     if [ -d "$SKILLS_DIR/$name" ]; then rm -rf "$SKILLS_DIR/$name"; ok "xóa skills/$name"; fi
   done
   rmdir "$SKILLS_DIR" 2>/dev/null && ok "xóa thư mục skills/ (rỗng)" || true
+  if [ -f "$CLAUDE_DIR/slp-supervisor.settings.json" ]; then rm -f "$CLAUDE_DIR/slp-supervisor.settings.json"; ok "xóa slp-supervisor.settings.json"; fi
   log "settings.json và CLAUDE.md giữ nguyên (không có manifest để biết SLP đã thêm gì)."
   exit 0
 fi
@@ -163,6 +164,14 @@ while IFS= read -r rel; do
   if [ -f "$f" ]; then rm -f "$f"; ok "xóa $rel"; else log "$rel đã không còn"; fi
 done <<<"$(manifest_get "$MANIFEST" agents)"
 rmdir "$AGENTS_DIR" 2>/dev/null && ok "xóa thư mục agents/ (rỗng)" || true
+
+# ---- 1a. file lẻ (manifest ≥ 0.5.0) — chỉ nhận tên đã biết ----------------------------
+while IFS= read -r rel; do
+  [ -z "$rel" ] && continue
+  case "$rel" in slp-supervisor.settings.json) ;; *) warn "manifest có path lạ '$rel' → bỏ qua"; continue ;; esac
+  f="$CLAUDE_DIR/$rel"
+  if [ -f "$f" ]; then rm -f "$f"; ok "xóa $rel"; else log "$rel đã không còn"; fi
+done <<<"$(manifest_get "$MANIFEST" files)"
 
 # ---- 1b. skills (manifest ≥ 0.3.0; manifest cũ không có key → bỏ qua) ------------
 while IFS= read -r rel; do
@@ -177,7 +186,16 @@ while IFS= read -r rel; do
 done <<<"$(manifest_get "$MANIFEST" skills)"
 rmdir "$SKILLS_DIR" 2>/dev/null && ok "xóa thư mục skills/ (rỗng)" || true
 
-# agent memory (memory: local) — dữ liệu của seat, chỉ xóa khi --force
+# agent memory — dữ liệu của seat, chỉ xóa khi --force
+# supervisor ≥ 0.5.0 dùng memory: user (~/.claude/agent-memory/supervisor) → chỉ đụng khi gỡ --global
+if [ "$MODE" = "global" ]; then
+  m="$HOME/.claude/agent-memory/supervisor"
+  if [ -d "$m" ]; then
+    if [ "$FORCE" -eq 1 ]; then rm -rf "$m"; ok "xóa agent-memory/supervisor"
+    else warn "giữ $m (memory của Supervisor, mọi workspace; --force để xóa)"; fi
+  fi
+fi
+# memory: local (lead; supervisor < 0.5.0)
 for name in lead supervisor; do
   m="$CLAUDE_DIR/agent-memory-local/$name"
   [ -d "$m" ] || continue

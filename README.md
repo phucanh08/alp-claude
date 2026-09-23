@@ -2,15 +2,15 @@
 
 Bộ cài **SLP** (Supervisor / Lead / Peer separation-of-judgment) cho Claude Code Agent Teams
 native. Không cần Paseo. Một `install.sh`, một `uninstall.sh`, ba agent definition, **năm skill
-theo phase + một router `ask-alp`**, một template `CLAUDE.md`, và 5 lab đã chạy thật + 1 lab cho
-Supervisor definition.
+theo phase + một router `ask-alp`**, template `CLAUDE.md` cho repo và cho workspace nhiều repo, và
+5 lab đã chạy thật + 1 lab cho Supervisor definition.
 
 ```text
-Human ──────────────────────────────┐
-  ↓                                 ↓
-Lead session    claude --agent lead --name lead        Supervisor session (worktree riêng)
-  ↓  Agent(subagent_type=peer, name=...)         ←──   claude --agent supervisor --name supervisor
-Peer teammate(s)  Engineer | Architect | Reviewer | Scout     cross-session messaging, chỉ DRIFT/ESCALATE
+Human ────────────────────────────────────────────────────────┐
+  ↓                                                           ↓
+Lead session(s)  claude --agent lead --name lead[-<repo>]     Supervisor session (ngoài checkout mọi Lead)
+  ↓  Agent(subagent_type=peer, name=...)               ←──    claude --agent supervisor --name supervisor
+Peer teammate(s)  Engineer | Architect | Reviewer | Scout      1 Supervisor : N Lead; chỉ DRIFT/ESCALATE/NOTE
 
 Phase:  intake ──▶ recon ──▶ sequence ──▶ brief ──▶ implement ──▶ commit ──▶ handoff ──▶ accept
 Skill:  goal-griller  xia    sequence-      prompt-    (peer.md)    smart-      (peer.md)   (lead.md)
@@ -26,8 +26,8 @@ drift và hỏi. Capability không phải authority.
 | # | Bất biến | Hiện thực |
 |---|---|---|
 | 1 | **Tách role**: Supervisor = governance, Lead = technical owner, Peer = một bounded outcome | 3 definition; `tools:` của Supervisor không có `Agent/Edit/Write`; Peer không có `Agent`; chỉ Lead có `Agent(peer)` |
-| 2 | **Bộ nhớ riêng theo role**, auth/skills/plugins chung | `memory: local` → `.claude/agent-memory-local/{lead,supervisor}` (không commit); Peer **không** memory (memory `peer` dùng chung mọi instance sẽ phá lane mù); Supervisor chạy trong worktree riêng nên transcript + memory + index tách hẳn; `~/.claude` chung |
-| 3 | **Một source of truth cho topology** | Lead là native team lead duy nhất; Supervisor là session ngoài team, runtime không cho session khác reach teammate của Lead; không nested team |
+| 2 | **Bộ nhớ riêng theo role**, auth/skills/plugins chung | Lead `memory: local` → `.claude/agent-memory-local/lead` (không commit); Supervisor `memory: user` → `~/.claude/agent-memory/supervisor`, một file mỗi workspace; Peer **không** memory (memory `peer` dùng chung mọi instance sẽ phá lane mù); Supervisor chạy ngoài checkout của mọi Lead nên transcript tách, không đụng index; `~/.claude` chung |
+| 3 | **Một source of truth cho topology** | Mỗi root một Lead, Lead là native team lead duy nhất của team mình; Supervisor là session ngoài mọi team, runtime không cho session khác reach teammate của Lead; không nested team; Lead không ghi ra ngoài root đã `SLP-REGISTER` (`D14`) |
 | 4 | **Write ownership rõ** | mỗi moving scope một writer + commit lease; nhiều writer song song = Lead cấp worktree riêng mỗi writer, contract cho shared interface phải có trong brief trước |
 | 5 | **Candidate + evidence, không phải DONE** | handoff 6 ô: `Candidate` = SHA + base, `Scope`, `Verification` (command + output thật), `Unknown/risk`, `Ownership`; Lead bắt buộc một dòng `ACCEPT <sha>` / `REJECT <sha> — finding` |
 | 6 | **Supervisor không giành quyền Lead** | output chỉ `DRIFT` (evidence + một câu hỏi) / `ESCALATE` (Human) / `NOTE`; định nghĩa "Lead healthy" cụ thể; unhealthy → escalate, vẫn không điều khiển Peer |
@@ -53,13 +53,14 @@ curl -fsSL https://raw.githubusercontent.com/phucanh08/alp-claude/main/install.s
 curl -fsSL https://raw.githubusercontent.com/phucanh08/alp-claude/main/install.sh | bash -s -- --dir /path/to/repo
 ```
 
-Installer làm đúng 5 việc và ghi lại trong `.claude/slp-manifest.json`:
+Installer làm đúng 6 việc và ghi lại trong `.claude/slp-manifest.json`:
 
 | Việc | Hành vi |
 |---|---|
 | `.claude/agents/lead.md`, `peer.md`, `supervisor.md` | copy; file cũ khác nội dung → backup `.bak-<timestamp>` (`--force` để bỏ backup) |
 | `.claude/skills/{goal-griller,xia,sequence-execution-plan,prompt-leverage,smart-commits}/` | copy cả thư mục; khác nội dung → backup thư mục `.bak-<timestamp>` |
 | `.claude/settings.json` | **merge**: thêm `env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` và `teammateMode=in-process` nếu chưa có; key khác giữ nguyên |
+| `.claude/slp-supervisor.settings.json` | copy; dùng qua `--settings` cho Supervisor: `Read(//**)` + sandbox Bash (chỉ ghi cwd/`$TMPDIR`) + hook chặn `Write`/`Edit` ngoài memory của chính nó → đọc mọi file, chỉ sửa memory mình |
 | `CLAUDE.md` | chỉ tạo từ template nếu **chưa có**; có rồi thì không đụng |
 | validate | `claude plugin validate` cho `.claude/agents` và `.claude/skills` nếu có lệnh `claude` |
 
@@ -74,8 +75,8 @@ curl -fsSL https://raw.githubusercontent.com/phucanh08/alp-claude/main/uninstall
 
 Uninstaller đọc manifest và gỡ **đúng những gì đã cài**: agent files; skill dirs; chỉ các key trong
 `settings.json` do SLP thêm (xóa file nếu SLP tạo và giờ rỗng); `CLAUDE.md` chỉ khi SLP tạo **và**
-chưa ai sửa (so sha256). Memory `.claude/agent-memory-local/{lead,supervisor}` giữ lại, `--force`
-mới xóa. Không có manifest → từ chối, trừ `--force` (khi đó chỉ gỡ 3 agent file + 5 skill dir).
+chưa ai sửa (so sha256). Memory `.claude/agent-memory-local/{lead,supervisor}` (và `~/.claude/agent-memory/supervisor`
+khi gỡ `--global`) giữ lại, `--force` mới xóa. Không có manifest → từ chối, trừ `--force` (khi đó chỉ gỡ 3 agent file + 5 skill dir).
 
 ## Dùng
 
@@ -84,15 +85,21 @@ cd <repo root>
 # 1. Điền CLAUDE.md: contract boundaries, lệnh test, path cấm sửa, external side-effect policy.
 # 2.
 claude --agent lead --name lead          # header phải hiện @lead
-# 3. (tuỳ chọn) Supervisor — terminal khác, worktree riêng:
-git worktree add ../<repo>-supervisor <nhánh>
-cd ../<repo>-supervisor && claude --agent supervisor --name supervisor
+# 3. (tuỳ chọn) Supervisor — terminal khác, thư mục trung lập, đọc mọi file, sandbox chặn ghi:
+mkdir -p ~/slp-supervisor && cd ~/slp-supervisor
+claude --agent supervisor --name supervisor --settings <repo root>/.claude/slp-supervisor.settings.json
 ```
+
+Workspace nhiều repo (`project-a-workspace/{backend,webadmin,webclient,mobileapp,service-a…}`):
+cài `--global`, đặt `templates/WORKSPACE.CLAUDE.template.md` thành `project-a-workspace/CLAUDE.md`
+(bảng part ↔ Lead + cross-repo contract), mỗi repo một Lead `--name lead-<repo>`, một Supervisor ở
+thư mục trung lập nghe tất cả (kể cả Lead của workspace khác). Chi tiết và monorepo: `docs/SETUP.md` §10.
 
 Lead nhận task từ Human, chẻ việc, spawn Peer bằng `Agent` với `subagent_type: peer` **và một
 `name`** (named call = teammate; có `isolation` = rơi về ordinary subagent). Peer commit local,
 handoff 6 ô (candidate SHA + base); Lead `git diff base sha` rồi `ACCEPT`/`REJECT`. Supervisor
-(nếu chạy) nhận checkpoint từ Lead, kiểm Git object + transcript, gửi `DRIFT` khi lệch.
+(nếu chạy) nhận `SLP-REGISTER` + checkpoint từ từng Lead, kiểm Git object (`git -C <root>`) +
+transcript, gửi `DRIFT @<lead>` khi lệch.
 
 Không dùng `claude -p` (teammate cần interactive session). Không dùng
 `--dangerously-skip-permissions` cho lab đầu.
@@ -126,15 +133,16 @@ sửa skill. Skill không cấp authority.
 ```text
 agents/lead.md              Lead — framing, delegation, review, acceptance (ACCEPT/REJECT)
 agents/peer.md              Peer — bounded co-worker; disposition trong brief; handoff = candidate
-agents/supervisor.md        Supervisor — governance; session riêng; DRIFT / ESCALATE / NOTE
+agents/supervisor.md        Supervisor — governance; session riêng; 1..N Lead; DRIFT / ESCALATE / NOTE
 skills/<name>/SKILL.md      5 skill theo phase (+ references/, scripts/ cho prompt-leverage)
 skills/ask-alp/             router: ghế ↔ từ vựng authority, luồng, on-ramp, bảng cấm; references/workflow.md
 templates/CLAUDE.template.md  khung repo-specific contract
+templates/WORKSPACE.CLAUDE.template.md  khung workspace nhiều repo: part ↔ Lead, cross-repo contract
 templates/settings.json     env + teammateMode
 docs/SETUP.md               setup chi tiết + cơ chế runtime cần biết
-docs/LAB1.md                Lab 1 trên repo disposable (Python stdlib)
-docs/LABS.md                Lab 2–6: prompt + PASS/FAIL + ghi chú từ lần chạy tham chiếu
-docs/LAB7.md                Lab 7: 5 skill theo phase trên repo disposable (bẫy mỗi phase, audit script)
+docs/labs/README.md         mục lục lab (tầng 1): đo gì, trạng thái, lab đã đổi gì
+docs/labs/common.md         quy ước chung: ràng buộc cứng, đọc transcript, chạy headless
+docs/labs/lab-NN-*.md       mỗi lab một file: kết luận nhanh → quy trình → ghi chú lần chạy
 docs/WORKFLOW.md            con trỏ → skills/ask-alp/references/workflow.md
 install.sh / uninstall.sh
 VERSION
@@ -142,25 +150,25 @@ VERSION
 
 ## Lab
 
-| Lab | Đo | Trạng thái |
-|---|---|---|
-| 1 | Human → Lead → 1 Peer writer → commit → Lead đọc SHA → accept | PASS |
-| 2 | Contract mơ hồ / sai tiền đề / thiếu authority → `BLOCKED` / `REOPEN_REQUEST` đúng tầng | PASS |
-| 3 | 2 lane read-only mù + messaging evidence-only + 1 writer | PASS |
-| 4 | Engineer commit → Reviewer độc lập đọc đúng SHA → Lead accept | PASS (sinh 1 sửa `lead.md`) |
-| 5 | Supervisor = session độc lập qua cross-session messaging; 2 mồi authority / evidence | PASS |
-| 6 | Supervisor với definition riêng + memory riêng: kiểm candidate, self-test D12 (rút lại), ESCALATE khi Lead unhealthy | PASS (sinh 4 sửa `supervisor.md`, 1 sửa `install.sh`) |
-| 7 | Năm skill theo phase trên repo disposable: intake mơ hồ → helper có sẵn được dùng lại → brief có ruling → ≥2 commit, 0 push → `ACCEPT` | PASS (sinh 1 sửa `peer.md`, 1 sửa `smart-commits`) |
-| 7b | Task từ session khác, repo 30 module: Lead hỏi Human authority → Scout `xia` (0 Edit, nhãn evidence, so sánh stdlib) → `sequence-execution-plan` W1→W2 một writer → 8 ruling → 2 commit, 0 push → `ACCEPT` | PASS |
-| 7c | Lab 7 chạy lại trên **v0.4.0** + Supervisor, hai session headless: Lead 0 skill call nhưng hành vi đúng → worktree-per-writer lần đầu → Supervisor 3 `NOTE` + 1 `DRIFT D9` (Lead bỏ Reviewer khi chạm seam) → Lead tự sửa, `ACCEPT` giữ SHA | PASS (sinh 2 sửa `lead.md`, 1 sửa `goal-griller`, 1 sửa `LAB7.md`) |
-| 7d | Lab 7 trên **v0.4.2** + Supervisor, model Opus, hai session headless: đo bắt buộc gọi skill — Lead `goal-griller`→`sequence-execution-plan`→`prompt-leverage`, writer `smart-commits`, Reviewer tự mở đúng trigger seam, Supervisor `D13` + self-test `D12` | PASS (`xia` chưa kích hoạt; gate table thiếu disposition Reviewer) |
-| 7e | Lab 7 trên **v0.4.3**, fixture `lib/` 29 module, hai work item: dừng giữa chừng vì session limit của tài khoản | DỞ (Lead tự recon 36 file, 0 `Skill xia` — Human ruling: không phải drift, `xia` có điều kiện → v0.4.5) |
-| 7e lại | Cùng fixture trên **v0.4.5**: Lead tự phân loại là cần recon → Scout `xia` → `sequence-execution-plan` → 3 lần `prompt-leverage` trước 3 lần spawn → writer `smart-commits` 2 commit → Reviewer → `ACCEPT c58cb39`; Supervisor `D12` bị từ chối, `D4` mở rồi đóng | PASS (lần đầu `xia` kích hoạt; `main` đứng yên, remote rỗng, 18/18 test, 0 helper viết lại) |
+Mười lab đã chạy thật, tất cả PASS — mỗi lab đo một cơ chế bằng Git object + transcript:
 
-Chi tiết và prompt trong `docs/LABS.md`; Lab 7 có repo dựng sẵn trong `docs/LAB7.md`.
+| Nhóm | Lab | Đo |
+|---|---|---|
+| Nền | 1–4 | chuỗi Lead → Peer → commit → accept; `BLOCKED`/`REOPEN_REQUEST` đúng tầng; lane mù; Reviewer đọc đúng SHA |
+| Supervisor | 5–6 | session khác không có authority của Human; `supervisor.md` bắt drift, self-test, ESCALATE |
+| Skill theo phase | 7 (7a → 7e) | năm skill, mỗi phase một bẫy; gate bắt buộc, `xia` có điều kiện |
+| Nhiều Lead | 8, 8b | một Supervisor nghe nhiều Lead / nhiều workspace; đọc mọi file, chỉ sửa memory của chính nó |
+
+Mục lục, thứ tự chạy, lab đã đổi gì trong instruction: [`docs/labs/`](docs/labs/README.md).
 
 ## Tuning đã đưa vào `lead.md` từ lab
 
+- v0.5.0: **một Supervisor, nhiều Lead; không cần worktree** — Supervisor chạy ở cwd ngoài checkout
+  của mọi Lead (gốc workspace hoặc thư mục trung lập), đọc bằng `git --no-optional-locks -C <root>`;
+  `memory: user`, một file mỗi workspace; Lead đăng ký bằng `SLP-REGISTER`; output ghi `@<lead>`,
+  healthy/`ESCALATE` tính riêng từng Lead; thêm `D14` (ghi ra ngoài root/scope đã đăng ký). `lead.md`
+  có mục workspace nhiều repo: mỗi root một Lead `lead-<repo>`, cross-repo contract trong `CLAUDE.md`
+  workspace là quyết định của Human, message giữa Lead chỉ mang fact có SHA. Lab 8 PASS.
 - Lab 7e chạy lại trên v0.4.5: PASS. Lead tự quyết là cần recon rồi giao Scout `xia` — lần đầu
   gate recon kích hoạt mà không phải do luật ép.
 - v0.4.5: **`xia` là gate có điều kiện**, không bắt buộc mọi lượt Lead — Lead tự quyết việc có cần
@@ -189,7 +197,7 @@ Chi tiết và prompt trong `docs/LABS.md`; Lab 7 có repo dựng sẵn trong `d
   thay bằng từ vựng authority + điều kiện dùng; thêm router `ask-alp` (model-invocable, Lead/Peer
   gọi qua `Skill`) giữ ánh xạ ghế và bảng cấm; `docs/WORKFLOW.md` dời vào
   `skills/ask-alp/references/workflow.md`; `lead.md` rút bảng skill thành thứ tự mặc định + con trỏ
-  `ask-alp`. Lab 7c PASS: Lead không gọi skill nào qua `Skill` nhưng intake/brief/accept vẫn đúng; Scout gọi `xia`, writer gọi `smart-commits`; Supervisor bắt `DRIFT D9` (Reviewer trigger #2) — câu hỏi mở ghi ở `docs/LABS.md`.
+  `ask-alp`. Lab 7c PASS: Lead không gọi skill nào qua `Skill` nhưng intake/brief/accept vẫn đúng; Scout gọi `xia`, writer gọi `smart-commits`; Supervisor bắt `DRIFT D9` (Reviewer trigger #2) — câu hỏi mở ghi ở `docs/labs/lab-07-runs.md`.
 - v0.3.0: thêm mục "Skills theo phase" vào `lead.md`/`peer.md`, dòng skills vào template
   `CLAUDE.md`; installer/uninstaller quản `.claude/skills/`. Lab 7 PASS: `goal-griller` hỏi đúng một
   câu, `prompt-leverage` ra brief 13 trường có ruling, `smart-commits` 2 commit + 0 push; kiểm hook

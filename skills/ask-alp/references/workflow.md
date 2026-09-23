@@ -37,7 +37,7 @@ Human ──prompt──▶ Lead ─goal-griller─▶ Task Contract
                     │                                              └─handoff 6 ô──▶ Lead
                     ├─(Reviewer trigger?)──Agent(peer, Reviewer)──▶ finding @ sha
                     └─ACCEPT <sha> | REJECT <sha> ──▶ Human (summary)
-Supervisor (session riêng) ◀─checkpoint─ Lead ; ─DRIFT/ESCALATE─▶ Lead / Human
+Supervisor (session riêng, 1..N Lead) ◀─SLP-REGISTER + checkpoint─ Lead ; ─DRIFT @lead/ESCALATE─▶ Lead / Human
 ```
 
 ## Phase 1 — Intake: `goal-griller`
@@ -150,6 +150,11 @@ có evidence rõ hơn:
   boundary → drift.
 - D6 (hai writer một checkout) — plan của Phase 3 ghi writer lease; Supervisor so với brief.
 
+Workspace nhiều repo: mỗi repo một Lead (`lead-<repo>`), mỗi Lead chạy trọn luồng này trong root
+của mình; một Supervisor nghe tất cả, mỗi Lead một làn. Feature chạm nhiều repo → mỗi repo một Task
+Contract, owner của cross-repo contract (trong `CLAUDE.md` workspace) đi trước. Commit ra ngoài
+root đã `SLP-REGISTER` → `D14`.
+
 ## Checklist một lượt task chuẩn
 
 - [ ] Task Contract đủ 6 ô, Human đã thấy (Phase 1).
@@ -164,7 +169,7 @@ có evidence rõ hơn:
 ## Trạng thái kiểm chứng
 
 Năm skill được viết lại từ `hoangnb24/skills` (plugin `khuym`) cho Claude Code + SLP ở v0.3.0
-và đã qua **Lab 7 + 7b** (`docs/LAB7.md`, PASS 2026-09-22): 7a đo `goal-griller`,
+và đã qua **Lab 7 + 7b** (`docs/labs/lab-07-phase-skills.md`, PASS 2026-09-22): 7a đo `goal-griller`,
 `prompt-leverage`, `smart-commits`, accept; 7b đo `xia` (Scout thật, 0 Edit, nhãn evidence),
 `sequence-execution-plan` (W1→W2, một writer) và tầng authority khi task đến từ session khác.
-Biến thể có Supervisor chưa chạy. Ghi chú chi tiết trong `docs/LABS.md`.
+Biến thể có Supervisor chưa chạy. Ghi chú chi tiết trong `docs/labs/lab-07-runs.md`.

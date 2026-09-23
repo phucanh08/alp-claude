@@ -12,6 +12,7 @@
 #   <root>/.claude/agents/lead.md, peer.md, supervisor.md   (copy)
 #   <root>/.claude/skills/<name>/                (copy: ask-alp, goal-griller, xia, sequence-execution-plan, prompt-leverage, smart-commits)
 #   <root>/.claude/settings.json                (merge: env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS, teammateMode)
+#   <root>/.claude/slp-supervisor.settings.json (copy: Read mọi file + sandbox Bash; dùng qua --settings)
 #   <root>/CLAUDE.md                            (chỉ tạo từ template nếu chưa có; project mode)
 #   <root>/.claude/slp-manifest.json            (ghi lại đúng những gì đã cài, để uninstall gỡ chính xác)
 set -euo pipefail
@@ -139,6 +140,7 @@ else
 fi
 for a in lead peer supervisor; do [ -f "$SRC/agents/$a.md" ] || die "bundle thiếu agents/$a.md"; done
 for s in $SKILLS; do [ -f "$SRC/skills/$s/SKILL.md" ] || die "bundle thiếu skills/$s/SKILL.md"; done
+[ -f "$SRC/templates/supervisor.settings.json" ] || die "bundle thiếu templates/supervisor.settings.json"
 VERSION="$(cat "$SRC/VERSION" 2>/dev/null || echo unknown)"
 
 # ---- resolve target ------------------------------------------------------------
@@ -150,7 +152,7 @@ else
   ROOT="$(cd "$ROOT" && pwd)" || die "không vào được $TARGET"
   CLAUDE_DIR="$ROOT/.claude"
   if [ ! -d "$ROOT/.git" ] && ! git -C "$ROOT" rev-parse --show-toplevel >/dev/null 2>&1; then
-    warn "$ROOT không phải git repo — SLP cần Git để Peer commit/handoff SHA. Vẫn cài."
+    warn "$ROOT không phải git repo — Lead cần Git để Peer commit/handoff SHA (bình thường nếu đây là gốc workspace chỉ cho Supervisor). Vẫn cài."
   fi
 fi
 AGENTS_DIR="$CLAUDE_DIR/agents"
@@ -205,6 +207,15 @@ for name in $SKILLS; do
   ok "skills/$name"
 done
 
+# ---- 1c. supervisor settings (dùng qua --settings, không merge vào settings.json) --------
+SUP_SETTINGS="$CLAUDE_DIR/slp-supervisor.settings.json"
+if [ -f "$SUP_SETTINGS" ] && ! cmp -s "$SRC/templates/supervisor.settings.json" "$SUP_SETTINGS" && [ "$FORCE" -ne 1 ]; then
+  bak="$SUP_SETTINGS.bak-$(date +%Y%m%d%H%M%S)"; cp "$SUP_SETTINGS" "$bak"
+  warn "$SUP_SETTINGS đã tồn tại và khác bản mới → backup $bak"
+fi
+cp "$SRC/templates/supervisor.settings.json" "$SUP_SETTINGS"
+ok "slp-supervisor.settings.json"
+
 # ---- 2. settings.json -------------------------------------------------------------
 added_keys="$(merge_settings "$SETTINGS")"
 settings_created=false
@@ -226,7 +237,7 @@ if [ "$MODE" = "project" ]; then
   if [ -f "$ROOT/CLAUDE.md" ]; then
     log "CLAUDE.md đã có — giữ nguyên. Kiểm nó có đủ 4 mục: contract boundaries, verification, generated/cấm sửa, external side effects."
   else
-    # linked worktree (vd. worktree của Supervisor) mà repo chưa commit CLAUDE.md → lấy bản thật từ main worktree
+    # linked worktree (worktree của writer/Lead monorepo, hoặc Supervisor chạy trong worktree) mà repo chưa commit CLAUDE.md → lấy bản thật từ main worktree
     common="$(git -C "$ROOT" rev-parse --path-format=absolute --git-common-dir 2>/dev/null || true)"
     main_root=""
     [ -n "$common" ] && [ "$common" != "$ROOT/.git" ] && main_root="$(dirname "$common")"
@@ -259,6 +270,7 @@ fi
   printf '  "skills": ['
   first=1; for k in "${installed_skills[@]}"; do [ $first -eq 1 ] || printf ', '; printf '"%s"' "$k"; first=0; done
   printf '],\n'
+  printf '  "files": ["slp-supervisor.settings.json"],\n'
   printf '  "settings": { "created": %s, "keys": [' "$settings_created"
   first=1; for k in "${settings_keys[@]+"${settings_keys[@]}"}"; do [ $first -eq 1 ] || printf ', '; printf '"%s"' "$k"; first=0; done
   printf '] },\n'
@@ -284,9 +296,12 @@ cat <<EOF
 
 Xong. Bước tiếp theo:
   1. $( [ "$MODE" = "project" ] && echo "Điền CLAUDE.md (contract boundary, lệnh test, path cấm sửa, external side-effect policy)." || echo "Mỗi repo vẫn cần CLAUDE.md riêng — template: $SRC/templates/CLAUDE.template.md" )
-  2. cd <repo root> && claude --agent lead --name lead      # header phải hiện @lead
-  3. (tuỳ chọn) Supervisor ở worktree riêng: docs/SETUP.md §10
-  4. Quy trình theo phase + skill: gõ /ask-alp (router; bản dài ở .claude/skills/ask-alp/references/workflow.md). Lab: docs/LAB1.md rồi docs/LABS.md (Lab 2–6).
+  2. cd <repo root> && claude --agent lead --name lead      # workspace nhiều repo: --name lead-<repo>
+  3. (tuỳ chọn) Supervisor — thư mục trung lập không chứa repo, không cần worktree; đọc mọi file, sandbox chặn ghi:
+       mkdir -p ~/slp-supervisor && cd ~/slp-supervisor
+       claude --agent supervisor --name supervisor --settings $SUP_SETTINGS   # docs/SETUP.md §10
+     Workspace nhiều repo: agents cần thấy từ mọi repo → cài --global; CLAUDE.md chung: templates/WORKSPACE.CLAUDE.template.md
+  4. Quy trình theo phase + skill: gõ /ask-alp (router; bản dài ở .claude/skills/ask-alp/references/workflow.md). Lab: docs/labs/README.md (mục lục, bắt đầu từ Lab 1).
 
 Gỡ: curl -fsSL https://raw.githubusercontent.com/${SLP_REPO}/${SLP_REF}/uninstall.sh | bash$( [ "$MODE" = "global" ] && echo " -s -- --global" )
 EOF
