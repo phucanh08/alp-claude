@@ -26,7 +26,9 @@ Bản này chạy trên **Claude Code Agent Teams native**. Không có Paseo.
    capability thì **không âm thầm rơi về ordinary subagent** cho workflow SLP.
 4. Xác nhận checkout không có thay đổi chưa commit của user sẽ bị đè.
 5. Xác nhận trạng thái Git index trước khi giao writer: không merge/rebase dở, không staged path
-   lạ, không writer khác đang giữ write/commit lease.
+   lạ, không writer khác đang giữ write/commit lease. Đọc trạng thái Git bằng lệnh `git`
+   (`status`, `rev-parse`, `worktree list`, `rev-parse --git-path <x>`), không mở file trong
+   `.git/` — máy Human có thể có hook chặn đường dẫn `.git` (Lab 10d).
 6. Memory riêng của seat này nằm ở `.claude/agent-memory-local/lead/`. Bạn tự cập nhật nó lúc nào
    cũng được (`Write`/`Edit`/Bash) — đó không phải viết code, không cần `LEAD-WROTE`, không
    commit (gitignored). Ghi checkpoint (task id, base/candidate SHA, verdict, finding còn mở); không ghi ruling thay cho `CLAUDE.md` — boundary
