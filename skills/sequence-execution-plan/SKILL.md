@@ -58,18 +58,19 @@ gộp bốn nhóm, ruling chưa chốt → 4 `REJECT`. Lab 10b: chẻ rồi như
 4. Lab 10c: không chẻ, ruling chốt trước trong `CLAUDE.md` + brief → 1. Lưới an toàn là trigger
 `REJECT` thứ hai ở mục 9.
 
-Mỗi item ghi:
+Mỗi item ghi — đây là các cột của mẫu plan:
 
 - **Result** — trạng thái quan sát được sau khi xong.
-- **Type** — outcome · mitigation · prerequisite · implementation · validation · rollout · cleanup.
 - **Disposition** — Engineer · Architect · Reviewer · Scout; **write?** yes/no.
 - **Owned scope** — path/glob; hai writer không được giao nhau.
 - **Boundary** — chạm boundary `CLAUDE.md` nào; ruling có sẵn chưa.
 - **Test seam** — hàm/API cao nhất mà test gọi để kiểm hành vi; dùng seam có sẵn, càng ít seam
   càng tốt. Seam mới → nêu trong plan cho người yêu cầu thấy. Đổ vào `Verification` của brief.
 - **Done evidence** — lệnh/artifact; sẽ thành `Verification` của brief.
-- **Uncertainty** — low/medium/high + unknown là gì.
 - **State** — ready · blocked · in progress · candidate · accepted.
+
+Type (mitigation, prerequisite, validation…) và uncertainty ghi ở Result hoặc mục Risk khi đáng nói,
+không thành cột riêng.
 
 Cấm item kiểu "cải thiện kiến trúc", "xử lý edge case", "test hết".
 
@@ -164,32 +165,9 @@ chỉ vì người nhận việc thích kiến trúc khác.
 
 Artifact **là** file `plans/<YYMMDD-HHmm>-<slug>/plan.md` ở gốc repo (không ghi vào `CLAUDE.md`);
 memory checkpoint chỉ trỏ tới đường dẫn này. Mỗi pha một file (thiết kế, code); không nối pha mới
-vào đuôi file pha cũ. **Chép nguyên mẫu dưới rồi điền** — không tự dựng bố cục khác, không đổi tên
-cột, không bỏ sơ đồ; ô chưa biết ghi `?` chứ không xoá:
-
-~~~markdown
-# <outcome> · base `<sha>` · cập nhật <YYYY-MM-DD HH:mm>
-
-Outcome & evidence: <kết quả quan sát được> — <lệnh/đo chứng minh>
-
-```mermaid
-flowchart LR
-  F1["F1 <tên ngắn><br/>ready"] --> F2["F2 <tên ngắn><br/>blocked"]
-```
-
-| ID | Result | Disposition/write | Owned scope | Boundary | Test seam | Done evidence | State |
-|---|---|---|---|---|---|---|---|
-| F1 | … | Engineer / write | `path` | C? — ruling ở đâu | `hàm(...)` | lệnh | ready |
-
-**Chẻ:** F1 — "không dấu hiệu" | "<dấu hiệu> → chẻ thành F1a, F1b" | "<dấu hiệu> — không chẻ, ruling ở `<sha>`".
-**Now:** … · **Next:** … · **Chờ người yêu cầu quyết:** …
-
-## Dependency · đường đi · lý do
-<câu quan hệ có nguyên nhân; phương án + trade-off; nhân–quả cho thứ tự gây ngạc nhiên>
-
-## Risk & trigger replan
-<risk mở, item gộp, biện pháp tạm; evidence nào đổi thứ tự>
-~~~
+vào đuôi file pha cũ. Mẫu: **`references/plan-template.md`** — `Read` file này ngay trước `Write`
+plan, chép nguyên rồi điền; không viết plan từ trí nhớ, không tự dựng bố cục khác, không đổi tên
+cột, không bỏ sơ đồ; ô chưa biết ghi `?` chứ không xoá.
 
 Node ghi trạng thái + SHA (`accepted a1b2c3d`); cạnh = `blocks`. Dòng **Chẻ** bắt buộc: soát ba
 dấu hiệu ở mục 2 cho từng item và ghi kết quả — item chạm hai boundary mà ghi "không dấu hiệu"
