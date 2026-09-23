@@ -66,6 +66,38 @@ Installer làm đúng 6 việc và ghi lại trong `.claude/slp-manifest.json`:
 
 Yêu cầu: `curl`, `tar`, `python3` **hoặc** `node`. Claude Code ≥ 2.1 (Agent Teams experimental).
 
+## Cập nhật
+
+Chạy lại installer đúng kiểu đã cài (xem kiểu và bản đang dùng: `grep '"version"'
+.claude/slp-manifest.json`, hoặc `~/.claude/slp-manifest.json` nếu cài `--global`):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/phucanh08/alp-claude/main/install.sh | bash                 # project
+curl -fsSL https://raw.githubusercontent.com/phucanh08/alp-claude/main/install.sh | bash -s -- --global  # global
+```
+
+Agent/skill bị ghi đè; file anh đã tự sửa được backup `*.bak-<timestamp>` để chép lại phần riêng.
+`settings.json` chỉ thêm key còn thiếu, `CLAUDE.md` giữ nguyên. Session `claude --agent …` đang mở
+dùng bản cũ tới khi thoát — mở lại sau khi cập nhật.
+
+**Từ ≤ 0.4.x lên 0.5.0** — Supervisor không còn chạy trong worktree:
+
+```bash
+# 1. (tuỳ chọn) giữ memory cũ — làm TRƯỚC khi gỡ worktree
+mkdir -p ~/.claude/agent-memory/supervisor
+cp ../<repo>-supervisor/.claude/agent-memory-local/supervisor/MEMORY.md ~/.claude/agent-memory/supervisor/<repo>.md
+# 2. gỡ worktree cũ của Supervisor
+git worktree remove ../<repo>-supervisor
+# 3. chạy lại ở thư mục trung lập, với settings mới (đọc mọi file, chỉ sửa memory của chính nó)
+mkdir -p ~/slp-supervisor && cd ~/slp-supervisor
+claude --agent supervisor --name supervisor --settings <repo>/.claude/slp-supervisor.settings.json
+```
+
+Lead chạy cùng permission mode với Supervisor (không `--dangerously-skip-permissions`), nếu không
+message giữa hai bên bị hold. Chuyển sang workspace nhiều repo: cài `--global`, đặt
+`templates/WORKSPACE.CLAUDE.template.md` thành `<workspace>/CLAUDE.md`, mỗi repo một Lead
+`--name lead-<repo>` — chi tiết `docs/SETUP.md` §10.
+
 ## Gỡ
 
 ```bash
