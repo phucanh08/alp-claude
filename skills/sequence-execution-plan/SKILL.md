@@ -155,32 +155,17 @@ Now ổn định trừ khi evidence đảo nó. Replan khi:
 Khi replan: cập nhật fact + dependency trước, sinh lại đường đi, rồi mới xếp lại. Không xếp lại
 chỉ vì người nhận việc thích kiến trúc khác.
 
-## Artifact
+## Artifact — file `plan.md`, chép mẫu rồi điền
 
-Trừ khi được yêu cầu format khác:
-
-1. **Outcome & evidence** — từ Task Contract.
-2. **Bảng work item** — ID · Result · Type · Disposition/write · Owned scope · Boundary · Test
-   seam · Done evidence · Uncertainty · State.
-3. **Dependency** — câu quan hệ, hoặc graph gọn.
-4. **Đường đi** — các phương án với thời gian tới mitigation / resolution và trade-off chính.
-5. **Sequence** — Now / Next / Later; nhánh song song + join point; **writer lease** thuộc item nào.
-6. **Lý do** — nhân–quả cho thứ tự gây ngạc nhiên.
-7. **Risk & traceability** — risk mở, item gộp, biện pháp tạm, cleanup.
-8. **Trigger replan.**
-
-Ngày tuyệt đối hoặc sự kiện đo được thay cho "sớm". Ước lượng ghi là ước lượng. Không bịa priority,
-SLA, dependency, effort.
-
-### File plan — chỗ người yêu cầu xem
-
-Ghi plan ra `plans/<YYMMDD-HHmm>-<slug>/plan.md` ở gốc repo (không ghi vào `CLAUDE.md`); memory
-checkpoint chỉ trỏ tới đường dẫn này. Mỗi pha một file (thiết kế, code); không nối pha mới vào
-đuôi file pha cũ. **Chép đúng mẫu dưới rồi điền** — không đổi tên cột, không bỏ sơ đồ; ô chưa biết
-ghi `?` chứ không xoá:
+Artifact **là** file `plans/<YYMMDD-HHmm>-<slug>/plan.md` ở gốc repo (không ghi vào `CLAUDE.md`);
+memory checkpoint chỉ trỏ tới đường dẫn này. Mỗi pha một file (thiết kế, code); không nối pha mới
+vào đuôi file pha cũ. **Chép nguyên mẫu dưới rồi điền** — không tự dựng bố cục khác, không đổi tên
+cột, không bỏ sơ đồ; ô chưa biết ghi `?` chứ không xoá:
 
 ~~~markdown
 # <outcome> · base `<sha>` · cập nhật <YYYY-MM-DD HH:mm>
+
+Outcome & evidence: <kết quả quan sát được> — <lệnh/đo chứng minh>
 
 ```mermaid
 flowchart LR
@@ -191,18 +176,26 @@ flowchart LR
 |---|---|---|---|---|---|---|---|
 | F1 | … | Engineer / write | `path` | C? — ruling ở đâu | `hàm(...)` | lệnh | ready |
 
-**Chẻ:** mỗi item — "không dấu hiệu" hoặc dấu hiệu nào và đã chẻ thành gì.
+**Chẻ:** F1 — "không dấu hiệu" | dấu hiệu <1/2/3> → chẻ thành F1a, F1b.
 **Now:** … · **Next:** … · **Chờ người yêu cầu quyết:** …
+
+## Dependency · đường đi · lý do
+<câu quan hệ có nguyên nhân; phương án + trade-off; nhân–quả cho thứ tự gây ngạc nhiên>
+
+## Risk & trigger replan
+<risk mở, item gộp, biện pháp tạm; evidence nào đổi thứ tự>
 ~~~
 
 Node ghi trạng thái + SHA (`accepted a1b2c3d`); cạnh = `blocks`. Dòng **Chẻ** bắt buộc: soát ba
 dấu hiệu ở mục 2 cho từng item và ghi kết quả — item chạm hai boundary mà ghi "không dấu hiệu"
-là sai. Các mục Artifact còn lại (đường đi, lý do, risk, trigger) để dưới, ngắn.
+là sai. Ngày tuyệt đối hoặc sự kiện đo được thay cho "sớm"; ước lượng ghi là ước lượng; không bịa
+priority, SLA, dependency, effort.
 
 Cập nhật trạng thái + SHA mỗi lần `ACCEPT`/`REJECT`/replan — sửa dòng, không viết lại cả file.
-Plan là bản đồ, không phải candidate: không commit. Lần đầu ghi, thêm `plans/` vào
-`.git/info/exclude` (local, dùng chung mọi worktree, không đụng `.gitignore` của repo) để writer
-không stage nhầm.
+Plan là bản đồ, không phải candidate: không commit. Lần đầu ghi, chạy
+`echo 'plans/' >> "$(git rev-parse --git-common-dir)/info/exclude"` (local, dùng chung mọi
+worktree, không đụng `.gitignore`) rồi `git status --short` không còn `plans/` — writer không stage
+nhầm.
 
 ### Duyệt plan
 
