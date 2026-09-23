@@ -2,7 +2,7 @@
 
 Bộ cài **SLP** (Supervisor / Lead / Peer separation-of-judgment) cho Claude Code Agent Teams
 native. Không cần Paseo. Một `install.sh`, một `uninstall.sh`, ba agent definition, **năm skill
-theo phase + một router `ask-alp`**, template `CLAUDE.md` cho repo và cho workspace nhiều repo, và
+theo phase + một skill phương pháp `bug-loop` + một router `ask-alp`**, template `CLAUDE.md` cho repo và cho workspace nhiều repo, và
 5 lab đã chạy thật + 1 lab cho Supervisor definition.
 
 ```text
@@ -108,7 +108,7 @@ curl -fsSL https://raw.githubusercontent.com/phucanh08/alp-claude/main/uninstall
 Uninstaller đọc manifest và gỡ **đúng những gì đã cài**: agent files; skill dirs; chỉ các key trong
 `settings.json` do SLP thêm (xóa file nếu SLP tạo và giờ rỗng); `CLAUDE.md` chỉ khi SLP tạo **và**
 chưa ai sửa (so sha256). Memory `.claude/agent-memory-local/{lead,supervisor}` (và `~/.claude/agent-memory/supervisor`
-khi gỡ `--global`) giữ lại, `--force` mới xóa. Không có manifest → từ chối, trừ `--force` (khi đó chỉ gỡ 3 agent file + 5 skill dir).
+khi gỡ `--global`) giữ lại, `--force` mới xóa. Không có manifest → từ chối, trừ `--force` (khi đó chỉ gỡ 3 agent file + 7 skill dir).
 
 ## Dùng
 
@@ -153,6 +153,17 @@ thêm ánh xạ vào Task Contract, brief 13 trường, handoff 6 ô, luật m�
 | `prompt-leverage` | brief | work item → **brief 13 trường**; trung lập cách làm, có ruling boundary, không seed verdict; `scripts/augment_prompt.py` nháp khung |
 | `smart-commits` | commit gate | working tree → commit logic trong owned scope, **không push**, block Candidate `base..head` |
 
+Một skill **phương pháp**, không gắn phase hay disposition — chỉ bắt buộc khi brief khai
+`Required skills`:
+
+| Skill | Loại việc | Vào → Ra |
+|---|---|---|
+| `bug-loop` | bug, test đỏ không rõ lý do, chậm đi | loop đỏ được → repro tối giản → 3–5 giả thuyết falsifiable → instrument → fix + regression test có **proof level** (L2 RED → GREEN, L3 thêm mutation). Read-only dừng ở Phase 4. Adapt từ [`mattpocock/skills`](https://github.com/mattpocock/skills/tree/main/skills/engineering/diagnosing-bugs) `diagnosing-bugs` (MIT) + [`alp-code`](https://github.com/phucanh08/alp-code/tree/main/skills/test-quality-guard) `test-quality-guard` |
+
+Không có ghế `Special`: specialist là skill của Peer, không phải ghế mới — authority, lifecycle,
+memory, acceptance của nó y hệt Peer. Luật test chung (oracle độc lập, lát dọc, mock ở rìa hệ
+thống, không làm xanh bằng mọi giá, proof level) nằm trong `peer.md`, không cần skill.
+
 Năm skill này **không gọi tên ghế**: chúng nói bằng từ vựng authority (*người yêu cầu* / *người
 giao việc* / *người nhận việc* / *người quan sát*) và điều kiện dùng (có kênh hỏi người yêu cầu,
 sở hữu topology, có write authority…). Ánh xạ ghế ↔ từ vựng, luồng chính, on-ramp và bảng "ghế
@@ -166,7 +177,7 @@ sửa skill. Skill không cấp authority.
 agents/lead.md              Lead — framing, delegation, review, acceptance (ACCEPT/REJECT)
 agents/peer.md              Peer — bounded co-worker; disposition trong brief; handoff = candidate
 agents/supervisor.md        Supervisor — governance; session riêng; 1..N Lead; DRIFT / ESCALATE / NOTE
-skills/<name>/SKILL.md      5 skill theo phase (+ references/, scripts/ cho prompt-leverage)
+skills/<name>/SKILL.md      5 skill theo phase + bug-loop (+ references/, scripts/)
 skills/ask-alp/             router: ghế ↔ từ vựng authority, luồng, on-ramp, bảng cấm; references/workflow.md
 templates/CLAUDE.template.md  khung repo-specific contract
 templates/WORKSPACE.CLAUDE.template.md  khung workspace nhiều repo: part ↔ Lead, cross-repo contract
@@ -195,6 +206,12 @@ Mục lục, thứ tự chạy, lab đã đổi gì trong instruction: [`docs/la
 
 ## Tuning đã đưa vào `lead.md` từ lab
 
+- v0.6.0: **skill phương pháp `bug-loop`** + trường brief tuỳ chọn `Required skills` (thứ 14).
+  `peer.md` thêm luật test: oracle độc lập với implementation, lát dọc, mock chỉ ở rìa hệ thống,
+  danh sách "làm xanh bằng mọi giá" là BLOCKING, ô `Verification` ghi proof level L1–L3.
+  `lead.md` checklist accept đòi proof ≥ L2 cho claim hành vi; `D13` kiểm skill phương pháp chỉ
+  khi brief khai; `ask-alp` thêm bảng theo loại việc. Không tạo ghế `Special`. Lab 9 viết sẵn,
+  **chưa chạy**.
 - v0.5.0: **một Supervisor, nhiều Lead; không cần worktree** — Supervisor chạy ở cwd ngoài checkout
   của mọi Lead (gốc workspace hoặc thư mục trung lập), đọc bằng `git --no-optional-locks -C <root>`;
   `memory: user`, một file mỗi workspace; Lead đăng ký bằng `SLP-REGISTER`; output ghi `@<lead>`,
