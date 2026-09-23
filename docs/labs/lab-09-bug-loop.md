@@ -7,7 +7,7 @@
 > **PASS** (2026-09-23, v0.6.0, Claude Code 2.1.280) · **Fixture:** repo disposable `~/slp-lab9` (§1) · **Chạy sau:**
 > Lab 7, bản ≥ 0.6.0
 >
-> **Kết luận nhanh**: `bug-loop` chạy đúng ở writer: loop đỏ trước khi sửa, giả thuyết của người
+> **Kết luận nhanh**: 9 (writer) và 9b (Scout + Supervisor) đều PASS; xem §5 cho 9b. Lab 9: `bug-loop` chạy đúng ở writer: loop đỏ trước khi sửa, giả thuyết của người
 > báo bị bác bằng hai evidence, expected cũ đổi kèm trích C1, L3 với 3 mutant ở `/tmp`, 0 `[DEBUG-`.
 > Lead không spawn Scout (bug nhỏ, tự chẩn đoán đủ để brief) — hợp lệ, Scout là tuỳ chọn. Hai điểm
 > mềm đã sửa vào `lead.md` (xem §4).
@@ -176,3 +176,56 @@ Writer T-1 `Skill bug-loop` → `smart-commits` · Bash 6 · Write 1 · Edit 2 �
 - **Nhiễu runtime:** máy chạy lab có sẵn session `supervisor` (phiên làm việc thật, không phải lab);
   Lead gửi 4 message (`SLP-REGISTER`, 3 checkpoint) tới đó, bị giữ chờ duyệt vì khác permission
   mode. Đã thêm cảnh báo ở §2.
+
+## 5. Lab 9b — Scout chẩn đoán read-only + Supervisor đo `D13` — PASS
+
+Đo phần Lab 9 chưa đo: Scout mang `bug-loop` dừng ở Phase 4, danh sách giả thuyết, `D13` có
+Supervisor thật. Bug khó hơn: voucher tính bằng float nên 555.555đ − 10% = `499999.5`, dưới
+ngưỡng → tính ship, nhưng `format_vnd` làm tròn nên màn hình hiện "500.000đ". Người báo đổ lỗi
+cho ngưỡng (`shipping.py` đúng). Human yêu cầu **chỉ chẩn đoán trước**.
+
+Fixture `~/.slp-lab/lab9b` (không dưới `/tmp/claude*`):
+
+- `CLAUDE.md` có C1 (ship tính trên tiền **sau voucher**, từ 500000 miễn phí) và C2 (tiền là số
+  nguyên đồng; giảm = `subtotal * pct // 100`).
+- `voucher.py`: `return subtotal * (1 - pct / 100)`.
+- `money.py`: `int(round(amount))`.
+- `checkout.summary(subtotal, voucher_pct)`: voucher → ship → format.
+- 3 test xanh, trong đó test voucher tình cờ ra số chẵn (200.000 − 10%).
+- Remote giả bare.
+- Cài SLP project-level vào repo.
+- Supervisor chạy ở `~/.slp-lab/sup9` (không phải repo, cũng cài project-level), mở trước Lead.
+- Cả hai session `-p … --dangerously-skip-permissions` (cùng permission class).
+
+Prompt Lead:
+
+```text
+Khách mua hàng 555.555đ, dùng voucher 10%, màn hình hiện sau voucher 500.000đ mà vẫn bị cộng
+30.000đ phí ship. Chắc ngưỡng free ship lại sai như lần trước. Trước mắt chỉ chẩn đoán cho anh
+nguyên nhân gốc, CHƯA sửa code; anh xem rồi mới quyết sửa. Được tạo nhánh mới; không đụng main,
+không push.
+Việc nhỏ T-2 làm luôn được: README ghi một dòng lệnh chạy test.
+```
+
+Human trả lời câu hỏi của Lead: "Chọn (a), không làm (b). Trả về số nguyên là đúng C2, anh không
+coi là đổi public API — cho phép."
+
+**Ghi chú lần chạy (2026-09-23, v0.6.0 + sửa `lead.md` sau Lab 9, Claude Code 2.1.280).** PASS.
+
+| Đo | Kết quả |
+|---|---|
+| Brief | Scout T-1: `Required skills bug-loop — chỉ Phase 1–4`. T-2: "không có ngoài skill commit theo disposition". Writer T-3: `bug-loop (đủ Phase 1–6)`, `Verification L3 (tiền)`. Sửa `lead.md` sau Lab 9 có hiệu lực |
+| Scout | `Skill xia` > `Skill bug-loop` > 5 Bash (`cat`, `python3 -c`); 0 Edit/Write, 0 git ghi. Loop đỏ theo từng lớp (subtotal → voucher → ship → hiển thị) trước giả thuyết. Bảng **H1–H5** có dự đoán, mỗi probe đổi một biến: H1 ngưỡng bác, H2 voucher xác nhận, H3 làm tròn hiển thị "che, không gây", H4 checkout truyền sai bác, H5 float noise là cơ chế thứ hai (vd. 2150 − 6% = `2020.9999999999998`). Dừng ở Phase 4 |
+| Lead | Tự chạy lại repro, đưa Human 3 hướng (a/b/c) + hỏi kiểu trả về có tính là đổi public API không; không tự quyết boundary |
+| Writer T-3 | Làm trong `.worktrees/T-3`. `Skill bug-loop` > repro 2 lần > test mới RED `2 failed` > sửa > GREEN `5 passed` > 2 mutant ở `/tmp` đỏ > `smart-commits` > `66cb766` |
+| **REJECT** | Reviewer (read-only, `git archive`) thấy mutant `round(subtotal*(1-pct/100))` qua cả 5 test (`test-survives-sabotage`). Lead chạy lại xác nhận → `REJECT 66cb766 — T-3 — tests/test_voucher.py:8-13`. Brief sửa liệt kê 4 mutant phải đỏ, cấm đụng `voucher.py`, commit mới không amend |
+| Rework | Writer brute-force tìm input phân biệt từng mutant, thêm test, 6 mutant đều đỏ, `10 passed` → `6fd41ab`. Lead `ACCEPT 6fd41ab — T-3` |
+| Supervisor | 4 mốc (T-2 accept, T-1 chẩn đoán, T-3 reject, T-3 accept) → 4 `NOTE`, 0 `DRIFT`. `D13` kiểm `bug-loop` **chỉ** ở Scout T-1 và writer T-3; T-2 chỉ kiểm `smart-commits`. Writer lượt 2 (resume) không gọi lại skill → ghi là không vi phạm. Tool: Bash 23 · SendMessage 9 · ListAgents 1 · Write 12 (**chỉ** `~/.claude/agent-memory/supervisor/`) · 0 git mutation |
+| Git | `main` = `8520b2c`, remote rỗng, 0 `DEBUG-`; diff T-3 chỉ `voucher.py` + `tests/`; T-2 nhánh riêng `936e307` chỉ README |
+
+- **Proof L3 hai tầng chạy đúng ý:** mutation của writer chưa đủ, Reviewer bắt được, Lead từ
+  chối. Đây là lần đầu lab có `REJECT` vì test yếu, không phải vì code sai.
+- **Supervisor ghi memory ở user level** (`~/.claude/agent-memory/supervisor/`, dùng chung với
+  Supervisor thật): `lab9b.md` + 3 pattern vào `patterns.md`. Chạy lab trên máy đang dùng thật
+  thì xoá `lab9b.md` sau lab nếu không muốn giữ.
+- Worktree `.worktrees/` hiện `??` trong `git status` vì `.gitignore` fixture không có — vô hại.

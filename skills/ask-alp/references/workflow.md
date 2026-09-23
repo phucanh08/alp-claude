@@ -175,4 +175,4 @@ và đã qua **Lab 7 + 7b** (`docs/labs/lab-07-phase-skills.md`, PASS 2026-09-22
 Biến thể có Supervisor chưa chạy. Ghi chú chi tiết trong `docs/labs/lab-07-runs.md`.
 
 `bug-loop` (v0.6.0) adapt từ `mattpocock/skills` `diagnosing-bugs` + `phucanh08/alp-code`
-`test-quality-guard`; Lab 9 PASS (2026-09-23) — ghi chú ở `docs/labs/lab-09-bug-loop.md`.
+`test-quality-guard`; Lab 9 + 9b PASS (2026-09-23) — ghi chú ở `docs/labs/lab-09-bug-loop.md`.
