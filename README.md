@@ -136,7 +136,7 @@ transcript, gửi `DRIFT @<lead>` khi lệch.
 Không dùng `claude -p` (teammate cần interactive session). Không dùng
 `--dangerously-skip-permissions` cho lab đầu.
 
-**Hướng dẫn dùng hằng ngày + 6 case thực tế** (prompt mẫu, cách đọc `ACCEPT`/`REJECT`/`BLOCKED`,
+**Hướng dẫn dùng hằng ngày + 7 case thực tế** (prompt mẫu, cách đọc `ACCEPT`/`REJECT`/`BLOCKED`,
 Supervisor, lỗi hay gặp): [`docs/USAGE.md`](docs/USAGE.md).
 
 Luồng một task đi qua phase nào, skill nào, gate nào: gõ `/ask-alp` (router, Lead/Peer gọi được

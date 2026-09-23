@@ -1,7 +1,7 @@
 # Hướng dẫn sử dụng SLP — kèm case thực tế
 
 Tài liệu cho người dùng hằng ngày: mở phiên thế nào, viết yêu cầu ra sao, đọc kết quả của Lead thế
-nào, và sáu case lấy từ lab đã chạy thật (diễn biến và kết quả có thật; prompt ghi rõ khi là bản minh hoạ). Cài đặt xem
+nào, và bảy case: sáu case lấy từ lab đã chạy thật (diễn biến và kết quả có thật; prompt ghi rõ khi là bản minh hoạ), một case Architect chưa có lab. Cài đặt xem
 [SETUP.md](SETUP.md); luồng phase/skill xem `/ask-alp`.
 
 **Ba vai, một câu mỗi vai:**
@@ -277,6 +277,50 @@ phải nói với lead-web (hoặc anh). Thứ tự: owner trước, consumer sa
 repo của mình, Supervisor gửi `DRIFT D14` cho cả hai Lead.
 
 **Bài học:** mỗi repo một Lead, một làn. Anh là người chuyển yêu cầu giữa các Lead khi cần.
+
+### Case 7 — Thiết kế trước khi code: hai Architect độc lập (chưa có lab)
+
+> Case này **chưa chạy lab**: mô tả theo luật "lane thiết kế mù" trong `lead.md` và disposition
+> Architect trong `peer.md`. Dùng làm kịch bản; chạy thật sẽ cập nhật lại.
+
+**Khi nào dùng:** quyết định **khó đảo ngược** (schema, state machine, public API, luồng tiền) mà
+có nhiều lời giải cùng đúng. Việc nhỏ hoặc chỉ có một cách hợp lý → không cần, Lead brief thẳng
+Engineer.
+
+**Prompt** (minh hoạ):
+
+```text
+Cần thêm hoàn tiền một phần cho đơn đã thanh toán (khách trả lại 1 trong 3 món). Việc này đụng trạng thái đơn và tiền nên anh muốn xem thiết kế trước: CHƯA code, đưa anh 2 phương án có so sánh rồi anh chọn. Không tạo migration, không push.
+```
+
+**Diễn biến dự kiến:**
+
+1. Lead nhận ra đây là quyết định khó đảo ngược (state machine đơn + tiền) → mở **hai Peer
+   Architect read-only, độc lập**. Brief hai bên giống nhau và trung lập: outcome, contract
+   `CLAUDE.md`, câu hỏi thiết kế; **không** kèm ý kiến của Lead, không cho lane này xem lane kia.
+2. Mỗi Architect gọi `xia` **trước khi đọc file đầu tiên**, gắn nhãn từng nhận định
+   Local / Upstream / Docs / Inference, trả handoff 6 ô. Ví dụ:
+   - Lane A: thêm trạng thái `PARTIALLY_REFUNDED` vào state machine, tổng hoàn tiền lưu trên đơn.
+   - Lane B: giữ state machine, thêm bảng `refunds` (mỗi lần hoàn một dòng), trạng thái đơn suy ra
+     từ tổng các dòng.
+3. Architect **không ra ruling**, không sửa file, không tạo migration. Phương án nào không nói được
+   "ai sở hữu dữ liệu này, nó sống/chết khi nào" bằng một câu → Lead coi là *architecture fog*, loại.
+4. Lead hội tụ thành **một** đề xuất (không bỏ phiếu 1–1), nhưng vì chạm schema/state machine và
+   `migrations/` là việc của Human → hỏi anh:
+
+   ```text
+   Đề xuất (B) bảng refunds: hoàn nhiều lần không phải thêm trạng thái mới, audit từng lần hoàn.
+   (A) đơn giản hơn nhưng mất lịch sử từng lần hoàn. Cần anh chọn và duyệt migration. Đề xuất: B.
+   ```
+
+5. Anh chọn → ruling nằm trong brief Engineer **trước** khi viết. Proof **L3** (tiền + state
+   machine), Reviewer bắt buộc vì chạm boundary. Migration: Engineer viết file, **anh** chạy.
+
+**Kết quả mong đợi:** một ruling thiết kế có lý do, rồi luồng Engineer → `ACCEPT <sha>` như Case 1.
+
+**Bài học:** Architect đưa phương án và bằng chứng; **Lead** chọn một đề xuất; **anh** quyết phần
+chạm boundary. Không có ghế nào được tự vote cho mình. Reviewer là lớp sau commit, không thay
+được bước thiết kế trước code.
 
 ---
 
