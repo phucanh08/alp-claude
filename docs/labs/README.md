@@ -30,6 +30,7 @@ Quy ước dùng chung (ràng buộc cứng, cách kiểm evidence, đọc trans
 | 10 | Hai Architect read-only độc lập thiết kế trước khi code; Lead hội tụ một đề xuất; `LEAD-WROTE` cho contract; L3 tiền + state machine | **PASS** (v0.6.0, headless, có Supervisor) | [lab-10](lab-10-architect-design-lanes.md) |
 | 10b | Chạy lại Lab 10 với gói lập kế hoạch: chẻ lát dọc, `plan.md` + Human duyệt, griller hỏi theo vòng; kèm hai luật `lead.md` sau Lab 10 | **PARTIAL**: luật giao tiếp ăn; gate duyệt plan và format plan chỉ ăn khi Human nhắc | [lab-10b](lab-10b-plan-slicing.md) |
 | 10c | Chạy lại Lab 10 sau ba sửa: thiết kế→code là plan mới, mẫu `plan.md` bắt buộc, Architect luôn `xia` | **PARTIAL**: gate chuyển pha và `xia` ăn không cần nhắc, 1 `REJECT`; mẫu plan và exclude vẫn không ăn | [lab-10c](lab-10c-plan-template.md) |
+| 10d | Lab hẹp (dừng ở plan pha code): mẫu plan tách file + `Read` trước `Write`, chẻ theo ruling, `plans/.gitignore` | **PASS**: plan theo mẫu cả hai pha, chẻ có lý do, gate duyệt giữ | [lab-10d](lab-10d-plan-template-narrow.md) |
 
 **Thứ tự chạy:** 1 → 2 trước (repo disposable, rồi repo thật có `CLAUDE.md` đủ contract) → 3 → 4
 → 5 → 6. Lab 7 sau khi 1–2 ổn và đã cài bản ≥ 0.3.0. Lab 8 sau Lab 6. Chưa thêm Supervisor khi
@@ -51,9 +52,8 @@ Lab 1–2 chưa ổn — không biết lỗi ở policy hay runtime.
 
 ## Chưa đo / lab kế tiếp
 
-- **Sau Lab 10c:** mẫu `plan.md` (Mermaid, Test seam, dòng Chẻ) và bước exclude `plans/` chưa
-  ăn; W2 chạm bốn boundary vẫn không chẻ. Skill đã gộp danh sách Artifact vào mẫu, nhưng chưa
-  đo lại (xem [lab-10c §4](lab-10c-plan-template.md#4-đọc-kết-quả)).
+- **Sau Lab 10d:** chưa đo pha code sau khi chẻ theo mẫu (số `REJECT`, dòng test), và chưa gặp
+  item gộp có lý do "ruling đã chốt" (xem [lab-10d §4](lab-10d-plan-template-narrow.md#4-chưa-đo)).
 - **D2-detection** (Lead ACCEPT không đọc diff): Lead healthy không chịu drift khi bị ép (Lab 6) —
   cần một definition Lead cố tình hỏng.
 - **Worktree per writer với hai writer song song** trong một team: index không nhiễm, hai

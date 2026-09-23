@@ -175,10 +175,9 @@ là sai; giữ gộp phải kèm ruling đã chốt ở đâu. Ngày tuyệt đ�
 priority, SLA, dependency, effort.
 
 Cập nhật trạng thái + SHA mỗi lần `ACCEPT`/`REJECT`/replan — sửa dòng, không viết lại cả file.
-Plan là bản đồ, không phải candidate: không commit. Lần đầu ghi, chạy
-`echo 'plans/' >> "$(git rev-parse --git-common-dir)/info/exclude"` (local, dùng chung mọi
-worktree, không đụng `.gitignore`) rồi `git status --short` không còn `plans/` — writer không stage
-nhầm.
+Plan là bản đồ, không phải candidate: không commit. Lần đầu ghi, tạo `plans/.gitignore` chứa đúng
+một dòng `*` (tự bỏ qua cả thư mục lẫn chính nó; không đụng `.gitignore` của repo, không cần chạm
+`.git/`) rồi `git status --short` không còn `plans/` — writer không stage nhầm.
 
 ### Duyệt plan
 
