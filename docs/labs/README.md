@@ -49,6 +49,10 @@ Lab 1–2 chưa ổn — không biết lỗi ở policy hay runtime.
 
 ## Chưa đo / lab kế tiếp
 
+- **Hai luật thêm sau Lab 10 chưa được lab nào kiểm** (`lead.md`): giữ ngôn ngữ Human suốt
+  phiên dài; anti-pattern **luật tự thêm** (Lead không REJECT theo luật chấp nhận/từ chối hành vi
+  không có trong brief/ruling mà chưa hỏi Human). Gộp vào lab kế tiếp có phiên dài và nhiều vòng
+  REJECT.
 - **D2-detection** (Lead ACCEPT không đọc diff): Lead healthy không chịu drift khi bị ép (Lab 6) —
   cần một definition Lead cố tình hỏng.
 - **Worktree per writer với hai writer song song** trong một team: index không nhiễm, hai
