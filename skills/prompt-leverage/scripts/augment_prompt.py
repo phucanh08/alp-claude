@@ -76,6 +76,10 @@ def _score(text: str, table: dict[str, list[str]]) -> dict[str, int]:
     return {key: sum(1 for kw in kws if kw in lowered) for key, kws in table.items()}
 
 
+# Từ khoá gợi ý `Required skills: bug-loop` cho brief.
+BUG_RE = re.compile(r"\b(bug|regression|crash|flaky|lỗi|hồi quy|chậm đi)\b", re.IGNORECASE)
+
+
 def detect_disposition(prompt: str) -> str:
     """Disposition cho brief. Hòa hoặc không khớp -> engineer."""
     scores = _score(prompt, DISPOSITION_KEYWORDS)
@@ -104,8 +108,10 @@ def normalize(prompt: str) -> str:
 
 
 def build_brief(raw_prompt: str, disposition: str | None = None, task_id: str | None = None) -> str:
-    """Khung brief 13 trường của SLP. Người giao việc điền các <TODO>."""
+    """Khung brief 13 trường (+ `Required skills` tuỳ chọn) của SLP. Người giao việc điền các <TODO>."""
     objective = normalize(raw_prompt)
+    # Chỉ là gợi ý: người giao việc quyết có khai hay không.
+    required_skills = "bug-loop  <TODO: xác nhận — gợi ý vì prompt nói về bug>" if BUG_RE.search(objective) else ""
     disp = disposition or detect_disposition(objective)
     depth = infer_depth(objective)
     write = WRITE_BY_DISPOSITION[disp]
@@ -131,6 +137,7 @@ def build_brief(raw_prompt: str, disposition: str | None = None, task_id: str | 
         Tool rules             {TOOL_RULES[disp]}
         Handoff contract       {OUTPUT_CONTRACT[disp]}
                                Candidate: {candidate}
+        Required skills        {required_skills or '(bỏ trống: chỉ skill theo disposition)'}
         Done                   handoff đủ 6 ô, Ownership: released; REOPEN/DEPENDENCY/BLOCKED kèm evidence + tầng
         """
     ).rstrip()

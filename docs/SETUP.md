@@ -3,6 +3,7 @@
 Bộ này chuyển ba instruction SLP `SUPERVISOR.md` / `LEAD.md` / `PEER.md` sang Claude Code Agent
 Teams native.
 Không cần Paseo. Cài bằng `install.sh` (xem README) hoặc làm tay theo mục 1–3 dưới đây.
+Cài xong, cách dùng hằng ngày và case thực tế: [USAGE.md](USAGE.md).
 
 ## Kiến trúc
 
@@ -271,7 +272,7 @@ chạy trong worktree.
 
 ## 11. Skills theo phase
 
-Năm skill trong `.claude/skills/` được Lead/Peer gọi qua tool `Skill` (cả hai definition có
+Năm skill theo phase (và skill phương pháp `bug-loop`, chỉ bắt buộc khi brief khai `Required skills`) trong `.claude/skills/` được Lead/Peer gọi qua tool `Skill` (cả hai definition có
 `Skill` trong `tools:`; Supervisor không có — cố ý). Skill là *cách làm* cho từng phase, không
 phải authority:
 
@@ -282,8 +283,9 @@ phải authority:
 | sequence | `sequence-execution-plan` | Lead |
 | brief | `prompt-leverage` | Lead |
 | commit gate | `smart-commits` | Peer writer / Lead khi `LEAD-WROTE` |
+| theo `Required skills` | `bug-loop` | Peer (read-only: Phase 1–4; writer: đủ) |
 
-Kiểm skill đã được load: trong session Lead gõ `/` — năm tên phải hiện trong danh sách; hoặc
+Kiểm skill đã được load: trong session Lead gõ `/` — bảy tên (năm skill phase + `bug-loop` + `ask-alp`) phải hiện trong danh sách; hoặc
 `claude plugin validate .claude/skills`. Skill dir bị sửa tay → lần `install.sh` sau backup thành
 `<name>.bak-<timestamp>` rồi ghi bản mới.
 

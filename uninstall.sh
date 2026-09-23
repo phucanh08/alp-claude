@@ -16,14 +16,14 @@ set -euo pipefail
 MODE="project"
 TARGET=""
 FORCE=0
-SKILLS="ask-alp goal-griller xia sequence-execution-plan prompt-leverage smart-commits"
+SKILLS="ask-alp goal-griller xia sequence-execution-plan prompt-leverage smart-commits bug-loop"
 
 usage() {
   cat <<'EOF'
 Usage: uninstall.sh [--global] [--dir <path>] [--force]
   --global      gỡ khỏi ~/.claude
   --dir <path>  repo root (mặc định: thư mục hiện tại)
-  --force       không có manifest vẫn gỡ agents/{lead,peer,supervisor}.md + 6 skill dir; xóa CLAUDE.md kể cả đã sửa;
+  --force       không có manifest vẫn gỡ agents/{lead,peer,supervisor}.md + 7 skill dir; xóa CLAUDE.md kể cả đã sửa;
                 xóa luôn agent memory (.claude/agent-memory-local/{lead,supervisor}; --global: ~/.claude/agent-memory/supervisor)
 EOF
 }

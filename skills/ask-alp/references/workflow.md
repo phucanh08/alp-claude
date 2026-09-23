@@ -1,7 +1,7 @@
 # Quy trình làm việc SLP — phase, role, skill, gate
 
 Tài liệu này là bản dài của router `ask-alp`: nối ba agent definition (`lead.md`, `peer.md`,
-`supervisor.md`) với năm skill theo phase thành một luồng từ *ý định của Human* tới
+`supervisor.md`) với năm skill theo phase (và skill phương pháp theo loại việc, như `bug-loop`) thành một luồng từ *ý định của Human* tới
 *`ACCEPT <sha>`*. Agent definition giữ bất biến (ai chấm, ai viết, ai không có authority); skill
 giữ **cách làm** của từng phase và nói bằng từ vựng authority (người yêu cầu / người giao việc /
 người nhận việc — ánh xạ ghế trong `SKILL.md`). Skill không cấp authority — đó vẫn là luật số một.
@@ -17,7 +17,7 @@ Bảng "ghế nào cấm skill nào" nằm trong `SKILL.md` của `ask-alp`, kh�
 | 2 | Recon | Peer **Scout** (Lead spawn) | `xia` | **Research brief** trong handoff 6 ô | brief có nhãn evidence; câu hỏi cho Lead đã được Lead ruling |
 | 3 | Sequence | Lead | `sequence-execution-plan` | **Plan**: work item, dependency, Now/Next/Later, writer lease | Now ≤1 writer/checkout; item đầu ready |
 | 4 | Brief | Lead | `prompt-leverage` | **Brief 13 trường** cho một Peer | `Base` là SHA thật; owned scope là path; boundary có ruling hoặc `BLOCKED`-khi-chạm |
-| 5 | Implement | Peer Engineer/Architect | (peer.md) | thay đổi trong owned scope | verification chạy thật |
+| 5 | Implement | Peer Engineer/Architect | (peer.md); `Required skills` nếu brief khai (bug → `bug-loop`) | thay đổi trong owned scope | verification chạy thật; claim hành vi có proof ≥ L2 |
 | 6 | Commit | Peer writer (hoặc Lead nếu `LEAD-WROTE`) | `smart-commits` | **Candidate** `base..head` | commit gate pass; không path ngoài scope |
 | 7 | Handoff | Peer | (peer.md) | handoff 6 ô | `Ownership: released` |
 | 8 | Review | Peer Reviewer (chỉ khi trúng trigger) | (peer.md) | finding trên đúng SHA | đọc SHA, không working tree |
@@ -173,3 +173,6 @@ và đã qua **Lab 7 + 7b** (`docs/labs/lab-07-phase-skills.md`, PASS 2026-09-22
 `prompt-leverage`, `smart-commits`, accept; 7b đo `xia` (Scout thật, 0 Edit, nhãn evidence),
 `sequence-execution-plan` (W1→W2, một writer) và tầng authority khi task đến từ session khác.
 Biến thể có Supervisor chưa chạy. Ghi chú chi tiết trong `docs/labs/lab-07-runs.md`.
+
+`bug-loop` (v0.6.0) adapt từ `mattpocock/skills` `diagnosing-bugs` + `phucanh08/alp-code`
+`test-quality-guard`; Lab 9 + 9b PASS (2026-09-23) — ghi chú ở `docs/labs/lab-09-bug-loop.md`.

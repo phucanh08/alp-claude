@@ -48,7 +48,11 @@ gate đó coi như chưa chạy:
   định trong owned scope, không push, trả dải `base..head` cho ô Candidate.
 - Disposition **Reviewer** → **không** có skill bắt buộc: bạn kiểm một candidate SHA đã có, không
   recon. Thay vào đó bắt buộc đọc bằng `git show <sha>:path` / `git diff <base> <sha>`, 0 write,
-  không review working tree.
+  không review working tree. Diff có test → hỏi *"phá hành vi này thì test nào đỏ?"*; không chỉ ra
+  được là finding. Muốn chạy thử mutation → worktree tạm ở `/tmp` tại đúng SHA.
+- Brief có **`Required skills`** → gọi từng skill đó bằng `Skill` trước khi làm phần việc nó phủ;
+  skill không gắn disposition (vd. `bug-loop`) chỉ bắt buộc khi brief khai. Read-only mà brief
+  khai `bug-loop` → chạy Phase 1–4, dừng trước sửa.
 - Skill không load được → `BLOCKED` về Lead kèm lỗi, không tự chế quy trình thay thế.
 - Không dùng `goal-griller` (thiếu ô → `BLOCKED` về Lead, không phỏng vấn Human); không dùng
   `sequence-execution-plan` (topology là của Lead); không dùng `prompt-leverage` để tự viết lại
@@ -111,6 +115,18 @@ RED thật: contract đã rõ, code chưa làm đúng. False RED: boundary chưa
 Kiểm bằng câu: *điều test này khẳng định về boundary — ai quyết?* Nếu câu trả lời là “tôi, lúc
 viết test”, dừng.
 
+Cùng luật cho **oracle** (giá trị expected): lấy từ ruling → Task Contract → contract → bug
+report → spec, không từ "code đang trả X". Expected là giá trị độc lập (literal, ví dụ tính tay),
+không tính lại bằng chính thuật toán đang test.
+
+Luật viết test:
+
+- **Lát dọc**: một test → một implementation vừa đủ → lặp. Không viết hết test rồi mới code.
+- Test qua interface công khai ở seam; không test private method, thứ tự gọi, số lần gọi.
+- Mock chỉ ở rìa hệ thống (network, API ngoài, clock, randomness, file system); không mock phần
+  mình sở hữu, không mock mất logic đang cần kiểm.
+- Assertion yếu đứng một mình (`assertNotNull`, `size > 0`, `status != 500`) không phải proof.
+
 ## Verification
 
 Bạn sở hữu proof cho phần bạn viết: lệnh thật, output thật, verification tương xứng risk.
@@ -118,6 +134,17 @@ Bạn **không tự accept** việc của mình; Lead chốt.
 
 Phép thử proof: nếu hành vi được claim biến mất thì proof có còn pass không? Nếu còn, proof chưa
 chứng minh claim.
+
+Ô `Verification` ghi **proof level**: L1 chỉ GREEN · L2 RED → GREEN (tối thiểu cho regression
+test và feature có contract) · L3 thêm MUTATE → RED → RESTORE → GREEN (auth, tiền, state
+machine, security). Mutation làm trên bản copy ở `/tmp` hoặc khôi phục trước commit; không bao
+giờ vào commit. Chi tiết và mẫu: `references/test-proof.md` của skill `bug-loop`.
+
+**Không làm xanh bằng mọi giá.** Các việc sau là finding BLOCKING, handoff không được ghi
+`complete`: nới assertion, sửa expected cho khớp actual sai, xoá hoặc skip test đỏ, update
+snapshot không đối chiếu requirement, mock mất phần đang kiểm, nuốt exception để pass, regression
+test chưa từng đỏ trên code lỗi, expected tính từ implementation. Requirement thật sự đổi → đó là
+`REOPEN_REQUEST`, không phải sửa test.
 
 Một RED mặc định là lỗi code. Chỉ quy cho môi trường khi chạy lại riêng, tuần tự và có cả hai
 output.

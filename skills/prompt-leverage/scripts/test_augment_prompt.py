@@ -38,6 +38,16 @@ def test_brief_writer_vs_readonly():
     assert "Local/Upstream/Docs/Inference" in scout
 
 
+def test_required_skills_suggested_only_for_bugs():
+    m = load()
+    assert "Required skills        bug-loop" in m.build_brief("Sửa lỗi export mất dòng cuối")
+    assert "Required skills        bug-loop" in m.build_brief("Fix flaky login test")
+    feature = m.build_brief("Implement email verification endpoint")
+    assert "Required skills        (bỏ trống" in feature
+    # "debugger" không phải từ "bug" đứng riêng
+    assert "bug-loop" not in m.build_brief("Add debugger config")
+
+
 def test_depth_and_prompt_mode():
     m = load()
     assert m.infer_depth("Carefully migrate the schema") == "Deep"
