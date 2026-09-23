@@ -10,7 +10,7 @@
 #
 # Cài gì:
 #   <root>/.claude/agents/lead.md, peer.md, supervisor.md   (copy)
-#   <root>/.claude/skills/<name>/                (copy: ask-alp, goal-griller, xia, sequence-execution-plan, prompt-leverage, smart-commits)
+#   <root>/.claude/skills/<name>/                (copy: ask-alp, goal-griller, xia, sequence-execution-plan, prompt-leverage, smart-commits, bug-loop)
 #   <root>/.claude/settings.json                (merge: env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS, teammateMode)
 #   <root>/.claude/slp-supervisor.settings.json (copy: Read mọi file + sandbox Bash; dùng qua --settings)
 #   <root>/CLAUDE.md                            (chỉ tạo từ template nếu chưa có; project mode)
@@ -22,7 +22,7 @@ SLP_REF="${SLP_REF:-main}"
 MODE="project"
 TARGET=""
 FORCE=0
-SKILLS="ask-alp goal-griller xia sequence-execution-plan prompt-leverage smart-commits"
+SKILLS="ask-alp goal-griller xia sequence-execution-plan prompt-leverage smart-commits bug-loop"
 
 usage() {
   cat <<'EOF'
