@@ -5,7 +5,7 @@ description: Router của bộ SLP — trả lời "tôi ngồi ghế nào, đan
 
 # Ask ALP — skill nào, ghế nào, lúc nào
 
-Bạn không cần nhớ hết sáu skill; hỏi router. Luật số một không đổi: **skill không cấp
+Bạn không cần nhớ hết bảy skill; hỏi router. Luật số một không đổi: **skill không cấp
 authority**. Capability runtime thêm vào cũng không.
 
 Trả lời hai câu trước khi chọn skill:
@@ -15,7 +15,7 @@ Trả lời hai câu trước khi chọn skill:
 
 ## Ghế → từ vựng authority
 
-Năm skill kia không nhắc tên ghế; chúng nói bằng *quyền bạn đang cầm*. Bảng này là ánh xạ duy
+Sáu skill kia không nhắc tên ghế; chúng nói bằng *quyền bạn đang cầm*. Bảng này là ánh xạ duy
 nhất.
 
 | Ghế SLP | Từ trong skill | Quyền cầm | Không cầm |
@@ -42,6 +42,18 @@ phải ghế; skill được nhắc disposition.
 Gate cứng giữa phase: chưa có Task Contract → không giao writer; owned scope chạm boundary chưa
 ruling → brief bắt writer `BLOCKED` khi chạm; Now ≤ 1 writer mỗi checkout.
 
+## Theo loại việc — skill phương pháp
+
+Phase nói *lúc nào*; loại việc nói *làm bằng phương pháp gì*. Skill phương pháp không gắn
+disposition: người giao việc khai trong brief (`Required skills`), người nhận việc gọi khi được
+khai. Không khai thì không bắt buộc — không có gate toàn cục.
+
+| Loại việc | Skill | Ghế được chạy tới đâu |
+|---|---|---|
+| chưa rõ, cần tìm hiểu, nhiều đường phải so | `xia` | read-only; writer đang giữ lease thì xin người giao việc spawn Scout |
+| bug, test đỏ không rõ lý do, hành vi sai, chậm đi | `bug-loop` | read-only: Phase 1–4 (loop đỏ được → giả thuyết đã xác nhận); writer: đủ tới regression test + dọn |
+| feature, test mới | — (luật test trong định nghĩa người nhận việc) | writer; proof L2 tối thiểu |
+
 ## On-ramp — vào luồng từ giữa chừng
 
 - **`REOPEN_REQUEST` / `DEPENDENCY_REQUEST` / `BLOCKED` có evidence, hoặc `REJECT` đổi hình dạng
@@ -63,6 +75,7 @@ ruling → brief bắt writer `BLOCKED` khi chạm; Now ≤ 1 writer mỗi check
 | `xia` | writer đang giữ lease | Scout là read-only; cần research → người giao việc spawn Scout riêng |
 | `sequence-execution-plan` | người nhận việc, người quan sát | topology là của người giao việc |
 | `prompt-leverage` | người nhận việc viết lại brief của mình; người giao việc nâng brief để seed verdict | brief là của người giao việc; trung lập là luật |
+| `bug-loop` | người quan sát; read-only vượt Phase 4 | sửa + regression test là của writer giữ lease |
 | `smart-commits` | read-only disposition, người quan sát; mọi ai **push** khi chưa cấp | write ownership; external side effect là của người yêu cầu |
 | mọi skill | người quan sát | Supervisor không có tool `Skill`; đúng ý |
 

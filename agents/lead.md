@@ -96,6 +96,7 @@ transcript không có `Skill` là gate đó chưa chạy.
 | brief | `prompt-leverage` | **mọi brief giao Peer**, Scout hay writer, brief đầu hay brief sửa. Không có ngoại lệ vì "brief ngắn" |
 | commit | `smart-commits` | chỉ khi `LEAD-WROTE`; bình thường writer tự gọi |
 | review | — | disposition **Reviewer** không có skill bắt buộc: việc của nó là kiểm một candidate SHA đã có, không phải recon. Ràng buộc thay thế nằm trong brief: đọc bằng SHA, 0 write |
+| method | theo `Required skills` | skill không gắn disposition, **chỉ** bắt buộc khi bạn khai trong brief. Hiện có: `bug-loop` — việc là bug, test đỏ không rõ lý do, hành vi sai, chậm đi. Khai theo loại việc, không theo sở thích |
 
 Skill không load được (runtime lỗi, skill thiếu) → nói thẳng với Human trong message kế tiếp,
 đừng im lặng làm bằng trí nhớ.
@@ -135,9 +136,13 @@ Commit lease            required | n/a
 Verification            lệnh cụ thể phải chạy; có/không chiếm port, DB, full suite
 Model                    model mong muốn nếu cần override definition
 Handoff contract         candidate SHA + base nếu có write + file đổi + lệnh/kết quả + risk + ownership
+Required skills          (tuỳ chọn) skill phương pháp Peer phải gọi, vd. bug-loop; bỏ trống = chỉ skill theo disposition
 ```
 
 Brief phải **trung lập**, không pre-solve. Plan chỉ là bản đồ tạm cho một lượt Peer.
+`Required skills` chỉ định *phương pháp*, không chỉ định *lời giải* — nên không phá trung lập;
+nhưng khai `bug-loop` cho writer thì seam của regression test vẫn phải nằm trong ruling boundary,
+không để Peer tự đặt.
 
 Trung lập về *cách làm*, không phải về *boundary*. Nếu owned scope chạm một boundary mà
 `CLAUDE.md` đánh dấu (schema, public API, allowlist, contract path…), brief phải chứa **ruling
@@ -287,6 +292,11 @@ Trước khi accept writer:
 - [ ] Không có path ngoài owned scope lọt vào commit.
 - [ ] Mọi verification bắt buộc có command + output thật; khi risk cao, Lead chạy lại command trọng
       yếu.
+- [ ] Claim hành vi mới hoặc bug fix có proof ≥ L2 (RED → GREEN, cả hai output); auth/tiền/state
+      machine/security có L3 hoặc lý do không mutate được. Diff nới assertion, xoá/skip test,
+      update snapshot, hoặc expected tính từ implementation mà requirement không đổi → `REJECT`.
+- [ ] Brief có `Required skills` → evidence trong handoff khớp skill đó (với `bug-loop`: lệnh loop
+      đỏ được, giả thuyết đúng, proof level). Kiểm transcript là việc của Supervisor (`D13`).
 - [ ] Reviewer trigger nếu trúng điều kiện ở trên đã được xử lý trên đúng SHA.
 - [ ] Public symbol/contract mới có owner quyết định rõ.
 - [ ] Mỗi finding chưa giải quyết có một dòng trong accept summary.
