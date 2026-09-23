@@ -43,15 +43,20 @@ unknown có tên (→ Scout `xia`).
 
 **Lát dọc, vừa một context.** Mỗi item cắt trọn một đường từ input tới hành vi quan sát được
 (dữ liệu + logic + test), không chẻ theo tầng ("viết ledger", "viết test"). Một Peer mới làm xong
-trong một context. Chẻ tiếp khi item có **một** trong ba dấu hiệu:
+trong một context. Soát ba dấu hiệu cho từng item:
 
-- chạm hơn một boundary trong `CLAUDE.md`;
-- cần hơn một ruling của người yêu cầu;
-- done evidence gồm nhiều nhóm hành vi độc lập — mỗi nhóm có thể bị `REJECT` riêng.
+- **cần ruling chưa chốt** — ruling của người yêu cầu chưa có trong `CLAUDE.md`/brief → **bắt buộc**
+  chẻ, hoặc chốt đủ ruling trước khi giao writer;
+- **chạm hơn một boundary** trong `CLAUDE.md` → chẻ, *trừ khi* mọi ruling của các boundary đó đã
+  chốt (commit/brief). Giữ gộp thì dòng Chẻ ghi lý do: "chạm C1, C3, C5 — không chẻ, ruling ở
+  `<sha>`";
+- **done evidence gồm nhiều nhóm hành vi độc lập** — mỗi nhóm có thể bị `REJECT` riêng → chẻ, trừ
+  khi mọi nhóm đã có expected cụ thể trong brief; giữ gộp thì ghi lý do như trên.
 
-Lab 10: item "hoàn một phần" gộp ledger ghi món + hoàn theo món + mã chống hoàn trùng + view số
-món đã hoàn → 4 `REJECT`, mỗi lần một nhóm khác. Chẻ đúng: hoàn 1 món có ghi món vào ledger →
-mã chống hoàn trùng → view.
+`REJECT` đến từ ruling Lead tự quyết giữa chừng, không từ số boundary. Lab 10: item "hoàn một phần"
+gộp bốn nhóm, ruling chưa chốt → 4 `REJECT`. Lab 10b: chẻ rồi nhưng Lead tự ruling giữa chừng → vẫn
+4. Lab 10c: không chẻ, ruling chốt trước trong `CLAUDE.md` + brief → 1. Lưới an toàn là trigger
+`REJECT` thứ hai ở mục 9.
 
 Mỗi item ghi:
 
@@ -176,7 +181,7 @@ flowchart LR
 |---|---|---|---|---|---|---|---|
 | F1 | … | Engineer / write | `path` | C? — ruling ở đâu | `hàm(...)` | lệnh | ready |
 
-**Chẻ:** F1 — "không dấu hiệu" | dấu hiệu <1/2/3> → chẻ thành F1a, F1b.
+**Chẻ:** F1 — "không dấu hiệu" | "<dấu hiệu> → chẻ thành F1a, F1b" | "<dấu hiệu> — không chẻ, ruling ở `<sha>`".
 **Now:** … · **Next:** … · **Chờ người yêu cầu quyết:** …
 
 ## Dependency · đường đi · lý do
@@ -188,7 +193,7 @@ flowchart LR
 
 Node ghi trạng thái + SHA (`accepted a1b2c3d`); cạnh = `blocks`. Dòng **Chẻ** bắt buộc: soát ba
 dấu hiệu ở mục 2 cho từng item và ghi kết quả — item chạm hai boundary mà ghi "không dấu hiệu"
-là sai. Ngày tuyệt đối hoặc sự kiện đo được thay cho "sớm"; ước lượng ghi là ước lượng; không bịa
+là sai; giữ gộp phải kèm ruling đã chốt ở đâu. Ngày tuyệt đối hoặc sự kiện đo được thay cho "sớm"; ước lượng ghi là ước lượng; không bịa
 priority, SLA, dependency, effort.
 
 Cập nhật trạng thái + SHA mỗi lần `ACCEPT`/`REJECT`/replan — sửa dòng, không viết lại cả file.
@@ -216,7 +221,8 @@ Plan là bản đồ tạm — SHA + brief + accept summary mới là checkpoint
 - [ ] Không mitigation/thay thế nào bị ghi là resolved.
 - [ ] Now có ≤1 writer mỗi checkout; writer song song có worktree + contract shared interface.
 - [ ] Item đầu tiên ready và đủ nhỏ để viết brief ngay.
-- [ ] Mỗi item là lát dọc, không có dấu hiệu phải chẻ tiếp; mỗi item có test seam.
+- [ ] Mỗi item là lát dọc; không còn ruling chưa chốt; item gộp nhiều boundary có lý do ở dòng Chẻ;
+  mỗi item có test seam.
 - [ ] Plan nằm ở `plans/…/plan.md` theo đúng mẫu (sơ đồ, cột Test seam, dòng Chẻ); trúng ngưỡng →
   đã được người yêu cầu duyệt.
 - [ ] Nền tảng speculative nằm ngoài horizon cam kết.

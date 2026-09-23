@@ -80,8 +80,8 @@ Luật SLP đè lên plan:
   Chưa có worktree → là xếp hàng, plan nói thẳng.
 - Mitigation không được gọi là resolution; outcome mở tới khi có `ACCEPT <sha>`.
 
-- Mỗi item là lát dọc vừa một context, có test seam; item chạm >1 boundary, cần >1 ruling hay có
-  nhiều nhóm hành vi độc lập → chẻ tiếp.
+- Mỗi item là lát dọc vừa một context, có test seam. Ruling chưa chốt → chẻ hoặc chốt trước khi
+  giao writer; chạm >1 boundary / nhiều nhóm hành vi mà ruling đã chốt → được gộp, dòng Chẻ ghi lý do.
 
 Plan ghi ra `plans/<YYMMDD-HHmm>-<slug>/plan.md` (sơ đồ Mermaid + bảng + Now/Next), cập nhật mỗi
 `ACCEPT`/`REJECT`/replan; không commit (`plans/` vào `.git/info/exclude`), không ghi vào `CLAUDE.md`.
