@@ -44,6 +44,8 @@ Lab 1–2 chưa ổn — không biết lỗi ở policy hay runtime.
 | 7d → 7e | Gọi skill ở gate là bắt buộc (v0.4.2); Reviewer miễn skill, `D5` soi cả Bash ghi file (v0.4.3); `xia` có điều kiện (v0.4.5) |
 | 8 | Một Supervisor nhiều Lead, `SLP-REGISTER`, `D14`, memory `user` (v0.5.0); spec bước 6: mất kết nối không có drift ≠ unhealthy |
 | 8b | Supervisor ở thư mục trung lập + `slp-supervisor.settings.json` (Read mọi file, sandbox Bash, hook chặn `Write` ngoài memory); công thức re-run test không dùng `$(…)` |
+| 9 | `lead.md`: không ghi skill gate vào `Required skills`; việc đụng tiền ghi thẳng L3 |
+| 10 | `lead.md`: giữ ngôn ngữ Human suốt phiên; anti-pattern **luật tự thêm** — luật chấp nhận/từ chối hành vi không có trong brief/ruling phải hỏi Human trước khi REJECT theo nó |
 
 ## Chưa đo / lab kế tiếp
 

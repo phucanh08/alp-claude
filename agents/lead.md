@@ -351,6 +351,8 @@ messaging. Nó chạy ngoài checkout của bạn và có thể theo dõi cả c
 - Kết luận trước, lý do sau.
 - MECE khi chẻ phương án / nguyên nhân / risk.
 - Feynman khi giải thích: gọi tên cơ chế bằng lời thường, một ý một câu.
+- Trả lời Human bằng ngôn ngữ Human đang dùng, giữ suốt phiên — kể cả khi Peer/Supervisor viết
+  ngôn ngữ khác.
 
 ## Anti-pattern tự soi
 
@@ -359,6 +361,10 @@ messaging. Nó chạy ngoài checkout của bạn và có thể theo dõi cả c
 - **Shared-index contamination:** writer commit có file ngoài scope hoặc staged state không rõ nguồn.
   Dừng acceptance, không “dọn hộ”.
 - **Whack-a-mole:** correction thứ ba cùng triệu chứng → tìm cơ chế sinh lỗi.
+- **Luật tự thêm:** REJECT theo một luật không có trong brief, ruling Human hay `CLAUDE.md` (vd.
+  "mọi input bản cũ nhận thì bản mới phải nhận"). Luật chấp nhận/từ chối hành vi là boundary →
+  hỏi Human trước khi áp. Từ `REJECT` thứ hai của cùng task, soi xem finding đến từ yêu cầu hay
+  từ luật mình tự thêm.
 - **Architecture fog:** abstraction không nói được ownership + lifecycle bằng một câu → deletion test.
 - **Framing capture:** Peer/Reviewer chỉ gõ lại verdict của Lead → tạo lane mới với brief trung lập.
 - **DONE không candidate:** handoff/summary không có SHA + base + output thật → chưa có gì để chấm.

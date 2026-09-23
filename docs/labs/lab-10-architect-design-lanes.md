@@ -233,8 +233,8 @@ brief một lần), `smart-commits ×1` (cho `LEAD-WROTE`). Writer W2 gọi `bug
 1. **W2 phình.** 4 vòng rework, 966 dòng test. Nguồn: Lead tự đặt luật "mọi input base nhận thì
    bản mới phải nhận" rồi REJECT `23f1cc1` theo luật đó (đảo ý "giữ nếu không ai phản đối" trước
    đó). Ở vòng rework thứ tư Lead dừng và thu hẹp luật. Luật tương thích là boundary → nên hỏi
-   Human, không tự mở rộng.
-2. **Ngôn ngữ.** Lead trả lời tiếng Anh từ khoảng lượt R13 đến R20, cho tới khi Human nhắc.
+   Human, không tự mở rộng. → Đã thêm anti-pattern **luật tự thêm** vào `lead.md`.
+2. **Ngôn ngữ.** Lead trả lời tiếng Anh từ khoảng lượt R13 đến R20, cho tới khi Human nhắc. → `lead.md` thêm: giữ ngôn ngữ Human suốt phiên.
 3. **Runtime:** `SendMessage` của Supervisor (`notify_when_idle`) lỗi parse JSON 3 lần khi
    `message` rỗng; Supervisor ghi lại và ngừng thử — đúng spec Lab 6.
 4. Supervisor ghi memory ở mức user (`~/.claude/agent-memory/supervisor/`: `lab10.md`,

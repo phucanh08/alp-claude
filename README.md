@@ -197,7 +197,7 @@ VERSION
 
 ## Lab
 
-Mười lab đã chạy thật, tất cả PASS — mỗi lab đo một cơ chế bằng Git object + transcript:
+Mọi lab dưới đây đã chạy thật, tất cả PASS — mỗi lab đo một cơ chế bằng Git object + transcript:
 
 | Nhóm | Lab | Đo |
 |---|---|---|
@@ -205,6 +205,8 @@ Mười lab đã chạy thật, tất cả PASS — mỗi lab đo một cơ ch�
 | Supervisor | 5–6 | session khác không có authority của Human; `supervisor.md` bắt drift, self-test, ESCALATE |
 | Skill theo phase | 7 (7a → 7e) | năm skill, mỗi phase một bẫy; gate bắt buộc, `xia` có điều kiện |
 | Nhiều Lead | 8, 8b | một Supervisor nghe nhiều Lead / nhiều workspace; đọc mọi file, chỉ sửa memory của chính nó |
+| Phương pháp | 9, 9b | `bug-loop`: chẩn đoán read-only, proof L2/L3, `Required skills` + `D13` |
+| Thiết kế | 10 | hai Architect mù thiết kế trước khi code; `LEAD-WROTE` cho contract; L3 tiền + state machine |
 
 Mục lục, thứ tự chạy, lab đã đổi gì trong instruction: [`docs/labs/`](docs/labs/README.md).
 
@@ -217,7 +219,10 @@ Mục lục, thứ tự chạy, lab đã đổi gì trong instruction: [`docs/la
   khi brief khai; `ask-alp` thêm bảng theo loại việc. Không tạo ghế `Special`. Lab 9 + 9b **PASS**
   (writer và Scout mang `bug-loop`, L3, bác giả thuyết của người báo bằng evidence; 9b có
   `REJECT` vì test sống sót mutant và Supervisor chỉ kiểm `bug-loop` ở brief đã khai); sau lab `lead.md` thêm:
-  không ghi skill gate vào `Required skills`, việc đụng tiền ghi thẳng L3.
+  không ghi skill gate vào `Required skills`, việc đụng tiền ghi thẳng L3. Lab 10 **PASS** (hai
+  Architect mù → một đề xuất → `ACCEPT` sau 4 `REJECT` có repro); sau lab `lead.md` thêm: giữ
+  ngôn ngữ của Human suốt phiên, anti-pattern **luật tự thêm** (luật chấp nhận/từ chối hành vi
+  không có trong brief/ruling → hỏi Human trước khi REJECT theo nó).
 - v0.5.0: **một Supervisor, nhiều Lead; không cần worktree** — Supervisor chạy ở cwd ngoài checkout
   của mọi Lead (gốc workspace hoặc thư mục trung lập), đọc bằng `git --no-optional-locks -C <root>`;
   `memory: user`, một file mỗi workspace; Lead đăng ký bằng `SLP-REGISTER`; output ghi `@<lead>`,
