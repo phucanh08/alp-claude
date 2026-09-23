@@ -27,6 +27,7 @@ Quy ước dùng chung (ràng buộc cứng, cách kiểm evidence, đọc trans
 | 8 | Một Supervisor, nhiều Lead, không worktree; `SLP-REGISTER`, `D14` | PASS (v0.5.0) | [lab-08](lab-08-multi-lead.md) |
 | 8b | Supervisor đọc mọi file, chỉ sửa memory của chính nó; monorepo; hai workspace | PASS (v0.5.0) | [lab-08 § 8b](lab-08-multi-lead.md#lab-8b--supervisor-đọc-mọi-file-chỉ-sửa-memory-của-chính-nó-monorepo-hai-workspace--pass) |
 | 9 | `bug-loop`: Scout chẩn đoán read-only → writer sửa với proof L2/L3; `Required skills` + `D13` | **PASS** 9 + 9b (v0.6.0; 9b có Scout + Supervisor) | [lab-09](lab-09-bug-loop.md) |
+| 10 | Hai Architect read-only độc lập thiết kế trước khi code; Lead hội tụ một đề xuất; `LEAD-WROTE` cho contract; L3 tiền + state machine | **PASS** (v0.6.0, headless, có Supervisor) | [lab-10](lab-10-architect-design-lanes.md) |
 
 **Thứ tự chạy:** 1 → 2 trước (repo disposable, rồi repo thật có `CLAUDE.md` đủ contract) → 3 → 4
 → 5 → 6. Lab 7 sau khi 1–2 ổn và đã cài bản ≥ 0.3.0. Lab 8 sau Lab 6. Chưa thêm Supervisor khi

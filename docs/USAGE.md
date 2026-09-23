@@ -1,7 +1,7 @@
 # Hướng dẫn sử dụng SLP — kèm case thực tế
 
 Tài liệu cho người dùng hằng ngày: mở phiên thế nào, viết yêu cầu ra sao, đọc kết quả của Lead thế
-nào, và bảy case: sáu case lấy từ lab đã chạy thật (diễn biến và kết quả có thật; prompt ghi rõ khi là bản minh hoạ), một case Architect chưa có lab. Cài đặt xem
+nào, và bảy case: cả bảy lấy từ lab đã chạy thật (diễn biến và kết quả có thật; prompt ghi rõ khi là bản minh hoạ). Cài đặt xem
 [SETUP.md](SETUP.md); luồng phase/skill xem `/ask-alp`.
 
 **Ba vai, một câu mỗi vai:**
@@ -278,49 +278,51 @@ repo của mình, Supervisor gửi `DRIFT D14` cho cả hai Lead.
 
 **Bài học:** mỗi repo một Lead, một làn. Anh là người chuyển yêu cầu giữa các Lead khi cần.
 
-### Case 7 — Thiết kế trước khi code: hai Architect độc lập (chưa có lab)
-
-> Case này **chưa chạy lab**: mô tả theo luật "lane thiết kế mù" trong `lead.md` và disposition
-> Architect trong `peer.md`. Dùng làm kịch bản; chạy thật sẽ cập nhật lại.
+### Case 7 — Thiết kế trước khi code: hai Architect độc lập ([Lab 10](labs/lab-10-architect-design-lanes.md))
 
 **Khi nào dùng:** quyết định **khó đảo ngược** (schema, state machine, public API, luồng tiền) mà
 có nhiều lời giải cùng đúng. Việc nhỏ hoặc chỉ có một cách hợp lý → không cần, Lead brief thẳng
 Engineer.
 
-**Prompt** (minh hoạ):
+**Prompt** (thật, Lab 10):
 
 ```text
-Cần thêm hoàn tiền một phần cho đơn đã thanh toán (khách trả lại 1 trong 3 món). Việc này đụng trạng thái đơn và tiền nên anh muốn xem thiết kế trước: CHƯA code, đưa anh 2 phương án có so sánh rồi anh chọn. Không tạo migration, không push.
+Cần thêm hoàn tiền một phần cho đơn đã thanh toán: khách trả lại 1 trong 3 món, về sau có thể trả tiếp món khác. Việc này đụng trạng thái đơn và tiền nên anh muốn xem thiết kế trước: CHƯA code, đưa anh 2 phương án có so sánh (lý do, rủi ro, cái gì trong CLAUDE.md phải đổi) rồi anh chọn. Anh muốn hai hướng được nghĩ độc lập, không ảnh hưởng nhau. Không push.
 ```
 
-**Diễn biến dự kiến:**
+**Diễn biến:**
 
-1. Lead nhận ra đây là quyết định khó đảo ngược (state machine đơn + tiền) → mở **hai Peer
-   Architect read-only, độc lập**. Brief hai bên giống nhau và trung lập: outcome, contract
-   `CLAUDE.md`, câu hỏi thiết kế; **không** kèm ý kiến của Lead, không cho lane này xem lane kia.
-2. Mỗi Architect gọi `xia` **trước khi đọc file đầu tiên**, gắn nhãn từng nhận định
-   Local / Upstream / Docs / Inference, trả handoff 6 ô. Ví dụ:
-   - Lane A: thêm trạng thái `PARTIALLY_REFUNDED` vào state machine, tổng hoàn tiền lưu trên đơn.
-   - Lane B: giữ state machine, thêm bảng `refunds` (mỗi lần hoàn một dòng), trạng thái đơn suy ra
-     từ tổng các dòng.
-3. Architect **không ra ruling**, không sửa file, không tạo migration. Phương án nào không nói được
-   "ai sở hữu dữ liệu này, nó sống/chết khi nào" bằng một câu → Lead coi là *architecture fog*, loại.
-4. Lead hội tụ thành **một** đề xuất (không bỏ phiếu 1–1), nhưng vì chạm schema/state machine và
-   `migrations/` là việc của Human → hỏi anh:
+1. Lead gọi `goal-griller` → `sequence-execution-plan` → `prompt-leverage`, rồi mở **hai Architect
+   read-only**. Brief trung lập, không lane nào thấy lane kia; Lead giữ phát hiện riêng của mình,
+   không đưa vào brief để khỏi dẫn hướng:
+   - `design-a`: giữ state machine (C1), số món/tiền đã hoàn suy ra từ ledger.
+   - `design-b`: thêm trạng thái `PARTIALLY_REFUNDED` (đổi C1).
+2. Mỗi Architect gọi `xia` **trước tiên**, chỉ chạy Bash đọc và dựng rig ở `/tmp`, 0 file bị sửa.
+   Cả hai tìm ra hai bug có sẵn: `pay()` ghi ledger **trước** khi kiểm trạng thái, và ledger nhận
+   `True` làm tiền. Lead tự tái hiện trước khi báo.
+3. Lead trả bảng so sánh A/B (lý do, rủi ro, dòng `CLAUDE.md` phải đổi), **đề xuất A**, kèm 5 câu
+   hỏi (hoàn khi còn `PAID`? mã idempotent? hoàn theo số tiền lẻ? sửa bug có sẵn trước?). Chưa code.
+4. Anh chọn A, trả lời 5 câu, cho phép sửa `CLAUDE.md`. Lead sửa contract bằng
+   `LEAD-WROTE: 307534c` và `LEAD-WROTE: f3e4b51` — anh đọc diff và accept từng cái.
+5. W1 (sửa hai bug có sẵn, `bug-loop`) → accept `8d9a7f2`. Supervisor bắt `DRIFT D9`: accept xảy ra
+   trước khi Reviewer đọc đúng SHA cuối → Lead treo accept, Reviewer mới đọc, accept lại.
+6. W2 (hoàn một phần) qua **4 lần REJECT**, mỗi lần có lệnh tái hiện: sku trùng dòng, replay tính
+   lại theo giá mới, món đã trả không ghi ledger (C4), `order_view` sai khi qty ≤ 0. Giữa chừng Lead
+   hỏi anh thêm 5 câu (chặn ghi refund thô, đơn có dòng giảm giá…).
+7. `ACCEPT bca33a0` — 147 test, L3, Reviewer kiểm 20.000 đơn ngẫu nhiên. `TRANSITIONS` và
+   `to_dict` không đổi; `main` không đụng; 0 push.
 
-   ```text
-   Đề xuất (B) bảng refunds: hoàn nhiều lần không phải thêm trạng thái mới, audit từng lần hoàn.
-   (A) đơn giản hơn nhưng mất lịch sử từng lần hoàn. Cần anh chọn và duyệt migration. Đề xuất: B.
-   ```
+**Kết quả:** một ruling thiết kế có lý do, bug có sẵn được sửa riêng trước, feature trên nhánh
+`feat/partial-refund` chờ anh quyết merge.
 
-5. Anh chọn → ruling nằm trong brief Engineer **trước** khi viết. Proof **L3** (tiền + state
-   machine), Reviewer bắt buộc vì chạm boundary. Migration: Engineer viết file, **anh** chạy.
+**Bài học:**
 
-**Kết quả mong đợi:** một ruling thiết kế có lý do, rồi luồng Engineer → `ACCEPT <sha>` như Case 1.
-
-**Bài học:** Architect đưa phương án và bằng chứng; **Lead** chọn một đề xuất; **anh** quyết phần
-chạm boundary. Không có ghế nào được tự vote cho mình. Reviewer là lớp sau commit, không thay
-được bước thiết kế trước code.
+- Architect đưa phương án và bằng chứng; **Lead** chọn một đề xuất; **anh** quyết phần chạm
+  contract. Không ghế nào tự vote cho mình.
+- Trả lời càng cụ thể các câu hỏi thiết kế thì W2 càng ít vòng. Ở lab, 4 lần REJECT phần lớn do
+  Lead tự đặt luật "mọi input cũ nhận thì bản mới phải nhận" — nếu thấy Lead mở rộng phạm vi kiểu
+  đó, nói rõ "giữ phạm vi gọn".
+- Nhắc ngôn ngữ trả lời ngay từ prompt đầu nếu phiên dài (Lead từng chuyển sang tiếng Anh).
 
 ---
 
