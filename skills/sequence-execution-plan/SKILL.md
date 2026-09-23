@@ -175,21 +175,40 @@ SLA, dependency, effort.
 ### File plan — chỗ người yêu cầu xem
 
 Ghi plan ra `plans/<YYMMDD-HHmm>-<slug>/plan.md` ở gốc repo (không ghi vào `CLAUDE.md`); memory
-checkpoint chỉ trỏ tới đường dẫn này. File gồm, theo thứ tự:
+checkpoint chỉ trỏ tới đường dẫn này. Mỗi pha một file (thiết kế, code); không nối pha mới vào
+đuôi file pha cũ. **Chép đúng mẫu dưới rồi điền** — không đổi tên cột, không bỏ sơ đồ; ô chưa biết
+ghi `?` chứ không xoá:
 
-1. Dòng đầu: tên outcome · `base <sha>` · thời điểm cập nhật.
-2. Sơ đồ Mermaid `flowchart LR`: mỗi item một node `"ID tên ngắn<br/>trạng thái SHA"`, cạnh =
-   `blocks`.
-3. Bảng work item (cột như mục Artifact).
-4. **Now / Next / Chờ người yêu cầu quyết** — mỗi dòng một câu.
+~~~markdown
+# <outcome> · base `<sha>` · cập nhật <YYYY-MM-DD HH:mm>
+
+```mermaid
+flowchart LR
+  F1["F1 <tên ngắn><br/>ready"] --> F2["F2 <tên ngắn><br/>blocked"]
+```
+
+| ID | Result | Disposition/write | Owned scope | Boundary | Test seam | Done evidence | State |
+|---|---|---|---|---|---|---|---|
+| F1 | … | Engineer / write | `path` | C? — ruling ở đâu | `hàm(...)` | lệnh | ready |
+
+**Chẻ:** mỗi item — "không dấu hiệu" hoặc dấu hiệu nào và đã chẻ thành gì.
+**Now:** … · **Next:** … · **Chờ người yêu cầu quyết:** …
+~~~
+
+Node ghi trạng thái + SHA (`accepted a1b2c3d`); cạnh = `blocks`. Dòng **Chẻ** bắt buộc: soát ba
+dấu hiệu ở mục 2 cho từng item và ghi kết quả — item chạm hai boundary mà ghi "không dấu hiệu"
+là sai. Các mục Artifact còn lại (đường đi, lý do, risk, trigger) để dưới, ngắn.
 
 Cập nhật trạng thái + SHA mỗi lần `ACCEPT`/`REJECT`/replan — sửa dòng, không viết lại cả file.
-Plan là bản đồ, không phải candidate: người giao việc không commit nó, writer không stage nó.
+Plan là bản đồ, không phải candidate: không commit. Lần đầu ghi, thêm `plans/` vào
+`.git/info/exclude` (local, dùng chung mọi worktree, không đụng `.gitignore` của repo) để writer
+không stage nhầm.
 
 ### Duyệt plan
 
 Plan có **từ ba item** hoặc có item **chạm boundary** `CLAUDE.md` → gửi người yêu cầu đường dẫn
-file và hỏi một lần: độ chẻ (thô quá / vụn quá), cạnh phụ thuộc, test seam. **Chờ duyệt rồi mới
+file và hỏi một lần: độ chẻ (thô quá / vụn quá), cạnh phụ thuộc, test seam. Ngưỡng tính trên
+plan của **pha đang vào**: pha thiết kế read-only dưới ngưỡng không miễn duyệt cho pha code. **Chờ duyệt rồi mới
 giao writer đầu tiên**; item read-only (Scout/Architect) chạy trước được. Dưới ngưỡng → gửi một
 lần, không chờ. Replan đổi item hoặc cạnh → hỏi lại theo cùng ngưỡng; chỉ đổi trạng thái thì không.
 
@@ -205,7 +224,8 @@ Plan là bản đồ tạm — SHA + brief + accept summary mới là checkpoint
 - [ ] Now có ≤1 writer mỗi checkout; writer song song có worktree + contract shared interface.
 - [ ] Item đầu tiên ready và đủ nhỏ để viết brief ngay.
 - [ ] Mỗi item là lát dọc, không có dấu hiệu phải chẻ tiếp; mỗi item có test seam.
-- [ ] Plan nằm ở `plans/…/plan.md` có sơ đồ; trúng ngưỡng → đã được người yêu cầu duyệt.
+- [ ] Plan nằm ở `plans/…/plan.md` theo đúng mẫu (sơ đồ, cột Test seam, dòng Chẻ); trúng ngưỡng →
+  đã được người yêu cầu duyệt.
 - [ ] Nền tảng speculative nằm ngoài horizon cam kết.
 - [ ] Plan nói evidence nào sẽ đổi thứ tự.
 

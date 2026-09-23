@@ -84,8 +84,9 @@ Luật SLP đè lên plan:
   nhiều nhóm hành vi độc lập → chẻ tiếp.
 
 Plan ghi ra `plans/<YYMMDD-HHmm>-<slug>/plan.md` (sơ đồ Mermaid + bảng + Now/Next), cập nhật mỗi
-`ACCEPT`/`REJECT`/replan; không commit, không ghi vào `CLAUDE.md`. Từ ba item hoặc chạm boundary →
-Human duyệt file này trước writer đầu tiên.
+`ACCEPT`/`REJECT`/replan; không commit (`plans/` vào `.git/info/exclude`), không ghi vào `CLAUDE.md`.
+Từ ba item hoặc chạm boundary → Human duyệt file này trước writer đầu tiên. Chuyển từ thiết kế
+sang code là plan mới, qua lại Phase 3.
 
 Khi nào bỏ qua: đúng một work item, không dependency, không boundary — đi thẳng Phase 4.
 
