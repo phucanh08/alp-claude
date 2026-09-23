@@ -142,7 +142,9 @@ Required skills          (tuỳ chọn) skill phương pháp Peer phải gọi, 
 Brief phải **trung lập**, không pre-solve. Plan chỉ là bản đồ tạm cho một lượt Peer.
 `Required skills` chỉ định *phương pháp*, không chỉ định *lời giải* — nên không phá trung lập;
 nhưng khai `bug-loop` cho writer thì seam của regression test vẫn phải nằm trong ruling boundary,
-không để Peer tự đặt.
+không để Peer tự đặt. Không ghi skill gate (`xia`, `smart-commits`) vào đây: chúng đã bắt buộc theo
+disposition. Việc đụng tiền/auth/state machine/security → ô `Verification` ghi thẳng **L3**, không
+"nếu được".
 
 Trung lập về *cách làm*, không phải về *boundary*. Nếu owned scope chạm một boundary mà
 `CLAUDE.md` đánh dấu (schema, public API, allowlist, contract path…), brief phải chứa **ruling

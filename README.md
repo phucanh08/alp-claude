@@ -210,8 +210,9 @@ Mục lục, thứ tự chạy, lab đã đổi gì trong instruction: [`docs/la
   `peer.md` thêm luật test: oracle độc lập với implementation, lát dọc, mock chỉ ở rìa hệ thống,
   danh sách "làm xanh bằng mọi giá" là BLOCKING, ô `Verification` ghi proof level L1–L3.
   `lead.md` checklist accept đòi proof ≥ L2 cho claim hành vi; `D13` kiểm skill phương pháp chỉ
-  khi brief khai; `ask-alp` thêm bảng theo loại việc. Không tạo ghế `Special`. Lab 9 viết sẵn,
-  **chưa chạy**.
+  khi brief khai; `ask-alp` thêm bảng theo loại việc. Không tạo ghế `Special`. Lab 9 **PASS**
+  (writer mang `bug-loop`, L3, bác giả thuyết của người báo bằng evidence); sau lab `lead.md` thêm:
+  không ghi skill gate vào `Required skills`, việc đụng tiền ghi thẳng L3.
 - v0.5.0: **một Supervisor, nhiều Lead; không cần worktree** — Supervisor chạy ở cwd ngoài checkout
   của mọi Lead (gốc workspace hoặc thư mục trung lập), đọc bằng `git --no-optional-locks -C <root>`;
   `memory: user`, một file mỗi workspace; Lead đăng ký bằng `SLP-REGISTER`; output ghi `@<lead>`,

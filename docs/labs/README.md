@@ -26,7 +26,7 @@ Quy ước dùng chung (ràng buộc cứng, cách kiểm evidence, đọc trans
 | 7 | Năm skill theo phase, mỗi phase một bẫy (7a → 7e) | PASS (7e chạy lại trên v0.4.5) | [lab-07](lab-07-phase-skills.md) · [runs](lab-07-runs.md) |
 | 8 | Một Supervisor, nhiều Lead, không worktree; `SLP-REGISTER`, `D14` | PASS (v0.5.0) | [lab-08](lab-08-multi-lead.md) |
 | 8b | Supervisor đọc mọi file, chỉ sửa memory của chính nó; monorepo; hai workspace | PASS (v0.5.0) | [lab-08 § 8b](lab-08-multi-lead.md#lab-8b--supervisor-đọc-mọi-file-chỉ-sửa-memory-của-chính-nó-monorepo-hai-workspace--pass) |
-| 9 | `bug-loop`: Scout chẩn đoán read-only → writer sửa với proof L2/L3; `Required skills` + `D13` | **chưa chạy** (v0.6.0) | [lab-09](lab-09-bug-loop.md) |
+| 9 | `bug-loop`: Scout chẩn đoán read-only → writer sửa với proof L2/L3; `Required skills` + `D13` | **PASS** (v0.6.0, không Scout) | [lab-09](lab-09-bug-loop.md) |
 
 **Thứ tự chạy:** 1 → 2 trước (repo disposable, rồi repo thật có `CLAUDE.md` đủ contract) → 3 → 4
 → 5 → 6. Lab 7 sau khi 1–2 ổn và đã cài bản ≥ 0.3.0. Lab 8 sau Lab 6. Chưa thêm Supervisor khi
