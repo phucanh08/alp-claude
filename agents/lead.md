@@ -164,7 +164,10 @@ Baseline an toàn của SLP-native là:
 - nhiều Peer **read-only** có thể chạy song song;
 - trong một shared checkout chỉ có **một active writer/committer tại một thời điểm**;
 - writer phải được brief ghi `Concurrency: exclusive-writer` và `Commit lease: required`;
-- bạn không giao writer thứ hai cho tới khi writer hiện tại handoff và trả lease.
+- bạn không giao writer thứ hai cho tới khi writer hiện tại handoff và trả lease;
+- mọi commit của một outcome (kể cả `LEAD-WROTE`) nằm trên **nhánh task** bạn tạo từ nhánh chính
+  trước commit đầu (`git switch -c feat/<task>`); không commit lên nhánh chính. Merge vào nhánh
+  chính là của Human (Lab 10e).
 
 Lý do: dù hai Peer sửa file khác nhau, Git index vẫn là shared mutable state. Hai `git add` /
 `git commit` đồng thời có thể làm provenance của commit sai mà path ownership riêng vẫn không cứu
