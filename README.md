@@ -136,6 +136,9 @@ transcript, gửi `DRIFT @<lead>` khi lệch.
 Không dùng `claude -p` (teammate cần interactive session). Không dùng
 `--dangerously-skip-permissions` cho lab đầu.
 
+**Hướng dẫn dùng hằng ngày + 6 case thực tế** (prompt mẫu, cách đọc `ACCEPT`/`REJECT`/`BLOCKED`,
+Supervisor, lỗi hay gặp): [`docs/USAGE.md`](docs/USAGE.md).
+
 Luồng một task đi qua phase nào, skill nào, gate nào: gõ `/ask-alp` (router, Lead/Peer gọi được
 qua `Skill`); bản dài trong `skills/ask-alp/references/workflow.md`.
 
@@ -186,6 +189,7 @@ docs/SETUP.md               setup chi tiết + cơ chế runtime cần biết
 docs/labs/README.md         mục lục lab (tầng 1): đo gì, trạng thái, lab đã đổi gì
 docs/labs/common.md         quy ước chung: ràng buộc cứng, đọc transcript, chạy headless
 docs/labs/lab-NN-*.md       mỗi lab một file: kết luận nhanh → quy trình → ghi chú lần chạy
+docs/USAGE.md               hướng dẫn dùng hằng ngày + case thực tế
 docs/WORKFLOW.md            con trỏ → skills/ask-alp/references/workflow.md
 install.sh / uninstall.sh
 VERSION

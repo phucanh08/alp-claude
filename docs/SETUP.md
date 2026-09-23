@@ -3,6 +3,7 @@
 Bộ này chuyển ba instruction SLP `SUPERVISOR.md` / `LEAD.md` / `PEER.md` sang Claude Code Agent
 Teams native.
 Không cần Paseo. Cài bằng `install.sh` (xem README) hoặc làm tay theo mục 1–3 dưới đây.
+Cài xong, cách dùng hằng ngày và case thực tế: [USAGE.md](USAGE.md).
 
 ## Kiến trúc
 
