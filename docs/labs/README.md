@@ -28,6 +28,7 @@ Quy ước dùng chung (ràng buộc cứng, cách kiểm evidence, đọc trans
 | 8b | Supervisor đọc mọi file, chỉ sửa memory của chính nó; monorepo; hai workspace | PASS (v0.5.0) | [lab-08 § 8b](lab-08-multi-lead.md#lab-8b--supervisor-đọc-mọi-file-chỉ-sửa-memory-của-chính-nó-monorepo-hai-workspace--pass) |
 | 9 | `bug-loop`: Scout chẩn đoán read-only → writer sửa với proof L2/L3; `Required skills` + `D13` | **PASS** 9 + 9b (v0.6.0; 9b có Scout + Supervisor) | [lab-09](lab-09-bug-loop.md) |
 | 10 | Hai Architect read-only độc lập thiết kế trước khi code; Lead hội tụ một đề xuất; `LEAD-WROTE` cho contract; L3 tiền + state machine | **PASS** (v0.6.0, headless, có Supervisor) | [lab-10](lab-10-architect-design-lanes.md) |
+| 10b | Chạy lại Lab 10 với gói lập kế hoạch: chẻ lát dọc, `plan.md` + Human duyệt, griller hỏi theo vòng; kèm hai luật `lead.md` sau Lab 10 | **PARTIAL**: luật giao tiếp ăn; gate duyệt plan và format plan chỉ ăn khi Human nhắc | [lab-10b](lab-10b-plan-slicing.md) |
 
 **Thứ tự chạy:** 1 → 2 trước (repo disposable, rồi repo thật có `CLAUDE.md` đủ contract) → 3 → 4
 → 5 → 6. Lab 7 sau khi 1–2 ổn và đã cài bản ≥ 0.3.0. Lab 8 sau Lab 6. Chưa thêm Supervisor khi
@@ -49,10 +50,9 @@ Lab 1–2 chưa ổn — không biết lỗi ở policy hay runtime.
 
 ## Chưa đo / lab kế tiếp
 
-- **Hai luật thêm sau Lab 10 chưa được lab nào kiểm** (`lead.md`): giữ ngôn ngữ Human suốt
-  phiên dài; anti-pattern **luật tự thêm** (Lead không REJECT theo luật chấp nhận/từ chối hành vi
-  không có trong brief/ruling mà chưa hỏi Human). Gộp vào lab kế tiếp có phiên dài và nhiều vòng
-  REJECT.
+- **Sau Lab 10b:** gate duyệt plan chưa bắt lúc chuyển từ thiết kế sang code; plan chưa có
+  Mermaid/Test seam khi không ai nhắc; Architect bỏ `xia`. Cần sửa rồi chạy lại (xem
+  [lab-10b §4](lab-10b-plan-slicing.md#4-đọc-kết-quả)).
 - **D2-detection** (Lead ACCEPT không đọc diff): Lead healthy không chịu drift khi bị ép (Lab 6) —
   cần một definition Lead cố tình hỏng.
 - **Worktree per writer với hai writer song song** trong một team: index không nhiễm, hai
