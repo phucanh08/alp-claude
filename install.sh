@@ -31,6 +31,8 @@ Usage: install.sh [--global] [--dir <path>] [--force]
   --dir <path>  repo root cần cài (mặc định: thư mục hiện tại)
   --force       ghi đè agent file / skill dir đã có mà không backup
 Env: SLP_REPO (mặc định phucanh08/alp-claude), SLP_REF (branch/tag, mặc định main)
+     SLP_REF=beta → dòng SLP trên Paseo (VERSION x.y.z-beta.N): cài cùng agents/skills, nhưng chạy ghế bằng
+     Paseo + plugin slp-paseo thay cho `claude --agent`; bước tiếp theo in ra cuối là bước Paseo (docs/PASEO.md)
 EOF
 }
 
@@ -302,10 +304,48 @@ else
   warn "không thấy lệnh 'claude' trong PATH — bỏ qua validate"
 fi
 
+STEP1="$( [ "$MODE" = "project" ] && echo "Điền CLAUDE.md (contract boundary, lệnh test, path cấm sửa, external side-effect policy)." || echo "Mỗi repo vẫn cần CLAUDE.md riêng — template: $SRC/templates/CLAUDE.template.md" )"
+UNINSTALL="curl -fsSL https://raw.githubusercontent.com/${SLP_REPO}/${SLP_REF}/uninstall.sh | bash"
+if [ "$MODE" = "global" ]; then UNINSTALL="$UNINSTALL -s -- --global"; fi   # không dùng $( [ ] && ... ): set -e sẽ thoát khi [ ] sai
+
+case "$VERSION" in
+*-beta.*)
+# Dòng beta: ghế chạy trên Paseo (docs/PASEO.md), không dùng `claude --agent`. Plugin không nằm trong
+# bản cài này (chạy trên máy daemon, ngoài sandbox) — clone repo và cài bằng `paseo plugin install`.
+PLUGIN_SRC="$( [ -d "$SRC/plugins/slp-paseo" ] && [ "$SRC" != "$TMP" ] && echo "$SRC/plugins/slp-paseo" || echo "" )"
+cat <<EOF
+
+Xong. Bản BETA — ghế SLP chạy trên Paseo (>= 0.9.2, Desktop hoặc CLI). Bước tiếp theo (docs/PASEO.md §1–§4):
+  1. $STEP1
+  2. ~/.paseo/config.json trên máy chạy daemon (giữ key khác), rồi: paseo reload
+       "pluginsEnabled": true;  "daemon": { "mcp": { "enabled": true, "injectIntoAgents": true } }
+       "agents": { "providers": { "claude-lead" / "claude-peer" / "claude-supervisor" — mẫu §2; ghế Codex: "codex-lead" / "codex-peer" / "codex-supervisor" } }
+  3. Plugin slp-paseo (nạp definition + SLP-RUNTIME theo ghế, Lead ↔ Supervisor tự thấy nhau; cần node/npm):
+$( if [ -n "$PLUGIN_SRC" ]; then
+     echo "       cd $PLUGIN_SRC && npm install && npm test && paseo plugin install \"\$PWD\""
+   else
+     echo "       git clone -b ${SLP_REF} https://github.com/${SLP_REPO} ~/alp-claude"
+     echo "       cd ~/alp-claude/plugins/slp-paseo && npm install && npm test && paseo plugin install \"\$PWD\""
+   fi )
+       paseo plugin ls    # slp-paseo running; sửa source → paseo plugin reload slp-paseo
+  4. Lead: Paseo Desktop → workspace = repo root → New agent → provider "SLP Lead" (hoặc "SLP Lead (Codex)"), tin đầu = đề bài.
+       CLI: cd <repo root> && paseo run --provider claude-lead/<model> --mode acceptEdits "<đề bài>"
+     Lead tự create_agent peer (provider claude-peer/<model>), duyệt permission của peer bằng respond_to_permission.
+  5. (tuỳ chọn) Supervisor — agent thứ ba ở workspace trung lập, không cần id Lead (plugin liệt kê Lead đang sống, Lead mới tự SLP-REGISTER):
+       mkdir -p ~/slp-supervisor/.claude/agents ~/slp-supervisor/memory
+       cp $SUP_SETTINGS ~/slp-supervisor/.claude/settings.json      # sandbox Bash: chỉ ghi được cwd
+$( [ "$MODE" = "project" ] && echo "       cp $CLAUDE_DIR/agents/supervisor.md ~/slp-supervisor/.claude/agents/   # cài --global thì plugin tự lấy ~/.claude/agents/supervisor.md" || echo "       (definition lấy từ ~/.claude/agents/supervisor.md — đã cài --global)" )
+       Desktop: workspace ~/slp-supervisor → New agent → provider "SLP Supervisor", tin đầu: "Làm bootstrap theo definition. Chỉ báo DRIFT / ESCALATE / NOTE."
+  6. Quy trình theo phase + skill: gõ /ask-alp. Khác gì bản native: docs/PASEO.md §6. Lab Paseo: docs/labs/lab-12-paseo-runtime.md, lab-13-paseo-supervisor.md.
+
+Gỡ: $UNINSTALL   (plugin: paseo plugin remove slp-paseo)
+EOF
+;;
+*)
 cat <<EOF
 
 Xong. Bước tiếp theo:
-  1. $( [ "$MODE" = "project" ] && echo "Điền CLAUDE.md (contract boundary, lệnh test, path cấm sửa, external side-effect policy)." || echo "Mỗi repo vẫn cần CLAUDE.md riêng — template: $SRC/templates/CLAUDE.template.md" )
+  1. $STEP1
   2. cd <repo root> && claude --agent lead --name lead      # workspace nhiều repo: --name lead-<repo>
   3. (tuỳ chọn) Supervisor — thư mục trung lập không chứa repo, không cần worktree; đọc mọi file, sandbox chặn ghi:
        mkdir -p ~/slp-supervisor && cd ~/slp-supervisor
@@ -313,5 +353,7 @@ Xong. Bước tiếp theo:
      Workspace nhiều repo: agents cần thấy từ mọi repo → cài --global; CLAUDE.md chung: templates/WORKSPACE.CLAUDE.template.md
   4. Quy trình theo phase + skill: gõ /ask-alp (router; bản dài ở .claude/skills/ask-alp/references/workflow.md). Lab: docs/labs/README.md (mục lục, bắt đầu từ Lab 1).
 
-Gỡ: curl -fsSL https://raw.githubusercontent.com/${SLP_REPO}/${SLP_REF}/uninstall.sh | bash$( [ "$MODE" = "global" ] && echo " -s -- --global" )
+Gỡ: $UNINSTALL
 EOF
+;;
+esac
