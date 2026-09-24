@@ -1,9 +1,15 @@
-# alp-claude — SLP trên Claude Code Agent Teams
+# alp-claude — SLP trên Claude Code Agent Teams (main) và trên Paseo (beta)
 
-Bộ cài **SLP** (Supervisor / Lead / Peer separation-of-judgment) cho Claude Code Agent Teams
-native. Không cần Paseo. Một `install.sh`, một `uninstall.sh`, ba agent definition, **năm skill
-theo phase + một skill phương pháp `bug-loop` + một router `ask-alp`**, template `CLAUDE.md` cho repo và cho workspace nhiều repo, và
-5 lab đã chạy thật + 1 lab cho Supervisor definition.
+Bộ cài **SLP** (Supervisor / Lead / Peer separation-of-judgment). Một `install.sh`, một
+`uninstall.sh`, ba agent definition, **năm skill theo phase + một skill phương pháp `bug-loop` + một
+router `ask-alp`**, template `CLAUDE.md` cho repo và cho workspace nhiều repo, 13 lab đã chạy thật.
+
+Hai runtime, cùng ba definition và sáu bất biến:
+
+| Nhánh | Runtime | Ghế chạy bằng | Dành cho |
+|---|---|---|---|
+| `main` | Claude Code Agent Teams native, không cần Paseo | `claude --agent lead` / `supervisor`; Peer = teammate | bản ổn định |
+| `beta` (nhánh này) | [Paseo](https://github.com/getpaseo/paseo) Desktop/CLI + plugin `slp-paseo` | provider profile `claude-lead`/`claude-peer`/`claude-supervisor` **hoặc** `codex-lead`/`codex-peer`/`codex-supervisor`; mỗi ghế một agent Paseo | dòng thử nghiệm; `VERSION` luôn `-beta.N` |
 
 ```text
 Human ────────────────────────────────────────────────────────┐
@@ -16,6 +22,11 @@ Phase:  intake ──▶ recon ──▶ sequence ──▶ brief ──▶ impl
 Skill:  goal-griller  xia    sequence-      prompt-    (peer.md)    smart-      (peer.md)   (lead.md)
         (Lead)       (Scout) execution-plan leverage                commits
 ```
+
+Trên Paseo (beta) sơ đồ giữ nguyên, chỉ đổi cách gọi: `claude --agent <ghế>` → tạo agent với provider
+`<họ>-<ghế>`; `Agent(peer)` → `create_agent`; `SendMessage` → `send_agent_prompt` khi đích idle;
+plugin `slp-paseo` nạp definition + khối `SLP-RUNTIME` vào system prompt và cho Lead ↔ Supervisor tự
+thấy nhau. Chi tiết: [docs/PASEO.md](docs/PASEO.md).
 
 Nguyên tắc lõi: **ai chấm** mới là ranh giới. Peer viết → Lead `ACCEPT`/`REJECT` bằng cách đọc
 diff `base..sha` từ Git object. Lead viết → Human accept. Supervisor không chấm ai — chỉ phát hiện
@@ -53,14 +64,28 @@ curl -fsSL https://raw.githubusercontent.com/phucanh08/alp-claude/main/install.s
 curl -fsSL https://raw.githubusercontent.com/phucanh08/alp-claude/main/install.sh | bash -s -- --dir /path/to/repo
 ```
 
-Bản **beta** (nhánh `beta` — dòng thử nghiệm SLP trên Paseo, xem [Lab 12](docs/labs/lab-12-paseo-runtime.md)
-và hướng dẫn dùng với Paseo Desktop ở [docs/PASEO.md](docs/PASEO.md); `VERSION` trên nhánh này luôn có
-hậu tố `-beta.N`, installer từ chối nếu thiếu):
+### Bản beta — SLP trên Paseo
+
+Nhánh `beta` là dòng thử nghiệm chạy SLP trên Paseo ≥ 0.9.2 (Desktop hoặc CLI, cùng daemon);
+`VERSION` luôn có hậu tố `-beta.N`, installer từ chối nếu thiếu. Ba bước, làm một lần trên máy chạy
+daemon (đầy đủ ở [docs/PASEO.md](docs/PASEO.md) §1–§2c):
 
 ```bash
+# 1. agent definition + skill (như bản main, lấy từ nhánh beta)
 curl -fsSL https://raw.githubusercontent.com/phucanh08/alp-claude/beta/install.sh | SLP_REF=beta bash
 curl -fsSL https://raw.githubusercontent.com/phucanh08/alp-claude/beta/install.sh | SLP_REF=beta bash -s -- --global
+# 2. plugin slp-paseo (code không sandbox chạy trên máy daemon; cần "pluginsEnabled": true trong ~/.paseo/config.json)
+git clone -b beta https://github.com/phucanh08/alp-claude ~/alp-claude
+cd ~/alp-claude/plugins/slp-paseo && npm install && npm test && paseo plugin install "$PWD"
+# 3. provider profile <họ>-<ghế> + injectIntoAgents trong ~/.paseo/config.json (mẫu ở docs/PASEO.md §2) → paseo reload
 ```
+
+Sau đó trong Desktop: New agent → provider **SLP Lead** (Claude) hoặc **SLP Lead (Codex)**, tin đầu là
+đề bài; Lead tự spawn peer bằng `create_agent`. Supervisor (tuỳ chọn) là agent thứ ba ở workspace
+trung lập `~/slp-supervisor`, provider **SLP Supervisor**; không cần đưa id Lead — plugin liệt kê
+Lead đang sống cho nó và Lead mới tự gửi `SLP-REGISTER`. Bằng chứng: [Lab 12](docs/labs/lab-12-paseo-runtime.md)
+(Lead/Peer), [Lab 13](docs/labs/lab-13-paseo-supervisor.md) (Supervisor), discovery ở
+[PR #17](https://github.com/phucanh08/alp-claude/pull/17). Ghế Codex mới có probe, chưa có lab trọn vòng.
 
 Windows (PowerShell 5.1+ hoặc pwsh 7, không cần `python3`/`node`):
 
@@ -214,6 +239,10 @@ skills/ask-alp/             router: ghế ↔ từ vựng authority, luồng, on
 templates/CLAUDE.template.md  khung repo-specific contract
 templates/WORKSPACE.CLAUDE.template.md  khung workspace nhiều repo: part ↔ Lead, cross-repo contract
 templates/settings.json     env + teammateMode
+templates/supervisor.settings.json  settings cwd trung lập của Supervisor: sandbox Bash chỉ ghi cwd, chặn Write/Edit
+plugins/slp-paseo/          (beta) plugin Paseo: system prompt theo ghế, roster Lead ↔ Supervisor, allow tool Paseo;
+                            server/seat.ts (ghế, họ claude|codex, providerOptions), discovery.ts, runtime-block.ts; npm test
+docs/PASEO.md               (beta) dùng SLP với Paseo Desktop/CLI: config, plugin, Supervisor, khác gì bản native
 docs/SETUP.md               setup chi tiết + cơ chế runtime cần biết
 docs/labs/README.md         mục lục lab (tầng 1): đo gì, trạng thái, lab đã đổi gì
 docs/labs/common.md         quy ước chung: ràng buộc cứng, đọc transcript, chạy headless
@@ -236,11 +265,21 @@ Mọi lab dưới đây đã chạy thật, tất cả PASS — mỗi lab đo m�
 | Nhiều Lead | 8, 8b | một Supervisor nghe nhiều Lead / nhiều workspace; đọc mọi file, chỉ sửa memory của chính nó |
 | Phương pháp | 9, 9b | `bug-loop`: chẩn đoán read-only, proof L2/L3, `Required skills` + `D13` |
 | Thiết kế | 10 | hai Architect mù thiết kế trước khi code; `LEAD-WROTE` cho contract; L3 tiền + state machine |
+| Sống có tiếng | 11 | heartbeat peer, `Model` bắt buộc, chạy song song bằng worktree; `D15`/`D16` |
+| Paseo (beta) | 12, 13 | Lab 11 chạy lại trên Paseo: ba FAIL runtime hết, sáu bất biến giữ; Supervisor là agent Paseo thứ ba: 1 send khi Lead idle, 0 Write/Edit, 0 tin tới peer |
 
 Mục lục, thứ tự chạy, lab đã đổi gì trong instruction: [`docs/labs/`](docs/labs/README.md).
 
 ## Tuning đã đưa vào `lead.md` từ lab
 
+- v0.8.0-beta.1 → beta.4 (nhánh `beta`, 24/9/2026): **SLP trên Paseo**. beta.1: Lab 12 PASS trên
+  Paseo 0.9.2 (issue #9) — persona qua `SLP-RUNTIME`, ranh giới tool qua provider profile; phát hiện
+  steer huỷ card permission của Lead, CLI `send` huỷ Bash đang chạy của peer. beta.2: plugin
+  `slp-paseo` thay `--agent` (system prompt theo ghế, Lead gọi tool Paseo không hỏi). beta.3: Supervisor
+  là ghế thứ ba trên Paseo, Lab 13 PASS (issue #14); phát hiện card Bash của Lead bị notification huỷ.
+  beta.4: Lead ↔ Supervisor tự thấy nhau, Lead tự `SLP-REGISTER`, plugin báo Supervisor khi Lead xong
+  lượt đầu (issue #16); ghế Codex `codex-lead`/`codex-peer`/`codex-supervisor`. `lead.md`/`peer.md`/
+  `supervisor.md` không đổi — khác biệt nằm ở khối runtime của plugin.
 - v0.7.0 (sự cố facepod, [issue #7](https://github.com/phucanh08/alp-claude/issues/7)): **Peer
   phải sống có tiếng** — `peer.md` thêm mục Heartbeat (định dạng cố định, mục tiêu mỗi 10 phút,
   không tool call nào > ~90s, số liệu ghi file ngay, vòng poll tự đọc inbox của mình).
