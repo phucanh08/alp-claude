@@ -73,10 +73,10 @@ trả lời nhất quán với ruling Lab 10c/10d.
      bản repo.
    - Dòng sequence: ghi đường dẫn mẫu đầy đủ (repo trước, global sau); không thấy ở đâu thì báo
      Human, không viết plan theo trí nhớ.
-   Bản sửa này **chưa được lab đo**.
+   Bản sửa này được đo ở [Lab 10f](lab-10f-template-path-branch.md): PASS.
 4. Lead commit thẳng lên `main` của repo lab. Lab 10c thì dùng `feat/partial-refund`. Prompt không
    yêu cầu nhánh, và `lead.md` không có luật nào về nhánh cho writer đơn. Ghi lại để quan sát, không
-   tính là lệch.
+   tính là lệch. Đã thêm luật nhánh task (`1326fb3`), đo ở Lab 10f: PASS.
 
 ## 5. Còn mở (Lead tự khai trong báo cáo cuối)
 
