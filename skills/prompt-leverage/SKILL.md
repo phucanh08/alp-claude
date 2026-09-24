@@ -62,7 +62,8 @@ Trước khi trả:
 - [ ] verification đúng mức risk, là lệnh chạy được;
 - [ ] có định nghĩa xong rõ (handoff 6 ô khi đích là người nhận việc);
 - [ ] (brief) đủ 13 trường; `Base` là SHA thật; `Owned scope` là path; boundary có ruling
-      hoặc lệnh dừng; `Required skills` chỉ khi loại việc cần (bug → `bug-loop`);
+      hoặc lệnh dừng; `Model` có tên model + lý do, không `inherit`; brief ôm ≤ 2 nhóm hành vi;
+      `Required skills` chỉ khi loại việc cần (bug → `bug-loop`);
 - [ ] không seed lời giải, verdict, hay authority.
 
 ## Reference

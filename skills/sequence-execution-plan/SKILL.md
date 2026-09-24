@@ -43,7 +43,7 @@ unknown có tên (→ Scout `xia`).
 
 **Lát dọc, vừa một context.** Mỗi item cắt trọn một đường từ input tới hành vi quan sát được
 (dữ liệu + logic + test), không chẻ theo tầng ("viết ledger", "viết test"). Một Peer mới làm xong
-trong một context. Soát ba dấu hiệu cho từng item:
+trong một context. Soát bốn dấu hiệu cho từng item:
 
 - **cần ruling chưa chốt** — ruling của người yêu cầu chưa có trong `CLAUDE.md`/brief → **bắt buộc**
   chẻ, hoặc chốt đủ ruling trước khi giao writer;
@@ -51,7 +51,13 @@ trong một context. Soát ba dấu hiệu cho từng item:
   chốt (commit/brief). Giữ gộp thì dòng Chẻ ghi lý do: "chạm C1, C3, C5 — không chẻ, ruling ở
   `<sha>`";
 - **done evidence gồm nhiều nhóm hành vi độc lập** — mỗi nhóm có thể bị `REJECT` riêng → chẻ, trừ
-  khi mọi nhóm đã có expected cụ thể trong brief; giữ gộp thì ghi lý do như trên.
+  khi mọi nhóm đã có expected cụ thể trong brief; giữ gộp thì ghi lý do như trên. **Trần cứng: một
+  brief ôm tối đa 2 nhóm**; "đo 200 mẫu + viết hàm/test + hiệu chuẩn" là ba nhóm → chẻ, không có
+  lý do giữ gộp;
+- **có bước chờ Human hoặc thiết bị** (quẹt mẫu, cắm máy, duyệt, chờ build ngoài) → tách bước chờ
+  thành item riêng (thường là Scout/Engineer thu dữ liệu, ghi file), để phần code/test chạy song
+  song với phần chờ. Một Peer ôm cả "chờ" lẫn "viết" thì đứng im suốt lúc chờ và không ai biết
+  (sự cố facepod, 2026-09-24).
 
 `REJECT` đến từ ruling Lead tự quyết giữa chừng, không từ số boundary. Lab 10: item "hoàn một phần"
 gộp bốn nhóm, ruling chưa chốt → 4 `REJECT`. Lab 10b: chẻ rồi nhưng Lead tự ruling giữa chừng → vẫn
@@ -130,6 +136,12 @@ Ràng buộc runtime của SLP:
   song song, là xếp hàng — plan phải nói thẳng.
 - Reviewer là item `validates` sau khi có candidate SHA, chỉ khi trúng trigger review (danh sách
   trong `ask-alp/references/workflow.md`, Phase 8).
+- **Song song là bắt buộc, không phải tuỳ chọn**, khi người yêu cầu nói **gấp** *và* Now có ≥ 2
+  item ready không phụ thuộc nhau: mỗi item một worktree + writer riêng; plan ghi rõ worktree nào,
+  contract interface chung ở đâu. Xếp hàng lúc này là drift, plan phải nói lý do nếu vẫn xếp hàng
+  (vd. không tách được scope).
+- Item tách ra từ dấu hiệu "bước chờ Human/thiết bị" chạy **song song** với item code/test của nó
+  (`A enables B`, không `blocks`), trừ khi code cần dữ liệu đo mới bắt đầu được.
 
 Mọi thứ tự không hiển nhiên phải có câu nhân–quả:
 
@@ -199,7 +211,9 @@ Plan là bản đồ tạm — SHA + brief + accept summary mới là checkpoint
 - [ ] Now có ≤1 writer mỗi checkout; writer song song có worktree + contract shared interface.
 - [ ] Item đầu tiên ready và đủ nhỏ để viết brief ngay.
 - [ ] Mỗi item là lát dọc; không còn ruling chưa chốt; item gộp nhiều boundary có lý do ở dòng Chẻ;
-  mỗi item có test seam.
+  mỗi item có test seam; không item nào ôm > 2 nhóm hành vi hay gộp bước chờ Human/thiết bị với
+  bước viết.
+- [ ] Người yêu cầu nói gấp và có ≥ 2 item ready độc lập → plan có worktree cho từng writer.
 - [ ] Plan nằm ở `plans/…/plan.md` theo đúng mẫu (sơ đồ, cột Test seam, dòng Chẻ); trúng ngưỡng →
   đã được người yêu cầu duyệt.
 - [ ] Nền tảng speculative nằm ngoài horizon cam kết.

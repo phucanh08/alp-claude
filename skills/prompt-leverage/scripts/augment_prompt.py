@@ -107,6 +107,18 @@ def normalize(prompt: str) -> str:
     return re.sub(r"\s+", " ", prompt).strip()
 
 
+def suggest_model(disposition: str, depth: str) -> str:
+    """Gợi ý trường `Model` — bắt buộc trong brief, `inherit` không phải lựa chọn (lead.md § Chọn model).
+
+    Người giao việc phải giữ lại lý do một dòng; Supervisor kiểm dòng này (D15).
+    """
+    if disposition == "reviewer" or depth == "Deep":
+        return "<TODO: model mạnh — cần phán đoán (review / thiết kế / bug chưa rõ cơ chế)>"
+    if depth == "Quick":
+        return "sonnet — <TODO: xác nhận: cơ khí, cách làm đã rõ>"
+    return "<TODO: sonnet nếu cơ khí, model mạnh nếu cần phán đoán — kèm lý do một dòng>"
+
+
 def build_brief(raw_prompt: str, disposition: str | None = None, task_id: str | None = None) -> str:
     """Khung brief 13 trường (+ `Required skills` tuỳ chọn) của SLP. Người giao việc điền các <TODO>."""
     objective = normalize(raw_prompt)
@@ -133,7 +145,7 @@ def build_brief(raw_prompt: str, disposition: str | None = None, task_id: str | 
         Concurrency            {concurrency}
         Commit lease           {lease}
         Verification           <TODO: lệnh cụ thể từ CLAUDE.md>; tài nguyên độc quyền (port/DB/full suite): <TODO: cấp|không>
-        Model                  inherit
+        Model                  {suggest_model(disp, depth)}
         Tool rules             {TOOL_RULES[disp]}
         Handoff contract       {OUTPUT_CONTRACT[disp]}
                                Candidate: {candidate}

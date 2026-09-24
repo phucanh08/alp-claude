@@ -12,7 +12,7 @@ verification, tiêu chí dừng). SLP thêm lớp thứ ba: *authority control* 
 |---|---|---|---|
 | Objective | việc + thành công quan sát được | một câu outcome + proof | `Objective` |
 | Context | file, URL, ràng buộc, giả định, ranh giới thông tin; khi nào phải tra thay vì đoán | link Task Contract / issue / log | `Repository root`, `Base`, `Excluded scope`, Scout brief đính kèm |
-| Work Style | rộng trước khi cần hiểu hệ; sâu ở chỗ risk; first-principles; mắt mới cho việc không tầm thường | depth mong muốn | `Disposition`, `Model`, depth |
+| Work Style | rộng trước khi cần hiểu hệ; sâu ở chỗ risk; first-principles; mắt mới cho việc không tầm thường | depth mong muốn | `Disposition`, `Model` (bắt buộc, kèm lý do một dòng; `inherit` không phải lựa chọn — effort thuộc Human `/effort`), depth |
 | Tool Rules | khi nào bắt buộc đọc file / chạy test / tra docs; không bỏ prerequisite; skill bắt buộc của gate | "đừng đoán, grep" | `Authority`, `Concurrency`, `Commit lease`, skill bắt buộc theo disposition (`xia` cho Scout, `smart-commits` cho writer); `Required skills` khi loại việc cần phương pháp riêng (bug → `bug-loop`) |
 | Output Contract | cấu trúc, độ sâu, section bắt buộc | "trả contract rồi dừng" | `Handoff contract` (6 ô) |
 | Verification | đúng, có căn cứ, đủ, side effect, phương án tốt hơn | lệnh proof | `Verification` (lệnh + tài nguyên độc quyền) |
