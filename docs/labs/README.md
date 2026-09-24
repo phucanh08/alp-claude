@@ -33,7 +33,7 @@ Quy ước dùng chung (ràng buộc cứng, cách kiểm evidence, đọc trans
 | 10d | Lab hẹp (dừng ở plan pha code): mẫu plan tách file + `Read` trước `Write`, chẻ theo ruling, `plans/.gitignore` | **PASS**: plan theo mẫu cả hai pha, chẻ có lý do, gate duyệt giữ | [lab-10d](lab-10d-plan-template-narrow.md) |
 | 10e | Chạy trọn pha code có Supervisor sau gói plan; item gộp nhiều boundary có lý do; đọc Git bằng lệnh `git` | **PASS có nhắc 1 lần**: 1 `REJECT`, 0 `D9`, 0 drift; mẫu plan FAIL lúc đầu vì skill global cũ che bản repo | [lab-10e](lab-10e-code-phase.md) |
 | 10f | Lab hẹp: đường dẫn mẫu cụ thể + skill repo thắng global; nhánh task, không commit lên nhánh chính | **PASS**: mẫu đúng cả hai plan, 0 nhắc, dù skill global vẫn cũ; `main` không đổi | [lab-10f](lab-10f-template-path-branch.md) |
-| 11 | Peer `HEARTBEAT` + không Bash dài + số liệu ra file; Lead truyền `model:` có lý do; chẻ theo bước chờ thiết bị, gấp → hai writer worktree song song; `D15`/`D16` | **CHƯA CHẠY** (kịch bản v0.7.0, issue #7) — số đo chính: tin của Lead có tới Peer giữa tool call không | [lab-11](lab-11-heartbeat-model-parallel.md) |
+| 11 | Peer `HEARTBEAT` + không Bash dài + số liệu ra file; Lead truyền `model:` có lý do; chẻ theo bước chờ thiết bị, gấp → hai writer worktree song song | **PASS có 2 phát hiện runtime** (v0.7.0, 2.1.281, headless + interactive PTY): mọi luật ăn lần đầu, 0 nhắc; **tin gửi peer đang chạy chỉ giao khi idle** (7 phút trong inbox); headless `-p` = subagent, không teammate; 1 `D13` | [lab-11](lab-11-heartbeat-model-parallel.md) |
 
 **Thứ tự chạy:** 1 → 2 trước (repo disposable, rồi repo thật có `CLAUDE.md` đủ contract) → 3 → 4
 → 5 → 6. Lab 7 sau khi 1–2 ổn và đã cài bản ≥ 0.3.0. Lab 8 sau Lab 6. Chưa thêm Supervisor khi
@@ -53,15 +53,16 @@ Lab 1–2 chưa ổn — không biết lỗi ở policy hay runtime.
 | 9 | `lead.md`: không ghi skill gate vào `Required skills`; việc đụng tiền ghi thẳng L3 |
 | 10 | `lead.md`: giữ ngôn ngữ Human suốt phiên; anti-pattern **luật tự thêm** — luật chấp nhận/từ chối hành vi không có trong brief/ruling phải hỏi Human trước khi REJECT theo nó |
 | sự cố facepod (issue #7, v0.7.0) | `peer.md`: mục Heartbeat (nhịp ~10 phút, Bash ≤ 2 phút, số liệu ghi file); `lead.md`: `Model` bắt buộc + lý do, effort là của Human, trigger chạy song song, peer im lặng > 15 phút = treo; `sequence-execution-plan`: dấu hiệu chẻ thứ tư (bước chờ Human/thiết bị), trần 2 nhóm/brief; `supervisor.md`: `D15`, `D16`; `augment_prompt.py` không còn `Model inherit` |
+| 11 | `peer.md`: tin không tới giữa lượt → đọc inbox của mình mỗi vòng poll; không `SendMessage` = subagent, không ToolSearch. `lead.md`: không hỏi peer đang chạy rồi chờ, không suy reply từ heartbeat, dừng peer là của Human, headless không có teammate |
 
 ## Chưa đo / lab kế tiếp
 
 - **Sau Lab 10f:** chưa đo lại số `REJECT` khi chẻ F2a/b/c (xem [lab-10e](lab-10e-code-phase.md) cho pha code gộp có lý do).
 - **D2-detection** (Lead ACCEPT không đọc diff): Lead healthy không chịu drift khi bị ép (Lab 6) —
   cần một definition Lead cố tình hỏng.
-- **Worktree per writer với hai writer song song** trong một team: index không nhiễm, hai
-  candidate đều descendant của base, Lead accept từng cái bằng SHA — nay là một cột của Lab 11.
-- **Tin của Lead tới Peer giữa tool call hay chỉ khi idle** — Lab 11; nếu chỉ khi idle thì luật
-  "trả lời ở lượt tool kế tiếp" trong `peer.md` phải viết lại.
+- **Human nhắn thẳng peer qua agent panel** có tới giữa lượt không — Lab 11 chỉ đo đường Lead →
+  peer (cùng inbox, suy ra là không). **Peer đọc inbox của mình mỗi vòng poll** (luật mới sau Lab
+  11) chưa có lần chạy nào kiểm.
+- **`D15`/`D16`** chưa chạy với phiên Supervisor thật.
 - **Mồi Supervisor tự sửa file theo lệnh Human** (Lab 8b dừng bước này); hook đã chặn ở runtime.
 - Lưu transcript đoạn spawn / handoff / accept / DRIFT của mỗi lab — input tốt nhất để tuning.

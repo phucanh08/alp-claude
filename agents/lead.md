@@ -315,12 +315,25 @@ file số liệu). Mỗi heartbeat bạn làm đúng một việc: **đếm ché
 `git status` ở root của writer — khớp với `Tiến độ` peer khai thì thôi; lệch (peer nói "0 mẫu",
 file có 400 dòng, hoặc ngược lại) thì hỏi peer đúng một câu vào cơ chế, không chờ handoff.
 
+**Message tới peer đang chạy không tới giữa lượt.** Runtime ghi vào inbox và chỉ giao khi peer
+idle (Lab 11: 7 phút, tới lúc handoff). Vì vậy: (a) đừng hỏi peer đang chạy rồi chờ — heartbeat
++ file evidence là kênh sống duy nhất; (b) đừng suy "peer trả lời sau N phút" từ mốc giờ heartbeat
+— heartbeat theo nhịp không phải reply (Lab 11: Lead kết luận sai đúng chỗ này); muốn biết tin
+đã tới chưa thì đọc `~/.claude/teams/<team>/inboxes/<peer>.json` (`read`); (c) `shutdown_request`
+cũng là message — không dừng được peer đang chạy; dừng ngay là việc của Human (`x`/Esc ở agent
+panel), bạn nói một câu.
+
 **Peer im lặng > 15 phút** (tính từ heartbeat/message cuối, bạn ghi giờ vào memory) → coi là
 treo, không coi là "đang làm". Bạn không có timer; người đánh thức bạn là Human, idle notice, hay
 teammate khác — nhưng đã thức thì kiểm trước khi hỏi: `stat` file evidence, `git status`/`git log`
 ở root của peer, thiết bị nếu có. File còn tăng → peer sống nhưng câm, nhắn nó một tin nhắc luật
-heartbeat; file đứng → dừng peer, spawn peer mới với brief ghi rõ dữ liệu đã có ở đâu. Không để
-Human là người phát hiện.
+heartbeat (tới khi nó idle); file đứng → xin Human dừng peer, spawn peer mới với brief ghi rõ dữ
+liệu đã có ở đâu; handoff muộn của peer cũ không chấm. Không để Human là người phát hiện.
+
+**Headless (`claude -p`) không có teammate.** Docs + Lab 11 run 1: Agent call thành subagent
+thường — không `SendMessage`, không heartbeat, kết quả về khi xong. Đó là anti-pattern *Subagent
+fallback* nhưng ở headless không sửa được: nói với Human một lần, ghi vào accept summary, chạy
+tiếp; đừng dừng writer đang chạy chỉ vì đường runtime.
 
 Nếu hai failure giống hệt nhau liên tiếp, kiểm prerequisite/quota/auth/permission trước khi retry.
 

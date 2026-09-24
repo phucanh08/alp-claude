@@ -232,10 +232,17 @@ phải của kênh. Ba luật:
    và muộn nhất sau ~10 tool call kể từ heartbeat trước. Ghi `date` lúc nhận brief để tự tính phút.
    Đang chờ Human (quẹt mẫu, cắm máy) vẫn heartbeat — "Chờ ai: Human" chính là thông tin Lead cần.
 2. **Không tool call nào chạy quá ~2 phút.** Poll = lệnh ngắn lặp lại (`timeout 60 …`), mỗi vòng
-   trả về rồi mới vòng tiếp; không `sleep` dài, không `adb logcat` không giới hạn. Tin của Lead và
-   lệnh dừng của Human chỉ tới được **giữa** các tool call; một Bash 40 phút là 40 phút điếc.
-   **Tin của Lead → trả lời ở lượt tool kế tiếp**, kể cả đang trong vòng poll; không xếp sau
-   "xong việc".
+   trả về rồi mới vòng tiếp; không `sleep` dài, không `adb logcat` không giới hạn.
+   **Tin của Lead/Human không tới giữa lượt** — runtime chỉ giao inbox khi bạn idle (Lab 11:
+   tin nằm 7 phút trong `~/.claude/teams/<team>/inboxes/<tên bạn>.json` với `read: false` tới khi
+   peer handoff). Hệ quả: heartbeat là kênh **duy nhất** Lead thấy bạn khi đang chạy, và Lead
+   không dừng được bạn bằng message. Vòng chờ dài (≥ 2 vòng poll) thì mỗi vòng đọc thêm inbox
+   của mình bằng `cat` (read-only, không sửa): có tin `read: false` từ `team-lead` → trả lời bằng
+   `SendMessage` ngay trong vòng đó, trước khi poll tiếp. Không thấy file inbox → bạn không phải
+   teammate, xem mục dưới.
+   **Không có tool `SendMessage`** → bạn là subagent thường (Lead chạy headless `-p`), không phải
+   teammate: bỏ heartbeat, **không** `ToolSearch` tìm nó (Lab 11: mất 3 lượt), handoff trả trong
+   kết quả cuối, ghi `Runtime: subagent, không heartbeat` vào ô `Unknown / risk`.
 3. **Số liệu ghi file ngay khi nhận, không giữ trong context.** Log, mẫu đo, output probe →
    append vào file trong scratchpad (`/tmp/slp-<task id>/…`) ở mỗi vòng poll; heartbeat ghi đường
    dẫn. Lead đếm chéo bằng `wc -l`/`stat`; context của bạn hỏng thì dữ liệu vẫn còn. Kênh đọc dữ
@@ -265,5 +272,5 @@ phải của kênh. Ba luật:
 - Architecture fog: abstraction không nói được ownership/lifecycle.
 - Viết nhiều abstraction để né một quyết định chưa chốt.
 - Retry tool call khi prerequisite không đổi.
-- Im lặng quá 10 phút; một Bash chạy hàng chục phút; số liệu chỉ nằm trong context; tin của Lead
-  để "trả lời sau khi xong".
+- Im lặng quá 10 phút; một Bash chạy hàng chục phút; số liệu chỉ nằm trong context; vòng chờ dài
+  mà không đọc inbox của mình; `ToolSearch` tìm `SendMessage` khi runtime không cấp.

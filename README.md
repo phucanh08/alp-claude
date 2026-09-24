@@ -240,7 +240,10 @@ Mục lục, thứ tự chạy, lab đã đổi gì trong instruction: [`docs/la
   worktree mỗi writer; bước chờ Human/thiết bị tách riêng; brief ≤ 2 nhóm hành vi); Lead đếm chéo
   file evidence mỗi heartbeat, peer im lặng > 15 phút = treo. `sequence-execution-plan`: dấu hiệu
   chẻ thứ tư. `supervisor.md`: `D15` (thiếu model/lý do), `D16` (peer im lặng, Lead không kiểm).
-  Lab 11 viết kịch bản, **chưa chạy** — số đo chính là tin của Lead có tới Peer giữa tool call không.
+  Lab 11 **PASS** (headless + interactive PTY): mọi luật ăn lần đầu, 0 nhắc; hai phát hiện
+  runtime — **tin gửi peer đang chạy chỉ giao khi peer idle** (nằm inbox 7 phút) nên `peer.md`
+  đổi sang "đọc inbox của mình mỗi vòng poll"; **headless `-p` không có teammate** (subagent
+  thường, không heartbeat).
 - v0.6.0: **skill phương pháp `bug-loop`** + trường brief tuỳ chọn `Required skills` (thứ 14).
   `peer.md` thêm luật test: oracle độc lập với implementation, lát dọc, mock chỉ ở rìa hệ thống,
   danh sách "làm xanh bằng mọi giá" là BLOCKING, ô `Verification` ghi proof level L1–L3.
