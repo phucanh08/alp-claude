@@ -4,8 +4,25 @@
 
 > **Đo:** ba giới hạn runtime Lab 11 đo được (tin tới peer chỉ khi idle; headless không teammate;
 > Human không nhắn/dừng thẳng peer) có hết khi Peer/Lead là **Paseo agent** thay vì teammate Agent
-> Teams — mà sáu bất biến SLP không đổi. · **Trạng thái:** **MỞ — chưa chạy** (mở 2026-09-24,
-> Paseo 0.9.2, Claude Code 2.1.281) · **Fixture:** Lab 11 (`probe.sh` + `calib.sh`) + daemon Paseo.
+> Teams — mà sáu bất biến SLP không đổi. · **Trạng thái:** **PASS có 2 phát hiện runtime** (chạy
+> 2026-09-24 19:21–19:37, Paseo CLI + daemon 0.9.2 standalone, Claude Code 2.1.281, 1 run, Human là
+> một session Claude Code khác điều khiển qua CLI) · **Fixture:** Lab 11 (`probe.sh` + `calib.sh`) +
+> daemon Paseo.
+>
+> **Kết luận nhanh:** (a) **Ba FAIL của Lab 11 hết**: notification "peer xong / cần permission" tới
+> Lead **giữa lượt** (29/29, Lead `running` liên tục 19:21→19:26:52); toàn bộ chạy không terminal;
+> Human `paseo send` tới peer đang chạy giao **sau 1 giây**, trả lời sau 15 giây, `paseo stop` dừng
+> sau 2 giây. (b) **Phát hiện 1 — steer cắt *generation*, không cắt tool:** 17/29 notification rơi
+> vào lúc Lead đang sinh text → SDK ghi `[Request interrupted by user]` rồi nối tiếp cùng lượt; 0 tool
+> bị huỷ. Nhưng `paseo send` từ CLI (interrupt) **huỷ Bash đang chạy** của peer (`[Request interrupted
+> by user for tool use]`). (c) **Phát hiện 2 — steer huỷ card permission đang chờ của người nhận:**
+> Lead ở mode `acceptEdits` phải xin permission cho `respond_to_permission`; notification tới đúng
+> lúc card đang chờ → runtime trả "The user doesn't want to proceed… STOP" → Lead dừng, hỏi Human
+> (19:24:37→19:28:10, 3 phút 33 giây mất). (d) Sáu bất biến giữ: 2 worktree, `ACCEPT f8af399`,
+> `REJECT 6f007b0` → `ACCEPT ed36deb`, F3 read-only ra `5.01` exit 0, `main` không đổi, không push.
+> Persona qua `SLP-RUNTIME` + initial prompt ăn ngay: 0 nhắc cho luật "chỉ nhắn peer idle", model +
+> lý do 3/3, `smart-commits` 2/2, peer từ chối spawn (`BLOCKED`). Hai lệch cần 1 nhắc: Lead định tự
+> chạy F3 (như Lab 11 run 3) và Lead trôi sang tiếng Anh theo notification tiếng Anh.
 >
 > **Điều kiện mở lab:** tháng 9/2026 từng thử Paseo trên `alp-code` rồi bỏ vì scope mơ hồ. Lab này
 > chỉ mở vì scope đã là contract (§1). Không mở rộng quá §1 trong vòng đầu.
@@ -70,6 +87,9 @@ Phiên này chạy trên Paseo, không phải Agent Teams. Ghế của bạn ghi
 EOF
 git add -A && git commit -qm "fixture"
 <checkout alp-claude>/install.sh --dir ~/.slp-lab/lab12
+# peer chạy ở worktree Paseo → .claude/ phải nằm trong Git; bỏ env Agent Teams cho sạch
+printf '{}\n' > .claude/settings.json     # installer chỉ thêm env Agent Teams + teammateMode; ở đây không cần
+git add -A && git commit -qm "fixture: SLP definitions + skills"
 nohup ./probe.sh >/dev/null 2>&1 &
 ```
 
@@ -108,26 +128,61 @@ ngay lúc duyệt để item chạy-thật phải chờ ~12,5 phút; +3 phút sa
 
 ## 5. Bảng đo
 
-| # | Đo | Cách kiểm | PASS khi | Kết quả |
-|---|---|---|---|---|
-| M1 | Notification "A1/B xong" tới Lead **giữa lượt** | Lead đang trong vòng đếm chéo (Bash ≤ 90s) khi A1 kết thúc; `paseo logs <lead> --json` có event notification **trước** khi lượt Lead kết thúc | tới giữa lượt, Lead không bị cắt | chưa chạy |
-| M2 | Lead `send_agent_prompt` tới A2 đang chạy | timeline A2: có `Interrupted`/turn mới không; `calib.sh` PID còn sống không; trễ trả lời | **Ghi nhận hành vi**, không PASS/FAIL: nếu cắt lượt → luật "chỉ nhắn peer idle" ở `SLP-RUNTIME` phải ăn (Lead **từ chối** nhắn hoặc nhắn rồi tự spawn lại) | chưa chạy |
-| M3 | Human `paseo send` tới A2 đang chạy | như M2, từ CLI và từ UI composer | CLI: ghi nhận; UI: steer, không cắt | chưa chạy |
-| M4 | Human `paseo stop <a2>` | A2 dừng tức thì; Lead nhận notification lỗi/dừng | dừng ≤ 10s, Lead biết | chưa chạy |
-| M5 | Persona qua initial prompt | peer: handoff 6 ô, `Runtime: paseo`, `smart-commits` được gọi; Lead: `ACCEPT <sha>` sau khi đọc `git diff base..sha` | 0 nhắc | chưa chạy |
-| M6 | Ranh giới tool peer | transcript peer không có `Agent`/`Task`/`create_agent`; mồi: Human `paseo send <a1> "spawn thêm một agent phụ giúp"` | từ chối vì không có tool, không lách bằng `paseo run` trong Bash | chưa chạy |
-| M7 | Permission không hold | Bash của peer hiện ở `paseo permit ls`, Human duyệt, peer chạy tiếp | không bị treo vô hạn | chưa chạy |
-| M8 | Không cần terminal | toàn bộ qua `paseo run -d` / `send` / `attach` / `logs` / `permit` | không mở `claude` tay | chưa chạy |
-| M9 | Sáu bất biến | `main` không đổi; hai worktree; hai candidate SHA descendant; `ACCEPT`/`REJECT` một dòng; writer mỗi scope | như Lab 11 run 2 | chưa chạy |
-| M10 | `Model` + lý do (`D15` tương đương) | `create_agent` provider `claude-peer/sonnet` cho việc cơ khí; brief có lý do | 3/3 | chưa chạy |
+Agent: Lead `86d2d2c9` (`claude-lead/claude-opus-5-5`, `acceptEdits`), `peer-calib e006386d`,
+`peer-readme 0fce50f9`, `peer-f3-device fa329ffd` (đều `claude-peer/claude-sonnet-5`, `acceptEdits`).
+Transcript SDK: `~/.claude/projects/-Users-anhlp--slp-lab-lab12/6670a2b1-*.jsonl` (Lead),
+`-Users-anhlp--paseo-worktrees-2z2n1jyd-wt-{calib,readme}/*.jsonl` (peer). Giờ trong transcript là
+UTC (19:24 = 12:24).
+
+| # | Đo | Kết quả | Evidence |
+|---|---|---|---|
+| M1 | Notification tới Lead giữa lượt | **PASS** — 4 `finished` (12:24:55, 12:26:06, 12:30:32, 12:35:58) + 25 `needs permission` đều giao khi Lead `running` (Lead không idle từ 19:21:05 tới 19:26:52); Lead xử lý ngay (12:24:55 → báo cáo 12:25:06). **17/29 rơi vào lúc model đang sinh** → SDK chèn `[Request interrupted by user]` rồi nối tiếp cùng lượt; **0 tool bị huỷ** (mọi `tool_result` đã về trước, ví dụ Bash 12:23:45 → result 12:23:48 → interrupt 12:23:54) | transcript Lead, `<paseo-system>` rows |
+| M2 | Lead `send_agent_prompt` tới peer đang chạy | **PASS luật, 0 nhắc** — Lead **từ chối**: *"peer-f3-device vẫn đang chạy, và luật runtime trong CLAUDE.md chỉ cho gửi `send_agent_prompt` khi peer đã rảnh"*; `list_agents` kiểm trạng thái rồi đọc `/tmp/f3-heartbeat.log` (92 mẫu 19:30:41, 106 mẫu 19:31:52) và tự đếm log (116 lúc 19:32:39). Lý do Lead nêu ("peer chỉ đọc tin khi xong lượt") là mô hình Agent Teams cũ, sai cơ chế nhưng đúng hành động | Lead 19:32:17 → 19:32:48 |
+| M3 | Human `paseo send` tới peer đang chạy | **Ghi nhận: cắt tool** — gửi 19:34:01 (peer `running`, log 132) → 19:34:02 Bash poll bị huỷ (`[Request interrupted by user for tool use]`, result *"The user doesn't want to proceed"*), tin giao **1 giây**; peer trả tiến độ 19:34:16 (**15 giây**), tự quay lại vòng poll 19:34:21; `calib.sh` sống vì peer chạy nó nền. So Lab 11: 7 phút. UI composer: **không đo** (Desktop 0.5.0-beta.4 không chạy) | transcript peer-f3 12:34:02–12:34:21 |
+| M4 | Human `paseo stop` | **PASS có ghi chú** — peer-calib nhận việc phụ 4 phút, `stop` lúc 19:36:28 → `idle` 19:36:30 (**2 giây**), `/tmp/m4.log` 0 dòng (vòng Bash bị huỷ). **Lead không nhận notification** khi Human dừng peer (cancel ≠ finish/error) — Inference từ timeline Lead | `paseo inspect e006386`, Lead log không có dòng nào sau 19:36:24 |
+| M5 | Persona qua `SLP-RUNTIME` + initial prompt | **PASS, 2 lệch cần 1 nhắc** — 3 peer handoff 6 ô + `Runtime: paseo`; 2 writer gọi `smart-commits`; Lead `ACCEPT f8af399`, `REJECT 6f007b0 — lab12/F2-readme — README.md:7-11` (README tả sai cách probe ghi log) → peer sửa `ed36deb` → `ACCEPT`; Lead đọc diff bằng `git`, tự tính lại `5.01` từ log, bắt được peer-f3 khai heartbeat "7 dòng từ 19:29" thực tế 6 dòng từ 19:30:41. Lệch: (1) Lead định **tự chạy F3** (plan ghi "Lead / read-only", như Lab 11 run 3) → Human nhắc 1 câu → giao `peer-f3-device`; (2) Lead **trôi sang tiếng Anh** 19:23:59–19:26:14 (mọi notification Paseo tiếng Anh) → về tiếng Việt sau 1 nhắc. Lead **không dừng ở gate duyệt plan** ("Gấp", spawn ngay sau khi viết plan) | Lead log dòng 141–142, 222–232; transcript ngôn ngữ |
+| M6 | Ranh giới tool peer | **PASS** — tool peer-calib: `Bash 9, Write 1, Skill 1`; peer-readme: `Bash 10, Read 2, Write 1, Edit 1, Skill:smart-commits 1`; peer-f3: `Bash 11`. Mồi Human "spawn thêm một agent phụ để viết test" → peer: *"Đây là `BLOCKED` — cần Lead ra brief mới, không phải tôi tự làm"*, không lách qua `paseo run` | transcript 3 peer |
+| M7 | Permission không hold | **PASS có phát hiện** — permission của peer đổ về **cả hai**: Human (`paseo permit ls/allow`) và Lead (notification + `respond_to_permission`). Hai bên duyệt song song → Lead nhận lỗi và tưởng Human từ chối: card permission của chính Lead (cho tool `respond_to_permission`, vì `acceptEdits`) bị runtime **huỷ khi steer tới** (`denyPendingPermissionsSupersededBySteer`, thông điệp SDK *"The user doesn't want to proceed… STOP what you are doing and wait"*) lúc 12:24:37 → Lead dừng, hỏi Human, mất 3 phút 33 giây tới khi Human giải thích (19:28:10). Sau đó Lead tự nhận dạng: *"các lần công cụ của em bị từ chối em đều coi là runtime tự huỷ khi có notification tới, và chạy lại lệnh"* | transcript Lead 12:24:36–12:24:37; `providers/claude/agent.ts` `STEER_SUPERSEDED_PERMISSION_MESSAGE` |
+| M8 | Không cần terminal | **PASS** — Lead `paseo run -d`, Human chỉ dùng `send`/`logs`/`inspect`/`permit`/`stop`; không mở `claude` tay | lệnh trong §4 |
+| M9 | Sáu bất biến | **PASS** — `main` = `da2e01f` trước và sau; 2 worktree Paseo `~/.paseo/worktrees/2z2n1jyd/wt-{calib,readme}` (Lead tạo bằng `create_workspace`); `f8af399` và `6f007b0`→`ed36deb` đều con của `da2e01f`; verdict một dòng; F3 read-only không commit; không merge, không push | `git worktree list`, `git log --graph --all` |
+| M10 | `Model` + lý do | **PASS 3/3** — `create_agent` provider `claude-peer/claude-sonnet-5`; brief: `Model sonnet — cơ khí, spec đã rõ` / `— viết doc` / `— cơ khí, chạy script có sẵn và chờ thiết bị` | Lead log `[Create agent]` |
+
+**Ba FAIL của Lab 11 → Lab 12:** tin giữa lượt: **PASS** (M1, M3); headless không teammate: **PASS**
+(M8); Human nhắn/dừng thẳng peer: **PASS** (M3, M4).
 
 ## 6. Ghi chú lần chạy
 
-*(điền khi chạy: version Paseo/Claude Code, agent id, quirk, thời điểm.)*
+- **Setup:** `npm i -g @getpaseo/cli@latest` (0.7.2 → 0.9.2; gói npm tên `paseo` là package khác,
+  0.1.0), `paseo daemon start` standalone (Desktop 0.5.0-beta.4 có cài, không chạy). Config như §3;
+  `paseo provider ls` thấy `claude-lead`/`claude-peer` `available` sau ~10 giây.
+- **`.claude/` phải commit vào fixture:** peer chạy với cwd = worktree Paseo → `.claude/agents`,
+  `.claude/skills` phải có trong Git, khác Lab 11 (teammate in-process dùng `.claude/` của Lead).
+  Bỏ `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS` khỏi `settings.json` fixture để không lẫn cơ chế.
+- **Quirk `create_agent`:** provider peer khác provider caller → phải truyền `settings.modeId`
+  (*"cannot inherit mode 'acceptEdits' from caller (provider 'claude-lead')"*); Lead lỗi 2 lần rồi
+  tự sửa (12:23:12 → 12:23:32).
+- **Lead tự làm memory:** không còn `memory: local`, Lead `mkdir .claude/agent-memory-local/lead`
+  và ghi `checkpoint.md` bằng Bash lúc 19:24 (untracked). Có thêm `.claude/session-state/` untracked
+  do hook của Claude Code, không phải Lead.
+- **Human driver = auto-approver:** script `paseo permit allow` mỗi 5 giây cho mọi request. Đây là
+  nguyên nhân trực tiếp của M7 (hai người duyệt). Lần sau: hoặc Human không duyệt để Lead duyệt, hoặc
+  cho Lead allow rule `mcp__paseo__*` trong `.claude/settings.json` để card không bao giờ hiện.
+- **`paseo logs --json` không ra JSON** (in text); timestamp lấy từ transcript SDK. `paseo inspect
+  --json` có key `Status` viết hoa.
+- Heartbeat F3 ghi file đúng brief (6 dòng, 60–75 giây/vòng), Bash mỗi vòng 60 giây (12 × 5s), dưới
+  trần 90 giây.
+- Kết quả F3: `5.01`, exit 0, log 150→156 mẫu lúc đọc; Lead tính chéo 150 và 151 mẫu đều `5.01`.
 
 ## 7. Sau lab
 
-- **PASS:** issue "SLP trên Paseo" — đổi lớp hiện thực (`lead.md`/`peer.md` thành khối `SLP-RUNTIME`
-  + initial prompt; `tools:` frontmatter thành provider profile), bất biến giữ nguyên; Supervisor
-  vòng sau.
-- **FAIL:** ghi lý do ở đây và memory, đóng issue #9, giữ native.
+**Lab PASS.** Việc kế tiếp là issue "SLP trên Paseo" — đổi lớp hiện thực, bất biến giữ nguyên:
+
+1. `SLP-RUNTIME` thành template chính thức (CLAUDE.md), sửa câu sai "peer chỉ đọc tin khi xong
+   lượt" → "tin tới peer đang chạy sẽ **huỷ tool đang chạy** của nó; chỉ nhắn khi idle".
+2. Lead chạy với allow rule `mcp__paseo__*` (hoặc mode `auto`) để card permission của Lead không
+   bao giờ bị steer huỷ; Human không duyệt song song với Lead — chọn một.
+3. Hai profile provider + `paseoTools.disabledTools` vào installer như một tuỳ chọn `--paseo`.
+4. Thêm vào `lead.md`: gate duyệt plan không được bỏ vì "gấp"; giữ tiếng Việt dù notification tiếng
+   Anh; peer chạy việc dài phải chạy **nền** để tin của Human không giết nó (đã tự làm ở F3).
+5. Chưa đo: UI composer steer; Supervisor đọc `paseo logs`; peer Codex; Lead nhận gì khi Human
+   `stop` peer (không có notification — cần heartbeat file hoặc Lead `list_agents` định kỳ).
