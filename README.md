@@ -53,6 +53,15 @@ curl -fsSL https://raw.githubusercontent.com/phucanh08/alp-claude/main/install.s
 curl -fsSL https://raw.githubusercontent.com/phucanh08/alp-claude/main/install.sh | bash -s -- --dir /path/to/repo
 ```
 
+Windows (PowerShell 5.1+ hoặc pwsh 7, không cần `python3`/`node`):
+
+```powershell
+irm https://raw.githubusercontent.com/phucanh08/alp-claude/main/install.ps1 | iex                                               # project
+& ([scriptblock]::Create((irm https://raw.githubusercontent.com/phucanh08/alp-claude/main/install.ps1))) -Global                # global
+$env:SLP_REF='v0.1.0'; irm https://raw.githubusercontent.com/phucanh08/alp-claude/main/install.ps1 | iex                        # pin version
+& ([scriptblock]::Create((irm https://raw.githubusercontent.com/phucanh08/alp-claude/main/install.ps1))) -Dir C:\path\to\repo    # repo khác
+```
+
 Installer làm đúng 6 việc và ghi lại trong `.claude/slp-manifest.json`:
 
 | Việc | Hành vi |
@@ -64,7 +73,7 @@ Installer làm đúng 6 việc và ghi lại trong `.claude/slp-manifest.json`:
 | `CLAUDE.md` | chỉ tạo từ template nếu **chưa có**; có rồi thì không đụng |
 | validate | `claude plugin validate` cho `.claude/agents` và `.claude/skills` nếu có lệnh `claude` |
 
-Yêu cầu: `curl`, `tar`, `python3` **hoặc** `node`. Claude Code ≥ 2.1 (Agent Teams experimental).
+Yêu cầu: `curl`, `tar`, `python3` **hoặc** `node` (Windows `install.ps1`: chỉ cần PowerShell). Claude Code ≥ 2.1 (Agent Teams experimental).
 
 ## Cập nhật
 
@@ -74,6 +83,11 @@ Chạy lại installer đúng kiểu đã cài (xem kiểu và bản đang dùng
 ```bash
 curl -fsSL https://raw.githubusercontent.com/phucanh08/alp-claude/main/install.sh | bash                 # project
 curl -fsSL https://raw.githubusercontent.com/phucanh08/alp-claude/main/install.sh | bash -s -- --global  # global
+```
+
+```powershell
+irm https://raw.githubusercontent.com/phucanh08/alp-claude/main/install.ps1 | iex                                  # project
+& ([scriptblock]::Create((irm https://raw.githubusercontent.com/phucanh08/alp-claude/main/install.ps1))) -Global   # global
 ```
 
 Agent/skill bị ghi đè; file anh đã tự sửa được backup vào `.claude/backups/slp-<timestamp>/` để chép lại phần riêng.
@@ -103,6 +117,11 @@ message giữa hai bên bị hold. Chuyển sang workspace nhiều repo: cài `-
 ```bash
 curl -fsSL https://raw.githubusercontent.com/phucanh08/alp-claude/main/uninstall.sh | bash
 curl -fsSL https://raw.githubusercontent.com/phucanh08/alp-claude/main/uninstall.sh | bash -s -- --global
+```
+
+```powershell
+irm https://raw.githubusercontent.com/phucanh08/alp-claude/main/uninstall.ps1 | iex
+& ([scriptblock]::Create((irm https://raw.githubusercontent.com/phucanh08/alp-claude/main/uninstall.ps1))) -Global
 ```
 
 Uninstaller đọc manifest và gỡ **đúng những gì đã cài**: agent files; skill dirs; chỉ các key trong
