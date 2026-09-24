@@ -8,12 +8,29 @@ export type Seat = "lead" | "peer" | "supervisor";
 /** providerOptions của agent config (Record<string, JsonValue>), lấy từ type hook để không thêm dep. */
 export type ProviderOptions = PluginBeforeRequests["agent.create"]["config"]["providerOptions"];
 
-/** Provider profile (extends: claude, khai trong ~/.paseo/config.json) → ghế SLP. */
+/** Họ provider gốc của profile: quyết định providerOptions nào có nghĩa (Claude: allowed/disallowedTools; Codex: sandbox_mode). */
+export type Family = "claude" | "codex";
+
+/** Provider profile (`<họ>-<ghế>`, extends claude|codex, khai trong ~/.paseo/config.json) → ghế SLP. */
 const SEAT_BY_PROVIDER: Record<string, Seat> = {
   "claude-lead": "lead",
   "claude-peer": "peer",
   "claude-supervisor": "supervisor",
+  "codex-lead": "lead",
+  "codex-peer": "peer",
+  "codex-supervisor": "supervisor",
 };
+
+export function familyOf(provider: string): Family | null {
+  if (!(provider in SEAT_BY_PROVIDER)) return null;
+  return provider.startsWith("codex-") ? "codex" : "claude";
+}
+
+/**
+ * Supervisor trên Codex: sandbox chỉ cho ghi trong cwd (workspace trung lập → chỉ memory của nó),
+ * thay cho disallowedTools Write/Edit của Claude. Không dùng `read-only` vì nó cần ghi memory.
+ */
+export const CODEX_SUPERVISOR_OPTIONS = { sandbox_mode: "workspace-write" } as const;
 
 /** Tool Paseo Lead được gọi không cần hỏi; wildcard là cú pháp allowedTools của Claude Code. */
 export const LEAD_ALLOWED_TOOLS = ["mcp__paseo__*"] as const;
@@ -96,8 +113,14 @@ export function withSupervisorTools(providerOptions: ProviderOptions): NonNullab
   };
 }
 
-/** providerOptions theo ghế; peer không đổi gì (ranh giới peer nằm ở profile). */
-export function providerOptionsFor(seat: Seat, providerOptions: ProviderOptions): ProviderOptions {
+/**
+ * providerOptions theo ghế và họ provider; peer không đổi gì (ranh giới peer nằm ở profile).
+ * Codex không có allowedTools (tool MCP không hiện card) nên Lead Codex giữ nguyên.
+ */
+export function providerOptionsFor(seat: Seat, family: Family, providerOptions: ProviderOptions): ProviderOptions {
+  if (family === "codex") {
+    return seat === "supervisor" ? { ...(providerOptions ?? {}), ...CODEX_SUPERVISOR_OPTIONS } : providerOptions;
+  }
   switch (seat) {
     case "lead":
       return withLeadAllowedTools(providerOptions);

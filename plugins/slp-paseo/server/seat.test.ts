@@ -5,6 +5,7 @@ import path from "node:path";
 import { test } from "node:test";
 import {
   buildSystemPrompt,
+  familyOf,
   providerOptionsFor,
   readDefinition,
   seatOf,
@@ -54,7 +55,7 @@ test("withLeadAllowedTools: thêm wildcard, giữ tool cũ, không trùng", () =
 
 test("supervisor: seat, disallowedTools ghi/spawn, runtime block đúng ghế", () => {
   assert.equal(seatOf("claude-supervisor"), "supervisor");
-  const opts = providerOptionsFor("supervisor", { disallowedTools: ["WebSearch"] });
+  const opts = providerOptionsFor("supervisor", "claude", { disallowedTools: ["WebSearch"] });
   assert.deepEqual(opts, {
     allowedTools: ["mcp__paseo__*"],
     disallowedTools: ["WebSearch", "Write", "Edit", "MultiEdit", "NotebookEdit", "Agent", "Task"],
@@ -67,6 +68,21 @@ test("supervisor: seat, disallowedTools ghi/spawn, runtime block đúng ghế", 
 
 test("providerOptionsFor: peer giữ nguyên tham chiếu", () => {
   const opts = { allowedTools: ["Bash"] };
-  assert.equal(providerOptionsFor("peer", opts), opts);
-  assert.equal(providerOptionsFor("peer", undefined), undefined);
+  assert.equal(providerOptionsFor("peer", "claude", opts), opts);
+  assert.equal(providerOptionsFor("peer", "claude", undefined), undefined);
+});
+
+test("codex: profile codex-* đúng ghế/họ; supervisor sandbox workspace-write, lead/peer không đổi", () => {
+  assert.equal(seatOf("codex-lead"), "lead");
+  assert.equal(seatOf("codex-supervisor"), "supervisor");
+  assert.equal(familyOf("codex-peer"), "codex");
+  assert.equal(familyOf("claude-peer"), "claude");
+  assert.equal(familyOf("codex"), null);
+  assert.deepEqual(providerOptionsFor("supervisor", "codex", { approval_policy: "never" }), {
+    approval_policy: "never",
+    sandbox_mode: "workspace-write",
+  });
+  const opts = { approval_policy: "on-request" };
+  assert.equal(providerOptionsFor("lead", "codex", opts), opts);
+  assert.equal(providerOptionsFor("peer", "codex", undefined), undefined);
 });

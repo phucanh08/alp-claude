@@ -19,8 +19,8 @@ dòng `desktopManaged: true`.
 
 ## 2. Cấu hình một lần (trên máy chạy daemon)
 
-Desktop đọc cùng file `~/.paseo/config.json` với CLI. Thêm hai profile provider và bật tool
-injection (giữ nguyên key khác đang có):
+Desktop đọc cùng file `~/.paseo/config.json` với CLI. Thêm profile provider theo mẫu `<họ>-<ghế>`
+(họ `claude` hoặc `codex`, từ beta.4) và bật tool injection (giữ nguyên key khác đang có):
 
 ```json
 {
@@ -29,6 +29,9 @@ injection (giữ nguyên key khác đang có):
     "claude-lead": { "extends": "claude", "label": "SLP Lead" },
     "claude-peer": { "extends": "claude", "label": "SLP Peer",
       "disallowedTools": ["Agent", "Task"],
+      "paseoTools": { "disabledTools": ["create_agent", "send_agent_prompt", "kill_agent", "cancel_agent", "archive_agent", "create_schedule"] } },
+    "codex-lead": { "extends": "codex", "label": "SLP Lead (Codex)" },
+    "codex-peer": { "extends": "codex", "label": "SLP Peer (Codex)",
       "paseoTools": { "disabledTools": ["create_agent", "send_agent_prompt", "kill_agent", "cancel_agent", "archive_agent", "create_schedule"] } }
   } }
 }
@@ -37,6 +40,12 @@ injection (giữ nguyên key khác đang có):
 Rồi `paseo reload` (hoặc khởi động lại Desktop). Kiểm: **Settings → your host → Providers** thấy
 **SLP Lead** và **SLP Peer** ở trạng thái available; **Settings → your host → Agents → Enable Paseo
 tools** đang bật (đây là cùng công tắc với `injectIntoAgents`).
+
+Profile kế thừa danh sách model của provider gốc, nên chọn model lúc tạo agent (`codex-peer/gpt-5.5`,
+`claude-peer/claude-sonnet-5`…). Mỗi ghế có thể là họ khác nhau (Lead Claude, peer Codex). Codex không
+có `disallowedTools`; ranh giới peer Codex chỉ là `paseoTools` (không spawn/nhắn) — Codex vốn không có
+tool spawn con. Đo 24/9 (Codex CLI 0.155): `codex-lead` nhận đủ `mcp__paseo__*` và gọi `list_agents`
+không hỏi; `codex-peer` nhận `peer.md` + `SLP-RUNTIME`. Chưa chạy lab trọn vòng với Codex.
 
 Ý nghĩa: Peer bị cắt `Agent`/`Task` phía Claude và cắt `create_agent`/`send_agent_prompt`/`kill_agent`
 phía Paseo → Peer không spawn được ai, không nhắn ai (Lab 12 M6). Lead giữ trọn bộ tool Paseo.
@@ -47,13 +56,19 @@ chọn một cú khi tạo agent. Profile chỉ gói provider/model/mode, **khô
 
 ## 2b. Plugin `slp-paseo` (khuyến nghị — thay cho bước 3 và 4 của §3)
 
-Plugin trong `plugins/slp-paseo/` của repo này làm hai việc mà config không làm được:
+Plugin trong `plugins/slp-paseo/` của repo này làm ba việc mà config không làm được:
 
-- `agent.create`: agent tạo bằng provider `claude-lead`/`claude-peer` nhận system prompt =
+- `agent.create`: agent tạo bằng provider `<họ>-<ghế>` nhận system prompt =
   `.claude/agents/<ghế>.md` (trong cwd của agent, không có thì `~/.claude/agents/`) + khối
-  `SLP-RUNTIME`. Đây là cái thay cho `claude --agent <ghế>` của bản native.
-- Lead được thêm `allowedTools: mcp__paseo__*` nên card permission cho tool Paseo không bao giờ
-  hiện — hết bẫy M7. Lưới thứ hai: nếu card vẫn hiện, plugin allow ngay.
+  `SLP-RUNTIME` + **roster** ghế đối ứng đang sống trên host (Lead thấy "Supervisor hiện có",
+  Supervisor thấy "Lead hiện có": id, title, Root, trạng thái). Đây là cái thay cho
+  `claude --agent <ghế>` và `ListAgents` của bản native. Trên Codex system prompt cũng ăn (đo 24/9).
+- Lead/Supervisor Claude được thêm `allowedTools: mcp__paseo__*` nên card permission cho tool Paseo
+  không bao giờ hiện — hết bẫy M7. Lưới thứ hai: nếu card vẫn hiện, plugin allow ngay.
+- `agent.turn_ended` lượt đầu của Lead: Lead chưa kịp gửi `SLP-REGISTER` (vì Supervisor đang bận
+  đúng lúc đó) → plugin nhắn Supervisor một dòng `[plugin slp-paseo] Lead mới…` khi Supervisor idle,
+  Supervisor mở phiên. Báo lúc Lead **kết thúc lượt** chứ không lúc tạo: báo lúc tạo làm hai bên
+  cùng thấy nhau "đang chạy" rồi cùng hoãn, không ai có cò để tiếp (đo 24/9, issue #16).
 
 Cài (plugin là code không sandbox, chạy trên máy daemon — Paseo bắt xác nhận):
 
@@ -89,12 +104,17 @@ cp <alp-claude>/agents/supervisor.md ~/slp-supervisor/.claude/agents/
 ```
 
 3. Trong Desktop mở workspace `~/slp-supervisor`, New agent → provider **SLP Supervisor**, model Opus,
-   mode Accept edits. Tin đầu: `Ghế: supervisor. Theo dõi Lead agent <id>, Root <path>. Làm bootstrap
-   theo definition. Chỉ báo DRIFT / ESCALATE / NOTE.` Id Lead lấy ở tab của Lead hoặc `paseo ls`.
-4. Lượt đầu Supervisor thường gặp Lead đang chạy → nó **không** nhắn, tự kiểm Root rồi xin anh đánh
-   thức. Khi Lead idle, gõ cho Supervisor *"Lead rảnh rồi"*; nó gửi mở phiên, Lead trả `SLP-REGISTER`,
-   từ đó Lead tự gửi checkpoint và Supervisor tự thức theo notification.
+   mode Accept edits. Tin đầu chỉ cần: `Làm bootstrap theo definition. Chỉ báo DRIFT / ESCALATE / NOTE.`
+   Không cần đưa id Lead (từ beta.4): plugin đã liệt kê mọi Lead đang sống trong prompt của nó. Muốn
+   giới hạn thì thêm *"chỉ theo dõi Root <path>"* — Lead ở Root khác nó bỏ qua, không nhắn (đo 24/9).
+4. Thứ tự tạo không quan trọng. Supervisor có trước → Lead mới tạo tự gửi `SLP-REGISTER` (nếu
+   Supervisor đang bận đúng lúc đó thì plugin báo Supervisor khi Lead xong lượt đầu, Supervisor mở
+   phiên). Lead có trước → Supervisor thấy Lead trong roster, mở phiên khi Lead idle. Anh không phải
+   gõ *"Lead rảnh rồi"* nữa; từ đó Lead tự gửi checkpoint và Supervisor tự thức theo notification.
 5. Đọc DRIFT/NOTE/ESCALATE ngay trong tab của Supervisor. Memory của nó ở `~/slp-supervisor/memory/`.
+6. Supervisor Codex: provider **SLP Supervisor (Codex)** (`codex-supervisor`, `extends: codex`, cùng
+   `paseoTools` với bản Claude); plugin đặt sandbox `workspace-write` thay cho settings.json + cắt
+   `Write`/`Edit`. Chưa đo bằng lab; dùng bản Claude khi cần bằng chứng.
 
 Ba điều Lab 13 đo được: Supervisor không bao giờ nhắn peer dù anh bảo; không ACCEPT thay Lead;
 `Read` file ngoài cwd sẽ hiện card (rule `Read(//**)` không tác dụng trên Paseo) nên nó đọc transcript
@@ -137,8 +157,10 @@ không bao giờ hiện. Cách khác là chạy Lead ở mode **Auto**.
 ## 4. Chạy một phiên
 
 1. **Mở workspace**: Desktop → chọn project (thư mục repo). Đây là workspace gốc, chỗ Lead ngồi.
-2. **Tạo Lead**: New agent → provider **SLP Lead** (hoặc profile), model Opus, mode Accept edits
-   hoặc Auto. Tin đầu tiên bắt đầu bằng `Ghế: lead.` rồi tới đề bài, ví dụ đề của Lab 11.
+2. **Tạo Lead**: New agent → provider **SLP Lead** hoặc **SLP Lead (Codex)** (hoặc profile), model
+   Opus/GPT, mode Accept edits hoặc Auto. Tin đầu tiên là đề bài, ví dụ đề của Lab 11 (tiền tố
+   `Ghế: lead.` không cần nữa khi có plugin — ghế đã nằm trong system prompt). Có Supervisor đang
+   chạy thì Lead tự đăng ký trước khi lập plan (§2c).
 3. **Lead tự làm phần còn lại**: đọc `lead.md`, lập plan, `create_workspace` worktree cho từng
    writer, `create_agent` với provider `claude-peer/<model>` và brief có `Model … — lý do`. Các
    peer hiện trong **Subagents track** cạnh composer; bấm vào để xem hội thoại thật của từng peer.
