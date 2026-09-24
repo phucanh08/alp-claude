@@ -53,12 +53,21 @@ curl -fsSL https://raw.githubusercontent.com/phucanh08/alp-claude/main/install.s
 curl -fsSL https://raw.githubusercontent.com/phucanh08/alp-claude/main/install.sh | bash -s -- --dir /path/to/repo
 ```
 
+Bản **beta** (nhánh `beta` — dòng thử nghiệm SLP trên Paseo, xem [Lab 12](docs/labs/lab-12-paseo-runtime.md);
+`VERSION` trên nhánh này luôn có hậu tố `-beta.N`, installer từ chối nếu thiếu):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/phucanh08/alp-claude/beta/install.sh | SLP_REF=beta bash
+curl -fsSL https://raw.githubusercontent.com/phucanh08/alp-claude/beta/install.sh | SLP_REF=beta bash -s -- --global
+```
+
 Windows (PowerShell 5.1+ hoặc pwsh 7, không cần `python3`/`node`):
 
 ```powershell
 irm https://raw.githubusercontent.com/phucanh08/alp-claude/main/install.ps1 | iex                                               # project
 & ([scriptblock]::Create((irm https://raw.githubusercontent.com/phucanh08/alp-claude/main/install.ps1))) -Global                # global
 $env:SLP_REF='v0.1.0'; irm https://raw.githubusercontent.com/phucanh08/alp-claude/main/install.ps1 | iex                        # pin version
+$env:SLP_REF='beta';   irm https://raw.githubusercontent.com/phucanh08/alp-claude/beta/install.ps1 | iex                        # bản beta
 & ([scriptblock]::Create((irm https://raw.githubusercontent.com/phucanh08/alp-claude/main/install.ps1))) -Dir C:\path\to\repo    # repo khác
 ```
 

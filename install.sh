@@ -142,6 +142,14 @@ for a in lead peer supervisor; do [ -f "$SRC/agents/$a.md" ] || die "bundle thi�
 for s in $SKILLS; do [ -f "$SRC/skills/$s/SKILL.md" ] || die "bundle thiếu skills/$s/SKILL.md"; done
 [ -f "$SRC/templates/supervisor.settings.json" ] || die "bundle thiếu templates/supervisor.settings.json"
 VERSION="$(cat "$SRC/VERSION" 2>/dev/null || echo unknown)"
+# Nhánh beta (SLP trên Paseo) bắt buộc VERSION dạng x.y.z-beta.N; bản chính không mang hậu tố này.
+case "$SLP_REF" in
+  beta|beta/*) case "$VERSION" in
+    *-beta.[0-9]*) ;;
+    *) die "ref '$SLP_REF' là dòng beta nhưng VERSION='$VERSION' thiếu hậu tố -beta.N" ;;
+  esac ;;
+esac
+case "$VERSION" in *-beta.*) warn "bản BETA $VERSION (ref $SLP_REF) — dòng thử nghiệm SLP trên Paseo, không phải bản chính." ;; esac
 
 # ---- resolve target ------------------------------------------------------------
 if [ "$MODE" = "global" ]; then
