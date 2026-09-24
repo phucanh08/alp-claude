@@ -6,17 +6,18 @@
 > (1) Peer gửi `HEARTBEAT` theo nhịp, không Bash dài, số liệu ghi file (`peer.md`); (2) Lead
 > truyền `model:` cho mọi Agent call + brief có lý do (`lead.md`); (3) item có bước chờ thiết bị
 > được tách, Human nói gấp thì hai writer chạy song song bằng worktree (`sequence-execution-plan`).
-> · **Trạng thái:** **PASS có 2 phát hiện runtime** (2026-09-24, Claude Code 2.1.281, hai lần
-> chạy: headless `-p` và interactive qua PTY; không Supervisor) · **Fixture:** repo disposable +
-> "thiết bị" giả `probe.sh` ghi một dòng mỗi 5 giây.
+> · **Trạng thái:** **PASS có 2 phát hiện runtime** (2026-09-24, Claude Code 2.1.281, ba lần
+> chạy: headless `-p`; interactive qua PTY; interactive + Supervisor thật) · **Fixture:** repo
+> disposable + "thiết bị" giả `probe.sh` ghi một dòng mỗi 5 giây.
 >
-> **Kết luận nhanh:** (a) **Tin gửi peer đang chạy không bao giờ tới giữa lượt** — nằm trong
-> inbox `read: false` 7 phút tới khi peer handoff và idle; heartbeat (chiều ra) thì tới ngay.
-> Luật "trả lời ở lượt tool kế tiếp" viết lại thành "đọc inbox của mình mỗi vòng poll".
-> (b) **Headless `-p` không có teammate**: writer là subagent thường, không có `SendMessage` →
-> không heartbeat được; Lead tự phát hiện và báo Human. (c) Model/lý do, heartbeat trước vòng
-> poll, Bash ≤ 102s, chẻ theo bước chờ thiết bị, hai writer worktree song song, Lead đếm chéo:
-> **tất cả ăn ngay lần đầu, 0 nhắc**. Một drift `D13` (writer B commit không `smart-commits`).
+> **Kết luận nhanh:** (a) **Tin gửi peer đang chạy không bao giờ tới giữa lượt** (đo 2 lần) —
+> nằm trong inbox `read: false` 7 phút tới khi peer handoff và idle; heartbeat (chiều ra) thì
+> tới ngay. Luật "trả lời ở lượt tool kế tiếp" viết lại thành "vòng poll tự `cat` inbox" — run 3
+> peer **chưa làm** khi luật chỉ nói bằng lời → thêm mẫu vòng poll. (b) **Headless `-p` không có
+> teammate**: writer là subagent thường, không `SendMessage` → không heartbeat; Lead tự phát
+> hiện và báo Human. (c) Model/lý do, heartbeat trước vòng poll, chẻ theo bước chờ thiết bị, hai
+> writer worktree song song, Lead đếm chéo, Lead đọc inbox thay vì đoán (run 3): **ăn ngay, 0
+> nhắc**. Supervisor v0.7.0 kiểm `D15`/`D16` bằng evidence đúng. Một drift `D13` ở run 2.
 
 ## 1. Fixture
 
@@ -82,6 +83,26 @@ riêng ở `<session>/subagents/agent-<tên>-*.jsonl`.
 - Không đo được tin giữa lượt: subagent xong là dừng, message chỉ đánh thức lại (`Resuming
   agent`), 12 giây.
 
+## 4b. Run 3 (interactive + Supervisor thật, definition v0.7.0 đã có luật inbox)
+
+Fixture `lab11u`, Supervisor ở `~/slp-supervisor` với `--settings slp-supervisor.settings.json`;
+definition Supervisor phải đặt ở `~/slp-supervisor/.claude/agents/supervisor.md` (bản global
+`~/.claude/agents/` là v0.6.0, không có `D15`/`D16` — lần đầu chạy nó chỉ kiểm D6/D13/D14).
+
+| Luật | Kết quả | Evidence |
+|---|---|---|
+| Lead đọc inbox thay vì đoán | **PASS** | Lead: *"lúc 18:05:55 inbox vẫn ghi `read: false`… Heartbeat 18:05:46 không phải câu trả lời"* — đúng, sửa lỗi run 2 |
+| Tin tới peer chỉ khi idle (lần 2) | xác nhận | Lead gửi 17:59:17 → peer nhận 18:06:26, 6 giây sau handoff |
+| Peer `cat` inbox mỗi vòng poll | **FAIL 0/1** | vòng poll của `a2-run` = `for i in $(seq 1 24); do … sleep 5; done; wc -l` — không có dòng đọc inbox; sau lab thêm mẫu vòng poll vào `peer.md` |
+| Bash ≤ 2 phút | sát ngưỡng | 24 × 5s + overhead = **121s**; trần hạ xuống ~90s |
+| Heartbeat | PASS | 17:57:29 (trước vòng chờ), 18:05:51 (8 phút) |
+| `D15` | **PASS** | Supervisor NOTE: *"D15: có sonnet kèm lý do"*; brief `Model: sonnet — cơ khí: chạy script có sẵn, chờ thiết bị` |
+| `D16` | **PASS** | Supervisor NOTE: *"D16: HEARTBEAT lúc 10:57:29 và 11:05:51, khoảng cách 8 phút, dưới 15 phút"* — đọc transcript peer, không polling |
+| Supervisor không lấn sân | PASS | Chỉ `NOTE` sau verdict; tự chạy `awk` độc lập trên 150 dòng → `5.01`; kiểm nguồn chỉ đạo của Human trong transcript Lead trước khi nhận là authority |
+| Supervisor giữ ngôn ngữ Human | FAIL | Trả lời Human bằng tiếng Anh dù Human viết tiếng Việt → thêm dòng vào `supervisor.md` |
+| Lead tự chạy A2 nền | lệch nhẹ | Lead chạy `calib.sh` nền trong scratchpad làm verification thay vì giao peer như plan; Human nhắc một câu → Lead kill run nền, giao `a2-run`, báo Supervisor "sửa quy trình" |
+| Human nhắn thẳng peer qua agent panel | **chưa đo được** | Driver PTY gõ ↓ + Enter ở prompt trống chọn *gợi ý prompt*, không chọn teammate; tin không tới Lead lẫn peer. Cần người thật ở terminal |
+
 ## 5. Sửa sau lab (đã vào v0.7.0)
 
 - `peer.md` luật 2: bỏ "trả lời ở lượt tool kế tiếp"; thay bằng: tin không tới giữa lượt → vòng
@@ -90,6 +111,8 @@ riêng ở `<session>/subagents/agent-<tên>-*.jsonl`.
 - `lead.md` Monitoring: message tới peer đang chạy chỉ giao khi idle; không suy reply từ mốc
   heartbeat; dừng peer đang chạy là việc của Human (agent panel); headless không có teammate —
   báo Human một lần rồi chạy tiếp.
+- Sau run 3: `peer.md` trần tool call hạ xuống ~90s và có **mẫu vòng poll** chứa `cat` inbox
+  (luật bằng lời không ăn); `supervisor.md` thêm "nói với Human bằng ngôn ngữ Human đang dùng".
 
 ## 6. Ghi chú lần chạy
 
@@ -97,5 +120,8 @@ riêng ở `<session>/subagents/agent-<tên>-*.jsonl`.
   phải drift; Lead chờ đúng luật.
 - A2 gửi `shutdown_response` 3 lần (2 định dạng + 1 `ToolSearch`) — quirk runtime, không hại.
 - `probe.sh` chạy dưới `nohup` giữ fd append: `: > log` reset được mà không cần restart.
+- Phiên Lead headless của run 1 vẫn sống sau khi kill wrapper `sh -c` → Supervisor run 3 thấy
+  hai session `lead` và hỏi Human — đúng luật (bước 3: trùng tên → hỏi). Kill đúng PID `claude`.
 - Chưa đo: Human nhắn **thẳng** peer qua agent panel (cùng đường inbox → suy ra cũng chỉ giao khi
-  idle, Inference); Supervisor `D15`/`D16` chưa có phiên Supervisor trong lab này.
+  idle, Inference; driver PTY không chọn được teammate); mẫu vòng poll có `cat` inbox (thêm sau
+  run 3) chưa có lần chạy nào kiểm.

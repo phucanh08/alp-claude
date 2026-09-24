@@ -231,15 +231,23 @@ phải của kênh. Ba luật:
    một bước Verification, **trước** khi vào bất kỳ vòng poll/chờ nào, mỗi vòng lặp poll thứ N,
    và muộn nhất sau ~10 tool call kể từ heartbeat trước. Ghi `date` lúc nhận brief để tự tính phút.
    Đang chờ Human (quẹt mẫu, cắm máy) vẫn heartbeat — "Chờ ai: Human" chính là thông tin Lead cần.
-2. **Không tool call nào chạy quá ~2 phút.** Poll = lệnh ngắn lặp lại (`timeout 60 …`), mỗi vòng
-   trả về rồi mới vòng tiếp; không `sleep` dài, không `adb logcat` không giới hạn.
-   **Tin của Lead/Human không tới giữa lượt** — runtime chỉ giao inbox khi bạn idle (Lab 11:
-   tin nằm 7 phút trong `~/.claude/teams/<team>/inboxes/<tên bạn>.json` với `read: false` tới khi
-   peer handoff). Hệ quả: heartbeat là kênh **duy nhất** Lead thấy bạn khi đang chạy, và Lead
-   không dừng được bạn bằng message. Vòng chờ dài (≥ 2 vòng poll) thì mỗi vòng đọc thêm inbox
-   của mình bằng `cat` (read-only, không sửa): có tin `read: false` từ `team-lead` → trả lời bằng
-   `SendMessage` ngay trong vòng đó, trước khi poll tiếp. Không thấy file inbox → bạn không phải
-   teammate, xem mục dưới.
+2. **Không tool call nào chạy quá ~90 giây** (Lab 11: peer chọn 24 × 5s và ra 121s — để dư).
+   Poll = lệnh ngắn lặp lại, mỗi vòng trả về rồi mới vòng tiếp; không `sleep` dài, không
+   `adb logcat` không giới hạn.
+   **Tin của Lead/Human không tới giữa lượt** — runtime chỉ giao inbox khi bạn idle (Lab 11, hai
+   lần: tin nằm 7 phút trong inbox với `read: false` tới khi peer handoff). Hệ quả: heartbeat là
+   kênh **duy nhất** Lead thấy bạn khi đang chạy, và Lead không dừng được bạn bằng message. Vì
+   vậy **vòng poll phải tự đọc inbox** — mẫu, chép vào mỗi vòng, không bỏ dòng inbox (Lab 11 run
+   3: peer bỏ qua khi luật chỉ nói bằng lời):
+
+   ```bash
+   for i in $(seq 1 15); do [ -f "$DONE_FLAG" ] && break; sleep 5; done   # ≤ 75s
+   wc -l < "$DATA_FILE"                                                     # tiến độ
+   cat ~/.claude/teams/*/inboxes/<tên bạn>.json                             # tin chưa đọc? (read-only)
+   ```
+
+   Inbox có tin `"read": false` từ `team-lead` → trả lời bằng `SendMessage` ngay vòng đó, trước
+   khi poll tiếp. Không thấy file inbox → bạn không phải teammate, xem mục dưới.
    **Không có tool `SendMessage`** → bạn là subagent thường (Lead chạy headless `-p`), không phải
    teammate: bỏ heartbeat, **không** `ToolSearch` tìm nó (Lab 11: mất 3 lượt), handoff trả trong
    kết quả cuối, ghi `Runtime: subagent, không heartbeat` vào ô `Unknown / risk`.

@@ -199,6 +199,8 @@ session của bạn — đó là ranh giới runtime, không phải hạn chế 
   `Reopen abc123`.
 - Một message một cơ chế, một Lead. Trích nguyên văn, kèm lệnh (có `-C <Root>`) để Lead tái hiện.
 - Không tường thuật rỗng. Gửi khi có `DRIFT`/`ESCALATE`, hoặc `NOTE` khi Lead vừa ra verdict.
+- Nói với Human bằng ngôn ngữ Human đang dùng, giữ suốt phiên (Lab 11: Supervisor trả lời Human
+  bằng tiếng Anh dù Human viết tiếng Việt).
 
 ## Memory (`~/.claude/agent-memory/supervisor/`, scope `user`)
 
