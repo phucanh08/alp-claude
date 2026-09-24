@@ -45,12 +45,39 @@ Tuỳ chọn: **Settings → your host → Agents → Agent profiles** tạo pro
 Lead, model Opus, mode Auto) và "SLP Peer" (provider SLP Peer, model Sonnet, mode Accept edits) để
 chọn một cú khi tạo agent. Profile chỉ gói provider/model/mode, **không** chứa system prompt.
 
+## 2b. Plugin `slp-paseo` (khuyến nghị — thay cho bước 3 và 4 của §3)
+
+Plugin trong `plugins/slp-paseo/` của repo này làm hai việc mà config không làm được:
+
+- `agent.create`: agent tạo bằng provider `claude-lead`/`claude-peer` nhận system prompt =
+  `.claude/agents/<ghế>.md` (trong cwd của agent, không có thì `~/.claude/agents/`) + khối
+  `SLP-RUNTIME`. Đây là cái thay cho `claude --agent <ghế>` của bản native.
+- Lead được thêm `allowedTools: mcp__paseo__*` nên card permission cho tool Paseo không bao giờ
+  hiện — hết bẫy M7. Lưới thứ hai: nếu card vẫn hiện, plugin allow ngay.
+
+Cài (plugin là code không sandbox, chạy trên máy daemon — Paseo bắt xác nhận):
+
+```bash
+# ~/.paseo/config.json: "pluginsEnabled": true  → paseo reload
+git clone -b beta https://github.com/phucanh08/alp-claude ~/alp-claude   # hoặc checkout sẵn có
+cd ~/alp-claude/plugins/slp-paseo && npm install && npm run typecheck && npm test
+paseo plugin install ~/alp-claude/plugins/slp-paseo
+paseo plugin ls          # slp-paseo running
+paseo plugin logs slp-paseo   # mỗi agent tạo ra: "slp-paseo: lead ← <path> (+allowedTools mcp__paseo__*)"
+```
+
+Desktop: **Settings → Plugins** bật Enable plugins, cùng công tắc `pluginsEnabled`. Sửa source →
+`paseo plugin reload slp-paseo`. Kiểm chứng 24/9/2026 trên 0.9.2: Lead mode `acceptEdits` gọi
+`list_agents` không hiện card (trước plugin: có), `config.systemPrompt` 27.945 ký tự có
+`# Ghế SLP: lead` + `SLP-RUNTIME`; peer nhận `peer.md`, không có `create_agent`/`send_agent_prompt`/
+`Agent`/`Task` (ranh giới đó vẫn từ profile §2).
+
 ## 3. Chuẩn bị repo
 
 1. Cài SLP bản beta vào repo: `curl -fsSL https://raw.githubusercontent.com/phucanh08/alp-claude/beta/install.sh | SLP_REF=beta bash`.
 2. **Commit `.claude/`** (agents, skills, settings). Peer chạy trong worktree Paseo, chỉ thấy file
    trong Git — khác Agent Teams, nơi teammate dùng `.claude/` của Lead.
-3. Thêm khối `SLP-RUNTIME` vào `CLAUDE.md` của repo (installer chưa tự thêm ở beta.1):
+3. *(Bỏ qua nếu đã cài plugin §2b.)* Thêm khối `SLP-RUNTIME` vào `CLAUDE.md` của repo:
 
 ```markdown
 ## SLP-RUNTIME: paseo
@@ -68,7 +95,7 @@ Phiên này chạy trên Paseo, không phải Agent Teams. Ghế của bạn ghi
   file mỗi vòng để Lead đếm chéo; không gửi tin giữa lượt (không có kênh).
 ```
 
-4. Cho Lead **không bị hỏi permission khi gọi tool Paseo** — thêm vào `.claude/settings.json`:
+4. *(Bỏ qua nếu đã cài plugin §2b.)* Cho Lead **không bị hỏi permission khi gọi tool Paseo** — thêm vào `.claude/settings.json`:
 
 ```json
 { "permissions": { "allow": ["mcp__paseo__*"] } }

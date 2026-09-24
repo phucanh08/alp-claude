@@ -177,10 +177,12 @@ UTC (19:24 = 12:24).
 
 **Lab PASS.** Việc kế tiếp là issue "SLP trên Paseo" — đổi lớp hiện thực, bất biến giữ nguyên:
 
-1. `SLP-RUNTIME` thành template chính thức (CLAUDE.md), sửa câu sai "peer chỉ đọc tin khi xong
-   lượt" → "tin tới peer đang chạy sẽ **huỷ tool đang chạy** của nó; chỉ nhắn khi idle".
-2. Lead chạy với allow rule `mcp__paseo__*` (hoặc mode `auto`) để card permission của Lead không
-   bao giờ bị steer huỷ; Human không duyệt song song với Lead — chọn một.
+1. ~~`SLP-RUNTIME` thành template chính thức (CLAUDE.md)~~ → **làm bằng plugin `plugins/slp-paseo`**
+   (0.8.0-beta.2): `agent.create` chèn `.claude/agents/<ghế>.md` + `SLP-RUNTIME` vào system
+   prompt, câu "tin tới peer đang chạy sẽ **huỷ tool đang chạy**" đã sửa trong khối. Chưa chạy lại
+   trọn Lab 11 với plugin — chỉ smoke test (docs/PASEO.md §2b).
+2. ~~Lead allow rule `mcp__paseo__*`~~ → plugin thêm `allowedTools` cho Lead; smoke test: `list_agents`
+   ở `acceptEdits` không hiện card. Human vẫn không duyệt song song với Lead — chọn một.
 3. Hai profile provider + `paseoTools.disabledTools` vào installer như một tuỳ chọn `--paseo`.
 4. Thêm vào `lead.md`: gate duyệt plan không được bỏ vì "gấp"; giữ tiếng Việt dù notification tiếng
    Anh; peer chạy việc dài phải chạy **nền** để tin của Human không giết nó (đã tự làm ở F3).
