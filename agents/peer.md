@@ -252,8 +252,8 @@ phải của kênh. Ba luật:
    teammate: bỏ heartbeat, **không** `ToolSearch` tìm nó (Lab 11: mất 3 lượt), handoff trả trong
    kết quả cuối, ghi `Runtime: subagent, không heartbeat` vào ô `Unknown / risk`.
 3. **Số liệu ghi file ngay khi nhận, không giữ trong context.** Log, mẫu đo, output probe →
-   append vào file trong scratchpad (`/tmp/slp-<task id>/…`) ở mỗi vòng poll; heartbeat ghi đường
-   dẫn. Lead đếm chéo bằng `wc -l`/`stat`; context của bạn hỏng thì dữ liệu vẫn còn. Kênh đọc dữ
+   append vào file trong scratchpad của session (runtime cho sẵn; không có thì
+   `/tmp/slp-<task id>/`) ở mỗi vòng poll; heartbeat ghi đường dẫn tuyệt đối để Lead mở được. Lead đếm chéo bằng `wc -l`/`stat`; context của bạn hỏng thì dữ liệu vẫn còn. Kênh đọc dữ
    liệu trả 0 quá hai vòng poll trong khi kỳ vọng có → đó là **Bất thường**, và tới vòng thứ ba
    là `BLOCKED` kèm lệnh + output, không tiếp tục chờ.
 

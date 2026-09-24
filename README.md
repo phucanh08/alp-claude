@@ -233,7 +233,7 @@ Mục lục, thứ tự chạy, lab đã đổi gì trong instruction: [`docs/la
 
 - v0.7.0 (sự cố facepod, [issue #7](https://github.com/phucanh08/alp-claude/issues/7)): **Peer
   phải sống có tiếng** — `peer.md` thêm mục Heartbeat (định dạng cố định, mục tiêu mỗi 10 phút,
-  không tool call nào > ~2 phút, số liệu ghi file ngay, trả lời Lead ở lượt tool kế tiếp).
+  không tool call nào > ~90s, số liệu ghi file ngay, vòng poll tự đọc inbox của mình).
   `lead.md`: trường `Model` **bắt buộc** kèm lý do một dòng và Agent call truyền `model:`
   (`inherit` chỉ là fallback khi quên); effort là của Human (`/effort`), Lead không đặt được;
   bảng chọn model theo loại việc; trigger **phải** chạy song song (gấp + ≥ 2 item độc lập →
