@@ -159,6 +159,8 @@ AGENTS_DIR="$CLAUDE_DIR/agents"
 SKILLS_DIR="$CLAUDE_DIR/skills"
 SETTINGS="$CLAUDE_DIR/settings.json"
 MANIFEST="$CLAUDE_DIR/slp-manifest.json"
+# Backup nằm ngoài agents/ và skills/: thư mục skill backup còn SKILL.md cùng name → runtime nạp thành skill trùng.
+BACKUP_DIR="$CLAUDE_DIR/backups/slp-$(date +%Y%m%d%H%M%S)"
 
 printf '\nSLP %s → %s (%s)\n\n' "$VERSION" "$CLAUDE_DIR" "$MODE"
 
@@ -175,8 +177,8 @@ for name in lead peer supervisor; do
     if [ "$FORCE" -eq 1 ]; then
       warn "ghi đè $dst (--force)"
     else
-      bak="$dst.bak-$(date +%Y%m%d%H%M%S)"
-      cp "$dst" "$bak"
+      bak="$BACKUP_DIR/agents/$name.md"
+      mkdir -p "$BACKUP_DIR/agents"; cp "$dst" "$bak"
       warn "$dst đã tồn tại và khác bản mới → backup $bak"
     fi
   fi
@@ -195,8 +197,8 @@ for name in $SKILLS; do
     if [ "$FORCE" -eq 1 ]; then
       warn "ghi đè $dst (--force)"
     else
-      bak="$dst.bak-$(date +%Y%m%d%H%M%S)"
-      cp -R "$dst" "$bak"
+      bak="$BACKUP_DIR/skills/$name"
+      mkdir -p "$BACKUP_DIR/skills"; cp -R "$dst" "$bak"
       warn "$dst đã tồn tại và khác bản mới → backup $bak"
     fi
   fi

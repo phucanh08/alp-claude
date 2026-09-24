@@ -286,8 +286,9 @@ phải authority:
 | theo `Required skills` | `bug-loop` | Peer (read-only: Phase 1–4; writer: đủ) |
 
 Kiểm skill đã được load: trong session Lead gõ `/` — bảy tên (năm skill phase + `bug-loop` + `ask-alp`) phải hiện trong danh sách; hoặc
-`claude plugin validate .claude/skills`. Skill dir bị sửa tay → lần `install.sh` sau backup thành
-`<name>.bak-<timestamp>` rồi ghi bản mới.
+`claude plugin validate .claude/skills`. Skill dir bị sửa tay → lần `install.sh` sau backup vào
+`.claude/backups/slp-<timestamp>/skills/<name>` rồi ghi bản mới (ngoài `skills/`, để runtime không nạp
+bản backup thành skill trùng).
 
 Script `prompt-leverage/scripts/augment_prompt.py` chỉ cần python3 stdlib:
 
