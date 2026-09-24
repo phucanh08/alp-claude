@@ -33,6 +33,8 @@ Usage: install.ps1 [-Global] [-Dir <path>] [-Force]
   -Dir <path>  repo root cần cài (mặc định: thư mục hiện tại)
   -Force       ghi đè agent file / skill dir đã có mà không backup
 Env: SLP_REPO (mặc định phucanh08/alp-claude), SLP_REF (branch/tag, mặc định main)
+     SLP_REF=beta → dòng SLP trên Paseo (VERSION x.y.z-beta.N): cài cùng agents/skills, nhưng chạy ghế bằng
+     Paseo + plugin slp-paseo thay cho `claude --agent`; bước tiếp theo in ra cuối là bước Paseo (docs/PASEO.md)
 '@ | Write-Host
   return
 }
@@ -265,6 +267,35 @@ try {
            else { "Mỗi repo vẫn cần CLAUDE.md riêng — template: templates/CLAUDE.template.md trong repo $SlpRepo" }
   $uninstall = "https://raw.githubusercontent.com/$SlpRepo/$SlpRef/uninstall.ps1"
   $uninstallCmd = if ($Mode -eq 'global') { "& ([scriptblock]::Create((irm $uninstall))) -Global" } else { "irm $uninstall | iex" }
+  if ($Version -match '-beta\.') {
+    # Dòng beta: ghế chạy trên Paseo (docs/PASEO.md), không dùng `claude --agent`. Plugin không nằm trong
+    # bản cài này (chạy trên máy daemon, ngoài sandbox) — clone repo và cài bằng `paseo plugin install`.
+    $supDef = if ($Mode -eq 'project') { "       Copy-Item $ClaudeDir\agents\supervisor.md ~/slp-supervisor/.claude/agents/   # cài -Global thì plugin tự lấy ~/.claude/agents/supervisor.md" }
+              else { "       (definition lấy từ ~/.claude/agents/supervisor.md — đã cài -Global)" }
+    @"
+
+Xong. Bản BETA — ghế SLP chạy trên Paseo (>= 0.9.2, Desktop hoặc CLI). Bước tiếp theo (docs/PASEO.md §1–§4):
+  1. $step1
+  2. ~/.paseo/config.json trên máy chạy daemon (giữ key khác), rồi: paseo reload
+       "pluginsEnabled": true;  "daemon": { "mcp": { "enabled": true, "injectIntoAgents": true } }
+       "agents": { "providers": { "claude-lead" / "claude-peer" / "claude-supervisor" — mẫu §2; ghế Codex: "codex-lead" / "codex-peer" / "codex-supervisor" } }
+  3. Plugin slp-paseo (nạp definition + SLP-RUNTIME theo ghế, Lead ↔ Supervisor tự thấy nhau; cần node/npm):
+       git clone -b $SlpRef https://github.com/$SlpRepo ~/alp-claude
+       cd ~/alp-claude/plugins/slp-paseo; npm install; npm test; paseo plugin install "`$PWD"
+       paseo plugin ls    # slp-paseo running; sửa source → paseo plugin reload slp-paseo
+  4. Lead: Paseo Desktop → workspace = repo root → New agent → provider "SLP Lead" (hoặc "SLP Lead (Codex)"), tin đầu = đề bài.
+       CLI: cd <repo root>; paseo run --provider claude-lead/<model> --mode acceptEdits "<đề bài>"
+     Lead tự create_agent peer (provider claude-peer/<model>), duyệt permission của peer bằng respond_to_permission.
+  5. (tuỳ chọn) Supervisor — agent thứ ba ở workspace trung lập, không cần id Lead (plugin liệt kê Lead đang sống, Lead mới tự SLP-REGISTER):
+       mkdir ~/slp-supervisor/.claude/agents, ~/slp-supervisor/memory -Force
+       Copy-Item $SupSettings ~/slp-supervisor/.claude/settings.json      # sandbox Bash: chỉ ghi được cwd
+$supDef
+       Desktop: workspace ~/slp-supervisor → New agent → provider "SLP Supervisor", tin đầu: "Làm bootstrap theo definition. Chỉ báo DRIFT / ESCALATE / NOTE."
+  6. Quy trình theo phase + skill: gõ /ask-alp. Khác gì bản native: docs/PASEO.md §6. Lab Paseo: docs/labs/lab-12-paseo-runtime.md, lab-13-paseo-supervisor.md.
+
+Gỡ: $uninstallCmd   (plugin: paseo plugin remove slp-paseo)
+"@ | Write-Host
+  } else {
   @"
 
 Xong. Bước tiếp theo:
@@ -278,6 +309,7 @@ Xong. Bước tiếp theo:
 
 Gỡ: $uninstallCmd
 "@ | Write-Host
+  }
 } finally {
   if ($Tmp -and (Test-Path -LiteralPath $Tmp)) { Remove-Item -LiteralPath $Tmp -Recurse -Force -ErrorAction SilentlyContinue }
 }
