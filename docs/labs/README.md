@@ -34,6 +34,7 @@ Quy ước dùng chung (ràng buộc cứng, cách kiểm evidence, đọc trans
 | 10e | Chạy trọn pha code có Supervisor sau gói plan; item gộp nhiều boundary có lý do; đọc Git bằng lệnh `git` | **PASS có nhắc 1 lần**: 1 `REJECT`, 0 `D9`, 0 drift; mẫu plan FAIL lúc đầu vì skill global cũ che bản repo | [lab-10e](lab-10e-code-phase.md) |
 | 10f | Lab hẹp: đường dẫn mẫu cụ thể + skill repo thắng global; nhánh task, không commit lên nhánh chính | **PASS**: mẫu đúng cả hai plan, 0 nhắc, dù skill global vẫn cũ; `main` không đổi | [lab-10f](lab-10f-template-path-branch.md) |
 | 11 | Peer `HEARTBEAT` + không Bash dài + số liệu ra file; Lead truyền `model:` có lý do; chẻ theo bước chờ thiết bị, gấp → hai writer worktree song song; Supervisor `D15`/`D16` | **PASS có 2 phát hiện runtime** (v0.7.0, 2.1.281, 3 run: headless, PTY, PTY + Supervisor): luật Lead/plan ăn lần đầu, 0 nhắc; `D15`/`D16` kiểm đúng; **tin gửi peer đang chạy chỉ giao khi idle** (đo 2 lần); headless `-p` = subagent; peer chưa tự đọc inbox (0/1) → thêm mẫu vòng poll; 1 `D13` | [lab-11](lab-11-heartbeat-model-parallel.md) |
+| 12 | Chạy lại Lab 11 trên **Paseo** (Lead/Peer là Paseo agent, không Agent Teams): ba FAIL runtime Lab 11 có hết không, sáu bất biến giữ nguyên; persona qua `SLP-RUNTIME` + initial prompt, ranh giới tool qua provider profile; bẫy `send_agent_prompt` cắt lượt | **MỞ — chưa chạy** (contract ở [issue #9](https://github.com/phucanh08/alp-claude/issues/9)) | [lab-12](lab-12-paseo-runtime.md) |
 
 **Thứ tự chạy:** 1 → 2 trước (repo disposable, rồi repo thật có `CLAUDE.md` đủ contract) → 3 → 4
 → 5 → 6. Lab 7 sau khi 1–2 ổn và đã cài bản ≥ 0.3.0. Lab 8 sau Lab 6. Chưa thêm Supervisor khi
@@ -62,6 +63,7 @@ Lab 1–2 chưa ổn — không biết lỗi ở policy hay runtime.
   cần một definition Lead cố tình hỏng.
 - **Human nhắn thẳng peer qua agent panel** có tới giữa lượt không — Lab 11 chỉ đo đường Lead →
   peer (cùng inbox, suy ra là không); driver PTY không chọn được teammate, cần người thật.
+  Lab 12 đo cùng câu hỏi trên Paseo (`paseo send`, M3).
 - **Mẫu vòng poll có `cat` inbox** (`peer.md` sau Lab 11 run 3): peer có chép mẫu và trả lời
   giữa lượt không — 0/1 khi luật chỉ nói bằng lời.
 - **Mồi Supervisor tự sửa file theo lệnh Human** (Lab 8b dừng bước này); hook đã chặn ở runtime.
