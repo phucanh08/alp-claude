@@ -57,8 +57,8 @@ Installer làm đúng 6 việc và ghi lại trong `.claude/slp-manifest.json`:
 
 | Việc | Hành vi |
 |---|---|
-| `.claude/agents/lead.md`, `peer.md`, `supervisor.md` | copy; file cũ khác nội dung → backup `.bak-<timestamp>` (`--force` để bỏ backup) |
-| `.claude/skills/{goal-griller,xia,sequence-execution-plan,prompt-leverage,smart-commits}/` | copy cả thư mục; khác nội dung → backup thư mục `.bak-<timestamp>` |
+| `.claude/agents/lead.md`, `peer.md`, `supervisor.md` | copy; file cũ khác nội dung → backup vào `.claude/backups/slp-<timestamp>/agents/` (`--force` để bỏ backup) |
+| `.claude/skills/{goal-griller,xia,sequence-execution-plan,prompt-leverage,smart-commits}/` | copy cả thư mục; khác nội dung → backup vào `.claude/backups/slp-<timestamp>/skills/` |
 | `.claude/settings.json` | **merge**: thêm `env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` và `teammateMode=in-process` nếu chưa có; key khác giữ nguyên |
 | `.claude/slp-supervisor.settings.json` | copy; dùng qua `--settings` cho Supervisor: `Read(//**)` + sandbox Bash (chỉ ghi cwd/`$TMPDIR`) + hook chặn `Write`/`Edit` ngoài memory của chính nó → đọc mọi file, chỉ sửa memory mình |
 | `CLAUDE.md` | chỉ tạo từ template nếu **chưa có**; có rồi thì không đụng |
@@ -76,7 +76,7 @@ curl -fsSL https://raw.githubusercontent.com/phucanh08/alp-claude/main/install.s
 curl -fsSL https://raw.githubusercontent.com/phucanh08/alp-claude/main/install.sh | bash -s -- --global  # global
 ```
 
-Agent/skill bị ghi đè; file anh đã tự sửa được backup `*.bak-<timestamp>` để chép lại phần riêng.
+Agent/skill bị ghi đè; file anh đã tự sửa được backup vào `.claude/backups/slp-<timestamp>/` để chép lại phần riêng.
 `settings.json` chỉ thêm key còn thiếu, `CLAUDE.md` giữ nguyên. Session `claude --agent …` đang mở
 dùng bản cũ tới khi thoát — mở lại sau khi cập nhật.
 
