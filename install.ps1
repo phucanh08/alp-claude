@@ -120,6 +120,11 @@ try {
   foreach ($s in $Skills) { if (-not (Test-Path (Join-Path $Src "skills/$s/SKILL.md"))) { Die "bundle thiếu skills/$s/SKILL.md" } }
   if (-not (Test-Path (Join-Path $Src 'templates/supervisor.settings.json'))) { Die "bundle thiếu templates/supervisor.settings.json" }
   $Version = if (Test-Path (Join-Path $Src 'VERSION')) { (Get-Content -Raw (Join-Path $Src 'VERSION')).Trim() } else { 'unknown' }
+  # Nhánh beta (SLP trên Paseo) bắt buộc VERSION dạng x.y.z-beta.N; bản chính không mang hậu tố này.
+  if ($SlpRef -eq 'beta' -or $SlpRef -like 'beta/*') {
+    if ($Version -notmatch '-beta\.\d+') { Die "ref '$SlpRef' là dòng beta nhưng VERSION='$Version' thiếu hậu tố -beta.N" }
+  }
+  if ($Version -match '-beta\.') { Warn "bản BETA $Version (ref $SlpRef) — dòng thử nghiệm SLP trên Paseo, không phải bản chính." }
 
   # ---- resolve target ----------------------------------------------------------
   $haveGit = [bool](Get-Command git -ErrorAction SilentlyContinue)
