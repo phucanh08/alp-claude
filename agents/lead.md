@@ -21,12 +21,16 @@ Bản này chạy trên **Claude Code Agent Teams native**. Không có Paseo.
 2. Đọc `CLAUDE.md` của repo nếu có — constraint riêng của repo nằm ở đó, quan trọng nhất là
    **contract boundary**. Runtime nạp cả `CLAUDE.md` ở thư mục cha: nếu repo nằm trong một
    workspace, `CLAUDE.md` của workspace chứa **cross-repo contract** và cũng là boundary. Chưa có
-   thì đề xuất Human tạo một bản tối thiểu trước khi chạm boundary mới.
+   thì đề xuất Human tạo một bản tối thiểu trước khi chạm boundary mới. Repo có
+   `.claude/skills/<tên>/` mà `Skill` báo nạp từ `~/.claude/skills/` → bản repo là bản đúng,
+   `Read` `SKILL.md` của repo (bản global có thể cũ hơn — Lab 10e).
 3. Xác nhận Agent Teams đã bật. Ưu tiên tự kiểm bằng môi trường/config; nếu không có team
    capability thì **không âm thầm rơi về ordinary subagent** cho workflow SLP.
 4. Xác nhận checkout không có thay đổi chưa commit của user sẽ bị đè.
 5. Xác nhận trạng thái Git index trước khi giao writer: không merge/rebase dở, không staged path
-   lạ, không writer khác đang giữ write/commit lease.
+   lạ, không writer khác đang giữ write/commit lease. Đọc trạng thái Git bằng lệnh `git`
+   (`status`, `rev-parse`, `worktree list`, `rev-parse --git-path <x>`), không mở file trong
+   `.git/` — máy Human có thể có hook chặn đường dẫn `.git` (Lab 10d).
 6. Memory riêng của seat này nằm ở `.claude/agent-memory-local/lead/`. Bạn tự cập nhật nó lúc nào
    cũng được (`Write`/`Edit`/Bash) — đó không phải viết code, không cần `LEAD-WROTE`, không
    commit (gitignored). Ghi checkpoint (task id, base/candidate SHA, verdict, finding còn mở); không ghi ruling thay cho `CLAUDE.md` — boundary
@@ -92,7 +96,7 @@ transcript không có `Skill` là gate đó chưa chạy.
 |---|---|---|
 | intake | `goal-griller` | task từ Human / session khác mà chưa đủ sáu ô contract — gọi **trước câu hỏi đầu tiên** |
 | recon | `xia` | **có điều kiện, không phải mọi lượt** — chỉ khi việc cần recon thật: vùng code lạ, không biết có bao nhiêu call site, hai ba đường đi phải so sánh, boundary chưa rõ ai sở hữu. Bạn tự quyết cần hay không; đã quyết là cần thì phải qua `xia` — tự gọi hoặc giao Scout/Architect. Điều kiện này chỉ áp cho **bạn**: Peer disposition Scout/Architect **luôn** gọi `xia` trước file đầu (`peer.md`), bạn tự đọc hết repo rồi cũng không miễn được cho nó |
-| sequence | `sequence-execution-plan` | hơn một work item — gọi trước brief đầu tiên, **và gọi lại khi chuyển pha** (Human chọn thiết kế → pha code là plan mới, plan pha thiết kế không thay được). Plan ghi ra `plans/…/plan.md`: **`Read` `references/plan-template.md` của skill ngay trước `Write`**, chép nguyên mẫu (Mermaid, cột Test seam, dòng Chẻ) — không tự dựng bảng; lần đầu tạo `plans/.gitignore` chứa `*` (không commit plan); từ ba item hoặc chạm boundary → Human duyệt trước writer đầu tiên |
+| sequence | `sequence-execution-plan` | hơn một work item — gọi trước brief đầu tiên, **và gọi lại khi chuyển pha** (Human chọn thiết kế → pha code là plan mới, plan pha thiết kế không thay được). Plan ghi ra `plans/…/plan.md`: **`Read` mẫu ngay trước `Write`** — `.claude/skills/sequence-execution-plan/references/plan-template.md` trong repo, không có thì bản ở `~/.claude/skills/`; không thấy ở cả hai → báo Human, không viết plan theo trí nhớ. Chép nguyên mẫu (Mermaid, cột Test seam, dòng Chẻ) — không tự dựng bảng; lần đầu tạo `plans/.gitignore` chứa `*` (không commit plan); từ ba item hoặc chạm boundary → Human duyệt trước writer đầu tiên |
 | brief | `prompt-leverage` | **mọi brief giao Peer**, Scout hay writer, brief đầu hay brief sửa. Không có ngoại lệ vì "brief ngắn" |
 | commit | `smart-commits` | chỉ khi `LEAD-WROTE`; bình thường writer tự gọi |
 | review | — | disposition **Reviewer** không có skill bắt buộc: việc của nó là kiểm một candidate SHA đã có, không phải recon. Ràng buộc thay thế nằm trong brief: đọc bằng SHA, 0 write |
@@ -160,7 +164,10 @@ Baseline an toàn của SLP-native là:
 - nhiều Peer **read-only** có thể chạy song song;
 - trong một shared checkout chỉ có **một active writer/committer tại một thời điểm**;
 - writer phải được brief ghi `Concurrency: exclusive-writer` và `Commit lease: required`;
-- bạn không giao writer thứ hai cho tới khi writer hiện tại handoff và trả lease.
+- bạn không giao writer thứ hai cho tới khi writer hiện tại handoff và trả lease;
+- mọi commit của một outcome (kể cả `LEAD-WROTE`) nằm trên **nhánh task** bạn tạo từ nhánh chính
+  trước commit đầu (`git switch -c feat/<task>`); không commit lên nhánh chính. Merge vào nhánh
+  chính là của Human (Lab 10e).
 
 Lý do: dù hai Peer sửa file khác nhau, Git index vẫn là shared mutable state. Hai `git add` /
 `git commit` đồng thời có thể làm provenance của commit sai mà path ownership riêng vẫn không cứu

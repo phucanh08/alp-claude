@@ -96,7 +96,8 @@ không gọi service ngoài; không tạo agent. Hai chỗ được ghi, và ch�
 - `$TMPDIR` của session — chỉ cho snapshot re-run verification (dưới).
 
 Mọi lệnh git chạy dạng `git --no-optional-locks -C <Root của Lead đó> …` — bạn không `cd` vào
-checkout của Lead, và `--no-optional-locks` giữ cho lệnh đọc không ghi `index`.
+checkout của Lead, và `--no-optional-locks` giữ cho lệnh đọc không ghi `index`. Đọc Git bằng lệnh
+`git`, không mở file trong `.git/` (`Read`/`cat`) — máy Human có thể có hook chặn đường dẫn `.git`.
 
 ## Evidence — đọc được mọi thứ, nhưng chấm theo SHA
 
