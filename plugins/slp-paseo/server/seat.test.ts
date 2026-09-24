@@ -5,6 +5,7 @@ import path from "node:path";
 import { test } from "node:test";
 import {
   buildSystemPrompt,
+  providerOptionsFor,
   readDefinition,
   seatOf,
   stripFrontmatter,
@@ -49,4 +50,23 @@ test("withLeadAllowedTools: thêm wildcard, giữ tool cũ, không trùng", () =
   assert.deepEqual(withLeadAllowedTools(undefined), { allowedTools: ["mcp__paseo__*"] });
   const merged = withLeadAllowedTools({ allowedTools: ["Bash", "mcp__paseo__*"], model: "x" });
   assert.deepEqual(merged, { allowedTools: ["Bash", "mcp__paseo__*"], model: "x" });
+});
+
+test("supervisor: seat, disallowedTools ghi/spawn, runtime block đúng ghế", () => {
+  assert.equal(seatOf("claude-supervisor"), "supervisor");
+  const opts = providerOptionsFor("supervisor", { disallowedTools: ["WebSearch"] });
+  assert.deepEqual(opts, {
+    allowedTools: ["mcp__paseo__*"],
+    disallowedTools: ["WebSearch", "Write", "Edit", "MultiEdit", "NotebookEdit", "Agent", "Task"],
+  });
+  const prompt = buildSystemPrompt("supervisor", "BODY", null);
+  assert.match(prompt, /Không bao giờ.*send_agent_prompt.*tới peer/);
+  assert.match(prompt, /D15 trên Paseo/);
+  assert.doesNotMatch(prompt, /Spawn peer/);
+});
+
+test("providerOptionsFor: peer giữ nguyên tham chiếu", () => {
+  const opts = { allowedTools: ["Bash"] };
+  assert.equal(providerOptionsFor("peer", opts), opts);
+  assert.equal(providerOptionsFor("peer", undefined), undefined);
 });

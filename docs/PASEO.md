@@ -72,6 +72,34 @@ Desktop: **Settings → Plugins** bật Enable plugins, cùng công tắc `plugi
 `# Ghế SLP: lead` + `SLP-RUNTIME`; peer nhận `peer.md`, không có `create_agent`/`send_agent_prompt`/
 `Agent`/`Task` (ranh giới đó vẫn từ profile §2).
 
+## 2c. Supervisor (ghế thứ ba, từ beta.3)
+
+Supervisor cũng là agent Paseo, provider `claude-supervisor`; bằng chứng [Lab 13](labs/lab-13-paseo-supervisor.md).
+
+1. Thêm profile vào `~/.paseo/config.json` rồi `paseo reload`. Tool Paseo của nó bị cắt còn đúng sáu:
+   `list_agents`, `get_agent_status`, `get_agent_activity`, `list_workspaces`, `list_pending_permissions`,
+   `send_agent_prompt` (`disabledTools` = phần còn lại của catalog). Plugin cắt thêm `Write`/`Edit`/
+   `MultiEdit`/`NotebookEdit`/`Agent`/`Task` phía Claude và nạp `supervisor.md` + khối runtime.
+2. Tạo cwd trung lập một lần:
+
+```bash
+mkdir -p ~/slp-supervisor/.claude/agents ~/slp-supervisor/memory
+cp <alp-claude>/templates/supervisor.settings.json ~/slp-supervisor/.claude/settings.json   # sandbox Bash: chỉ ghi được cwd
+cp <alp-claude>/agents/supervisor.md ~/slp-supervisor/.claude/agents/
+```
+
+3. Trong Desktop mở workspace `~/slp-supervisor`, New agent → provider **SLP Supervisor**, model Opus,
+   mode Accept edits. Tin đầu: `Ghế: supervisor. Theo dõi Lead agent <id>, Root <path>. Làm bootstrap
+   theo definition. Chỉ báo DRIFT / ESCALATE / NOTE.` Id Lead lấy ở tab của Lead hoặc `paseo ls`.
+4. Lượt đầu Supervisor thường gặp Lead đang chạy → nó **không** nhắn, tự kiểm Root rồi xin anh đánh
+   thức. Khi Lead idle, gõ cho Supervisor *"Lead rảnh rồi"*; nó gửi mở phiên, Lead trả `SLP-REGISTER`,
+   từ đó Lead tự gửi checkpoint và Supervisor tự thức theo notification.
+5. Đọc DRIFT/NOTE/ESCALATE ngay trong tab của Supervisor. Memory của nó ở `~/slp-supervisor/memory/`.
+
+Ba điều Lab 13 đo được: Supervisor không bao giờ nhắn peer dù anh bảo; không ACCEPT thay Lead;
+`Read` file ngoài cwd sẽ hiện card (rule `Read(//**)` không tác dụng trên Paseo) nên nó đọc transcript
+bằng Bash — cứ để, đừng duyệt hộ hàng loạt.
+
 ## 3. Chuẩn bị repo
 
 1. Cài SLP bản beta vào repo: `curl -fsSL https://raw.githubusercontent.com/phucanh08/alp-claude/beta/install.sh | SLP_REF=beta bash`.
@@ -146,7 +174,7 @@ Peer chạy việc dài phải chạy **nền** (F3 ở Lab 12 làm đúng): tin
 | Tin peer → Lead | `SendMessage` + HEARTBEAT | notification khi peer xong / cần permission; số liệu qua file |
 | Human → peer | agent panel | Subagents track / `paseo send` / Stop |
 | Headless | `-p` không có teammate | mọi thứ là agent, chạy từ Desktop, CLI, điện thoại |
-| Supervisor | session riêng, cross-session messaging | **chưa chuyển** (vòng sau) — tạm đọc bằng `paseo logs <id>` |
+| Supervisor | session riêng, cross-session messaging | agent Paseo provider `claude-supervisor` (§2c); `send_agent_prompt` khi Lead idle, checkpoint tới qua notification |
 | Ngôn ngữ | ổn | notification Paseo tiếng Anh kéo Lead sang tiếng Anh — nhắc một câu, hoặc ghi "nói tiếng Việt" ngay trong đề |
 
 ## 7. Xem lại sau phiên
