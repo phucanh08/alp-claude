@@ -53,8 +53,9 @@ curl -fsSL https://raw.githubusercontent.com/phucanh08/alp-claude/main/install.s
 curl -fsSL https://raw.githubusercontent.com/phucanh08/alp-claude/main/install.sh | bash -s -- --dir /path/to/repo
 ```
 
-Bản **beta** (nhánh `beta` — dòng thử nghiệm SLP trên Paseo, xem [Lab 12](docs/labs/lab-12-paseo-runtime.md);
-`VERSION` trên nhánh này luôn có hậu tố `-beta.N`, installer từ chối nếu thiếu):
+Bản **beta** (nhánh `beta` — dòng thử nghiệm SLP trên Paseo, xem [Lab 12](docs/labs/lab-12-paseo-runtime.md)
+và hướng dẫn dùng với Paseo Desktop ở [docs/PASEO.md](docs/PASEO.md); `VERSION` trên nhánh này luôn có
+hậu tố `-beta.N`, installer từ chối nếu thiếu):
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/phucanh08/alp-claude/beta/install.sh | SLP_REF=beta bash
