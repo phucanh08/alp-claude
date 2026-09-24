@@ -1,0 +1,52 @@
+import assert from "node:assert/strict";
+import { mkdtemp, mkdir, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import path from "node:path";
+import { test } from "node:test";
+import {
+  buildSystemPrompt,
+  readDefinition,
+  seatOf,
+  stripFrontmatter,
+  withLeadAllowedTools,
+} from "./seat.ts";
+
+test("seatOf: chỉ hai profile SLP", () => {
+  assert.equal(seatOf("claude-lead"), "lead");
+  assert.equal(seatOf("claude-peer"), "peer");
+  assert.equal(seatOf("claude"), null);
+  assert.equal(seatOf("codex"), null);
+});
+
+test("stripFrontmatter: bỏ YAML đầu file, giữ thân", () => {
+  const md = "---\nname: lead\ntools: Agent(peer)\n---\n# Lead\n\nThân.";
+  assert.equal(stripFrontmatter(md), "# Lead\n\nThân.");
+  assert.equal(stripFrontmatter("# Không frontmatter\n---\nx"), "# Không frontmatter\n---\nx");
+});
+
+test("readDefinition: ưu tiên .claude/agents trong cwd", async () => {
+  const cwd = await mkdtemp(path.join(tmpdir(), "slp-paseo-"));
+  await mkdir(path.join(cwd, ".claude", "agents"), { recursive: true });
+  await writeFile(path.join(cwd, ".claude", "agents", "peer.md"), "---\nname: peer\n---\nPEER BODY\n");
+  const def = await readDefinition(cwd, "peer");
+  assert.ok(def);
+  assert.equal(def.body, "PEER BODY");
+  assert.equal(def.path, path.join(cwd, ".claude", "agents", "peer.md"));
+});
+
+test("buildSystemPrompt: prompt sẵn có + definition + SLP-RUNTIME đúng ghế", () => {
+  const lead = buildSystemPrompt("lead", "BODY", "EXISTING");
+  assert.ok(lead.startsWith("EXISTING\n\n# Ghế SLP: lead\n\nBODY"));
+  assert.match(lead, /## SLP-RUNTIME: paseo/);
+  assert.match(lead, /create_agent/);
+  const peer = buildSystemPrompt("peer", "BODY", null);
+  assert.ok(peer.startsWith("# Ghế SLP: peer"));
+  assert.match(peer, /Runtime: paseo/);
+  assert.doesNotMatch(peer, /Spawn peer/);
+});
+
+test("withLeadAllowedTools: thêm wildcard, giữ tool cũ, không trùng", () => {
+  assert.deepEqual(withLeadAllowedTools(undefined), { allowedTools: ["mcp__paseo__*"] });
+  const merged = withLeadAllowedTools({ allowedTools: ["Bash", "mcp__paseo__*"], model: "x" });
+  assert.deepEqual(merged, { allowedTools: ["Bash", "mcp__paseo__*"], model: "x" });
+});

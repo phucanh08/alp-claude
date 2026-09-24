@@ -1,0 +1,20 @@
+{
+  "name": "slp-paseo",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Paseo plugin: system prompt theo ghế SLP (lead/peer) từ .claude/agents/*.md, Lead gọi tool Paseo không cần hỏi",
+  "files": [
+    "paseo-plugin.json",
+    "index.server.ts",
+    "server/"
+  ],
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "node --test 'server/*.test.ts'"
+  },
+  "devDependencies": {
+    "@getpaseo/plugin": "0.9.2",
+    "@types/node": "^24.0.0",
+    "typescript": "^5.9.3"
+  }
+}
