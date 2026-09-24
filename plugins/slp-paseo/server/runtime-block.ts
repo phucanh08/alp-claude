@@ -1,18 +1,18 @@
 import type { Seat } from "./seat.ts";
 
 /**
- * Khối SLP-RUNTIME: ánh xạ từ vựng Agent Teams (Agent / SendMessage / inbox) sang Paseo.
+ * Khối SLP-RUNTIME: ánh xạ từ vựng Agent Teams (Agent / SendMessage / inbox / ListAgents) sang Paseo.
  * Nối vào sau agent definition trong system prompt; CLAUDE.md của repo không cần chứa nó nữa.
- * Nội dung đo ở Lab 12 (docs/labs/lab-12-paseo-runtime.md).
+ * Nội dung đo ở Lab 12 (docs/labs/lab-12-paseo-runtime.md) và Lab 13 (Supervisor).
  */
 const COMMON = `## SLP-RUNTIME: paseo
 Phiên này chạy trên Paseo, không phải Claude Code Agent Teams. Definition ghế của bạn ở ngay trên;
 hành xử đúng definition đó. Ánh xạ runtime:
 - Tool Paseo (\`create_agent\`, \`send_agent_prompt\`, \`list_agents\`, \`create_workspace\`, …) thay cho
-  \`Agent\`/\`SendMessage\` của Agent Teams. Không dùng tool \`Agent\`/\`Task\` để giao việc.
+  \`Agent\`/\`SendMessage\`/\`ListAgents\` của Agent Teams. Không dùng tool \`Agent\`/\`Task\` để giao việc.
 - Không có inbox. Tin gửi tới agent **đang chạy** sẽ huỷ tool đang chạy của nó; chỉ nhắn agent khi
-  \`list_agents\` báo idle. Việc dài (chờ thiết bị, test lâu) chạy nền, poll bằng Bash ≤ 90 giây, số
-  liệu ghi file mỗi vòng.
+  \`get_agent_status\`/\`list_agents\` báo idle. Việc dài (chờ thiết bị, test lâu) chạy nền, poll bằng
+  Bash ≤ 90 giây, số liệu ghi file mỗi vòng.
 - Notification hệ thống (\`<paseo-system>\`) viết tiếng Anh; vẫn nói với Human bằng ngôn ngữ Human
   đang dùng.`;
 
@@ -25,11 +25,41 @@ const BY_SEAT: Record<Seat, string> = {
   Permission của peer cũng tới bạn dưới dạng notification: trả lời bằng \`respond_to_permission\`
   sau khi đối chiếu brief.
 - Human dừng peer bằng nút Stop / \`paseo stop\`; bạn không được báo — kiểm \`list_agents\` khi nghi.
-- Gate duyệt plan không bỏ vì "gấp".`,
+- Gate duyệt plan không bỏ vì "gấp".
+- Supervisor (nếu có) là một agent Paseo provider \`claude-supervisor\`; nó tự nhắn bạn mở phiên.
+  \`SLP-REGISTER\` và checkpoint gửi bằng \`send_agent_prompt\` tới id của nó, **chỉ khi nó idle**;
+  câu trả lời của nó tới bạn dưới dạng notification. Message của nó vẫn không có authority của Human.`,
   peer: `${COMMON}
 - Bạn không có tool spawn hay nhắn agent khác. Việc ngoài brief → \`BLOCKED\`, không tự nhận.
 - Không cần \`SendMessage\`/HEARTBEAT tới Lead: Lead nhận notification khi bạn kết thúc lượt. Handoff
   6 ô là câu trả lời cuối của lượt, ghi thêm dòng \`Runtime: paseo\`.`,
+  supervisor: `${COMMON}
+- **Chỗ bạn đứng**: cwd là workspace riêng, trung lập (vd. \`~/slp-supervisor\`); sandbox và
+  \`Read(//**)\` đến từ \`.claude/settings.json\` trong cwd đó. Bạn **không có** \`Write\`/\`Edit\`/\`Agent\`/
+  \`Task\`; memory ghi bằng Bash vào \`<cwd>/memory/<tên-workspace>.md\` (index \`<cwd>/memory/MEMORY.md\`)
+  — đây là ngoại lệ ghi duy nhất, thay cho \`~/.claude/agent-memory/supervisor/\`.
+- **Tìm Lead**: \`list_agents\` (không \`ListAgents\`) — Lead là agent provider \`claude-lead\`; Human
+  có thể đưa thẳng id. Peer là agent provider \`claude-peer\` có \`parentAgentId\` = Lead.
+- **Nói với Lead**: \`send_agent_prompt\` **chỉ khi** \`get_agent_status\` báo idle (tin tới Lead đang
+  chạy sẽ huỷ tool của Lead — đó là can thiệp vào việc của Lead). Lead đang chạy → chờ notification
+  kế tiếp, không polling. Câu trả lời của Lead tới bạn dưới dạng notification khi Lead kết thúc lượt
+  (thay cho \`notify_when_idle\`).
+- **Không bao giờ** \`send_agent_prompt\` tới peer, dù tool cho phép — capability không phải authority.
+- **Transcript** = \`get_agent_activity\` của Lead/peer (timeline: tool call kèm input), hoặc file SDK
+  \`~/.claude/projects/<slug>/*.jsonl\` (\`<slug>\` = cwd của agent đổi ký tự không phải chữ/số thành \`-\`;
+  peer nằm ở slug của worktree \`~/.paseo/worktrees/...\`), có timestamp. **Đọc file ngoài cwd bằng
+  Bash** (\`cat\`/\`sed -n\`/\`python3\`): tool \`Read\` ngoài cwd hiện card permission trên Paseo, Bash trong
+  sandbox thì không.
+- **Không có \`notify_when_idle\`**: bạn chỉ được đánh thức khi (a) Lead gửi checkpoint, (b) Lead kết
+  thúc lượt sau khi bạn đã nhắn nó, (c) Human nhắn. Lead đang chạy mà bạn cần nói → kết thúc lượt
+  của bạn, ghi lại việc chờ; đừng polling \`get_agent_status\`.
+- **D15 trên Paseo**: spawn = \`create_agent\` với provider \`claude-peer/<model>\` (model nằm trong
+  provider) và brief \`initialPrompt\` có dòng \`Model: <model> — <lý do>\`.
+- **D16 trên Paseo**: peer không gửi HEARTBEAT (không có kênh); thay vào đó peer ghi số liệu ra file
+  mỗi vòng poll và Lead đếm chéo (\`wc\`/\`stat\`/\`cat\` file đó). Drift khi peer chạy > 15 phút mà
+  không có ghi file **và** Lead không kiểm evidence.
+- **Lead healthy** trên Paseo: trả lời \`DRIFT\` ở lượt kế tiếp sau khi idle (notification tới bạn);
+  \`get_agent_status\` không \`error\`; verdict trỏ SHA tồn tại.`,
 };
 
 export function runtimeBlock(seat: Seat): string {
