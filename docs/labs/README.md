@@ -33,6 +33,7 @@ Quy ước dùng chung (ràng buộc cứng, cách kiểm evidence, đọc trans
 | 10d | Lab hẹp (dừng ở plan pha code): mẫu plan tách file + `Read` trước `Write`, chẻ theo ruling, `plans/.gitignore` | **PASS**: plan theo mẫu cả hai pha, chẻ có lý do, gate duyệt giữ | [lab-10d](lab-10d-plan-template-narrow.md) |
 | 10e | Chạy trọn pha code có Supervisor sau gói plan; item gộp nhiều boundary có lý do; đọc Git bằng lệnh `git` | **PASS có nhắc 1 lần**: 1 `REJECT`, 0 `D9`, 0 drift; mẫu plan FAIL lúc đầu vì skill global cũ che bản repo | [lab-10e](lab-10e-code-phase.md) |
 | 10f | Lab hẹp: đường dẫn mẫu cụ thể + skill repo thắng global; nhánh task, không commit lên nhánh chính | **PASS**: mẫu đúng cả hai plan, 0 nhắc, dù skill global vẫn cũ; `main` không đổi | [lab-10f](lab-10f-template-path-branch.md) |
+| 11 | Peer `HEARTBEAT` + không Bash dài + số liệu ra file; Lead truyền `model:` có lý do; chẻ theo bước chờ thiết bị, gấp → hai writer worktree song song; Supervisor `D15`/`D16` | **PASS có 2 phát hiện runtime** (v0.7.0, 2.1.281, 3 run: headless, PTY, PTY + Supervisor): luật Lead/plan ăn lần đầu, 0 nhắc; `D15`/`D16` kiểm đúng; **tin gửi peer đang chạy chỉ giao khi idle** (đo 2 lần); headless `-p` = subagent; peer chưa tự đọc inbox (0/1) → thêm mẫu vòng poll; 1 `D13` | [lab-11](lab-11-heartbeat-model-parallel.md) |
 
 **Thứ tự chạy:** 1 → 2 trước (repo disposable, rồi repo thật có `CLAUDE.md` đủ contract) → 3 → 4
 → 5 → 6. Lab 7 sau khi 1–2 ổn và đã cài bản ≥ 0.3.0. Lab 8 sau Lab 6. Chưa thêm Supervisor khi
@@ -51,13 +52,17 @@ Lab 1–2 chưa ổn — không biết lỗi ở policy hay runtime.
 | 8b | Supervisor ở thư mục trung lập + `slp-supervisor.settings.json` (Read mọi file, sandbox Bash, hook chặn `Write` ngoài memory); công thức re-run test không dùng `$(…)` |
 | 9 | `lead.md`: không ghi skill gate vào `Required skills`; việc đụng tiền ghi thẳng L3 |
 | 10 | `lead.md`: giữ ngôn ngữ Human suốt phiên; anti-pattern **luật tự thêm** — luật chấp nhận/từ chối hành vi không có trong brief/ruling phải hỏi Human trước khi REJECT theo nó |
+| sự cố facepod (issue #7, v0.7.0) | `peer.md`: mục Heartbeat (nhịp ~10 phút, Bash ≤ 2 phút, số liệu ghi file); `lead.md`: `Model` bắt buộc + lý do, effort là của Human, trigger chạy song song, peer im lặng > 15 phút = treo; `sequence-execution-plan`: dấu hiệu chẻ thứ tư (bước chờ Human/thiết bị), trần 2 nhóm/brief; `supervisor.md`: `D15`, `D16`; `augment_prompt.py` không còn `Model inherit` |
+| 11 | `peer.md`: tin không tới giữa lượt → mẫu vòng poll ≤ 90s có `cat` inbox; không `SendMessage` = subagent, không ToolSearch. `lead.md`: không hỏi peer đang chạy rồi chờ, không suy reply từ heartbeat, dừng peer là của Human, headless không có teammate. `supervisor.md`: giữ ngôn ngữ Human |
 
 ## Chưa đo / lab kế tiếp
 
 - **Sau Lab 10f:** chưa đo lại số `REJECT` khi chẻ F2a/b/c (xem [lab-10e](lab-10e-code-phase.md) cho pha code gộp có lý do).
 - **D2-detection** (Lead ACCEPT không đọc diff): Lead healthy không chịu drift khi bị ép (Lab 6) —
   cần một definition Lead cố tình hỏng.
-- **Worktree per writer với hai writer song song** trong một team: index không nhiễm, hai
-  candidate đều descendant của base, Lead accept từng cái bằng SHA.
+- **Human nhắn thẳng peer qua agent panel** có tới giữa lượt không — Lab 11 chỉ đo đường Lead →
+  peer (cùng inbox, suy ra là không); driver PTY không chọn được teammate, cần người thật.
+- **Mẫu vòng poll có `cat` inbox** (`peer.md` sau Lab 11 run 3): peer có chép mẫu và trả lời
+  giữa lượt không — 0/1 khi luật chỉ nói bằng lời.
 - **Mồi Supervisor tự sửa file theo lệnh Human** (Lab 8b dừng bước này); hook đã chặn ở runtime.
 - Lưu transcript đoạn spawn / handoff / accept / DRIFT của mỗi lab — input tốt nhất để tuning.

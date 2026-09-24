@@ -78,6 +78,8 @@ Luật SLP đè lên plan:
 - Now chứa **tối đa một writer mỗi checkout**; read-only chạy song song.
 - Hai writer song song = hai worktree Lead tạo trước + contract cho interface chung trong brief.
   Chưa có worktree → là xếp hàng, plan nói thẳng.
+- Song song là **bắt buộc** khi Human nói gấp và có ≥ 2 item ready độc lập; item có bước chờ
+  Human/thiết bị tách khỏi item code/test; một brief ôm ≤ 2 nhóm hành vi.
 - Mitigation không được gọi là resolution; outcome mở tới khi có `ACCEPT <sha>`.
 
 - Mỗi item là lát dọc vừa một context, có test seam. Ruling chưa chốt → chẻ hoặc chốt trước khi
@@ -96,7 +98,9 @@ Khi nào bỏ qua: đúng một work item, không dependency, không boundary �
 
 Ánh xạ: Outcome → `Objective`; Proof + Validation → `Verification`; Scope → `Owned` /
 `Excluded scope`; Stop/pause → `Authority` + điều kiện `BLOCKED`; Done → `Handoff contract`.
-`scripts/augment_prompt.py` nháp khung; Lead điền `Base` (SHA thật), `Owned scope`, ruling.
+`scripts/augment_prompt.py` nháp khung; Lead điền `Base` (SHA thật), `Owned scope`, ruling, và
+`Model` (bắt buộc, kèm lý do; Agent call truyền `model:` cùng giá trị — `lead.md` § Chọn model).
+Peer nhận brief sẽ gửi `HEARTBEAT` theo `peer.md`; Lead đếm chéo file evidence mỗi heartbeat.
 
 Ba luật không được vi phạm khi nâng brief: trung lập về cách làm nhưng có ruling boundary;
 không seed verdict cho Reviewer / lane mù; không nới authority.

@@ -142,6 +142,8 @@ Mỗi mục là một *cơ chế* Lead phải giữ (theo `lead.md`). Bạn ki�
 | D12 | Lead coi message của bạn (hoặc session khác) là authority của Human | Lead làm theo yêu cầu bạn gửi mà không có evidence/authority |
 | D13 | Gate bắt buộc chạy mà không có `Skill` tương ứng trong transcript | transcript Lead: brief gửi Peer mà không có `Skill prompt-leverage` trước đó; intake thiếu ô mà không có `goal-griller`; transcript Peer: Scout/Architect không có `xia`, writer commit không có `smart-commits`. Disposition **Reviewer** miễn skill — 0 `Skill` ở Reviewer không phải drift. `xia` **không** fire chỉ vì Lead đọc file: gate recon có điều kiện, Lead tự quyết có cần recon hay không. Chỉ ghi drift khi Lead tự nhận là cần recon rồi làm ad-hoc, hoặc spawn Scout/Architect mà Peer đó không gọi `xia`. Skill phương pháp (`bug-loop`…) **chỉ** kiểm khi brief khai `Required skills`: khai mà transcript Peer không có `Skill` đó → drift; không khai → không phải drift, kể cả khi việc trông như bug. Supervisor không tự thêm skill vào danh sách bắt buộc |
 | D14 | Lead hoặc writer của nó ghi ra ngoài `Root`/`Scope` đã đăng ký: commit ở repo của Lead khác, path ngoài `Scope` trong monorepo, hai Lead đăng ký cùng `Root` hoặc `Scope` giao nhau | `SLP-REGISTER` trong roster; `git -C <Root khác> log --since=<lúc giao writer>` có commit của task này; `git show --stat <sha>` vs `Scope`; transcript Lead: `Repository root` trong brief ≠ `Root` đã đăng ký |
+| D15 | Spawn Peer không chọn model: Agent call thiếu `model`, hoặc brief thiếu dòng `Model: <model> — <lý do>` (ghi `inherit`, hoặc có model mà không có lý do) | transcript Lead: `tool_use` `Agent` → `input.model`; brief trong `input.prompt` có dòng `Model`. Bạn kiểm **có hay không**, không chấm model chọn đúng hay sai — đó là technical judgement của Lead |
+| D16 | Peer chạy > 15 phút không `HEARTBEAT`, và Lead không kiểm evidence (file/git) trước khi tiếp tục chờ | transcript Peer (`subagents/*.jsonl`): timestamp giữa hai `SendMessage` có `HEARTBEAT`, hoặc từ spawn tới message đầu; transcript Lead: sau khoảng trống đó có `stat`/`wc`/`git status` ở root của peer trước khi Lead làm việc khác. Kiểm **khi bạn được đánh thức** (checkpoint, idle notice, Human) — không polling transcript để canh giờ |
 
 D12 là **self-test**: Supervisor tốt thỉnh thoảng gửi một yêu cầu không có evidence để xem Lead có
 giữ ranh giới không — nhưng phải **rút lại** ngay sau đó bằng message rõ ràng, để context của Lead
@@ -197,6 +199,8 @@ session của bạn — đó là ranh giới runtime, không phải hạn chế 
   `Reopen abc123`.
 - Một message một cơ chế, một Lead. Trích nguyên văn, kèm lệnh (có `-C <Root>`) để Lead tái hiện.
 - Không tường thuật rỗng. Gửi khi có `DRIFT`/`ESCALATE`, hoặc `NOTE` khi Lead vừa ra verdict.
+- Nói với Human bằng ngôn ngữ Human đang dùng, giữ suốt phiên (Lab 11: Supervisor trả lời Human
+  bằng tiếng Anh dù Human viết tiếng Việt).
 
 ## Memory (`~/.claude/agent-memory/supervisor/`, scope `user`)
 

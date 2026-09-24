@@ -48,6 +48,17 @@ def test_required_skills_suggested_only_for_bugs():
     assert "bug-loop" not in m.build_brief("Add debugger config")
 
 
+def test_model_field_never_inherit():
+    m = load()
+    quick = m.build_brief("fix typo in README")
+    assert "Model                  sonnet — " in quick
+    deep = m.build_brief("Carefully migrate the schema")
+    assert "model mạnh" in deep
+    for brief in (quick, deep, m.build_brief("Review candidate abc123 cho finding bảo mật")):
+        model_line = next(l for l in brief.splitlines() if l.startswith("Model "))
+        assert "inherit" not in model_line
+
+
 def test_depth_and_prompt_mode():
     m = load()
     assert m.infer_depth("Carefully migrate the schema") == "Deep"

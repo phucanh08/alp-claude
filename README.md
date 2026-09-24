@@ -231,6 +231,19 @@ Mục lục, thứ tự chạy, lab đã đổi gì trong instruction: [`docs/la
 
 ## Tuning đã đưa vào `lead.md` từ lab
 
+- v0.7.0 (sự cố facepod, [issue #7](https://github.com/phucanh08/alp-claude/issues/7)): **Peer
+  phải sống có tiếng** — `peer.md` thêm mục Heartbeat (định dạng cố định, mục tiêu mỗi 10 phút,
+  không tool call nào > ~90s, số liệu ghi file ngay, vòng poll tự đọc inbox của mình).
+  `lead.md`: trường `Model` **bắt buộc** kèm lý do một dòng và Agent call truyền `model:`
+  (`inherit` chỉ là fallback khi quên); effort là của Human (`/effort`), Lead không đặt được;
+  bảng chọn model theo loại việc; trigger **phải** chạy song song (gấp + ≥ 2 item độc lập →
+  worktree mỗi writer; bước chờ Human/thiết bị tách riêng; brief ≤ 2 nhóm hành vi); Lead đếm chéo
+  file evidence mỗi heartbeat, peer im lặng > 15 phút = treo. `sequence-execution-plan`: dấu hiệu
+  chẻ thứ tư. `supervisor.md`: `D15` (thiếu model/lý do), `D16` (peer im lặng, Lead không kiểm).
+  Lab 11 **PASS** (headless + interactive PTY): mọi luật ăn lần đầu, 0 nhắc; hai phát hiện
+  runtime — **tin gửi peer đang chạy chỉ giao khi peer idle** (nằm inbox 7 phút) nên `peer.md`
+  đổi sang "đọc inbox của mình mỗi vòng poll"; **headless `-p` không có teammate** (subagent
+  thường, không heartbeat).
 - v0.6.0: **skill phương pháp `bug-loop`** + trường brief tuỳ chọn `Required skills` (thứ 14).
   `peer.md` thêm luật test: oracle độc lập với implementation, lát dọc, mock chỉ ở rìa hệ thống,
   danh sách "làm xanh bằng mọi giá" là BLOCKING, ô `Verification` ghi proof level L1–L3.

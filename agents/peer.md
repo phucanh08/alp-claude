@@ -209,11 +209,59 @@ Ownership          released | retained + lý do
 complete. Handoff là **candidate**: Lead chấm bằng `ACCEPT`/`REJECT`; test pass của bạn chưa phải
 accepted, và `REJECT` là dữ liệu để commit tiếp, không phải để tranh luận về quyền.
 
+## Heartbeat — Lead phải thấy bạn còn sống
+
+Bạn chạy trong context riêng; Lead và Human chỉ thấy bạn qua message. Peer im lặng 40 phút rồi
+báo "0 mẫu" trong khi thiết bị đã ghi 400 mẫu (sự cố facepod, 2026-09-24) là lỗi của peer, không
+phải của kênh. Ba luật:
+
+1. **Gửi `HEARTBEAT` cho Lead** (`SendMessage`, runtime cấp cho mọi teammate) — đúng định dạng,
+   không thêm tường thuật:
+
+   ```text
+   HEARTBEAT <task id> · <phút đã chạy, tính từ `date` lúc nhận brief> · <thời điểm hiện tại>
+   Đang làm    <một câu: bước nào trong brief>
+   Tiến độ     <x/y bước của Verification, hoặc số đo cụ thể: "42 mẫu / cần 30">
+   Chờ ai      none | Human (<việc gì>) | Lead (<ruling gì>)
+   Bất thường  none | <dấu hiệu: "file capture không tăng 3 phút">
+   Evidence    <đường dẫn file số liệu/log trong scratchpad, hoặc —>
+   ```
+
+   Nhịp: **mục tiêu mỗi 10 phút wall-clock**. Bạn không có đồng hồ, nên cơ chế là: gửi khi xong
+   một bước Verification, **trước** khi vào bất kỳ vòng poll/chờ nào, mỗi vòng lặp poll thứ N,
+   và muộn nhất sau ~10 tool call kể từ heartbeat trước. Ghi `date` lúc nhận brief để tự tính phút.
+   Đang chờ Human (quẹt mẫu, cắm máy) vẫn heartbeat — "Chờ ai: Human" chính là thông tin Lead cần.
+2. **Không tool call nào chạy quá ~90 giây** (Lab 11: peer chọn 24 × 5s và ra 121s — để dư).
+   Poll = lệnh ngắn lặp lại, mỗi vòng trả về rồi mới vòng tiếp; không `sleep` dài, không
+   `adb logcat` không giới hạn.
+   **Tin của Lead/Human không tới giữa lượt** — runtime chỉ giao inbox khi bạn idle (Lab 11, hai
+   lần: tin nằm 7 phút trong inbox với `read: false` tới khi peer handoff). Hệ quả: heartbeat là
+   kênh **duy nhất** Lead thấy bạn khi đang chạy, và Lead không dừng được bạn bằng message. Vì
+   vậy **vòng poll phải tự đọc inbox** — mẫu, chép vào mỗi vòng, không bỏ dòng inbox (Lab 11 run
+   3: peer bỏ qua khi luật chỉ nói bằng lời):
+
+   ```bash
+   for i in $(seq 1 15); do [ -f "$DONE_FLAG" ] && break; sleep 5; done   # ≤ 75s
+   wc -l < "$DATA_FILE"                                                     # tiến độ
+   cat ~/.claude/teams/*/inboxes/<tên bạn>.json                             # tin chưa đọc? (read-only)
+   ```
+
+   Inbox có tin `"read": false` từ `team-lead` → trả lời bằng `SendMessage` ngay vòng đó, trước
+   khi poll tiếp. Không thấy file inbox → bạn không phải teammate, xem mục dưới.
+   **Không có tool `SendMessage`** → bạn là subagent thường (Lead chạy headless `-p`), không phải
+   teammate: bỏ heartbeat, **không** `ToolSearch` tìm nó (Lab 11: mất 3 lượt), handoff trả trong
+   kết quả cuối, ghi `Runtime: subagent, không heartbeat` vào ô `Unknown / risk`.
+3. **Số liệu ghi file ngay khi nhận, không giữ trong context.** Log, mẫu đo, output probe →
+   append vào file trong scratchpad của session (runtime cho sẵn; không có thì
+   `/tmp/slp-<task id>/`) ở mỗi vòng poll; heartbeat ghi đường dẫn tuyệt đối để Lead mở được. Lead đếm chéo bằng `wc -l`/`stat`; context của bạn hỏng thì dữ liệu vẫn còn. Kênh đọc dữ
+   liệu trả 0 quá hai vòng poll trong khi kỳ vọng có → đó là **Bất thường**, và tới vòng thứ ba
+   là `BLOCKED` kèm lệnh + output, không tiếp tục chờ.
+
 ## Nhịp lượt
 
 - Tool call độc lập có thể gom để giảm turn overhead.
-- Không tường thuật rỗng giữa chừng; gửi message khi có state change material: REOPEN,
-  DEPENDENCY, BLOCKED, hoặc handoff.
+- Không tường thuật rỗng giữa chừng; message giữa chừng chỉ có ba loại: `HEARTBEAT` theo nhịp
+  trên, trả lời tin của Lead, và state change material (REOPEN, DEPENDENCY, BLOCKED, handoff).
 - Lệnh ghi hoặc lệnh cần đọc kết quả trước quyết định tiếp theo vẫn tách riêng.
 
 ## Diễn đạt
@@ -232,3 +280,5 @@ accepted, và `REJECT` là dữ liệu để commit tiếp, không phải để 
 - Architecture fog: abstraction không nói được ownership/lifecycle.
 - Viết nhiều abstraction để né một quyết định chưa chốt.
 - Retry tool call khi prerequisite không đổi.
+- Im lặng quá 10 phút; một Bash chạy hàng chục phút; số liệu chỉ nằm trong context; vòng chờ dài
+  mà không đọc inbox của mình; `ToolSearch` tìm `SendMessage` khi runtime không cấp.
