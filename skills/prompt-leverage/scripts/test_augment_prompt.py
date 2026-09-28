@@ -30,6 +30,8 @@ def test_brief_writer_vs_readonly():
     assert "Concurrency            exclusive-writer" in writer
     assert "Commit lease           required" in writer
     assert "Project / Task ID      T-1" in writer
+    assert "Premise                bắt buộc:" in writer
+    assert "đang dùng:" in writer
     assert "Implement email verification endpoint" in writer
 
     scout = m.build_brief("Khảo sát xem framework có sẵn rate limit chưa")

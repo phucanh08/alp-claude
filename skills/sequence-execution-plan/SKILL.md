@@ -171,7 +171,9 @@ Now ổn định trừ khi evidence đảo nó. Replan khi:
 - một horizon hoàn thành.
 
 Khi replan: cập nhật fact + dependency trước, sinh lại đường đi, rồi mới xếp lại. Không xếp lại
-chỉ vì người nhận việc thích kiến trúc khác.
+chỉ vì người nhận việc thích kiến trúc khác. Xếp lại xong, plan phải nói quyết định mới đến từ
+evidence nào và item nào đổi vì nó — item đang chạy trên premise cũ phải được báo, không đợi tới
+handoff.
 
 ## Artifact — file `plan.md`, chép mẫu rồi điền
 

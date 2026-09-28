@@ -35,7 +35,7 @@ phải ghế; skill được nhắc disposition.
 | Intake | người giao việc (người yêu cầu tự chạy được) | `goal-griller` | Task Contract 6 ô | contract đã đủ 6 ô |
 | Recon | Scout read-only (người giao việc spawn) | `xia` | research brief nhãn Local/Upstream/Docs/Inference, trong handoff 6 ô | người yêu cầu waive; sửa nhỏ, seam rõ |
 | Sequence | người giao việc | `sequence-execution-plan` | work item, dependency, Now/Next/Later, writer lease | đúng một item, không dependency |
-| Brief | người giao việc | `prompt-leverage` | brief 13 trường, trung lập cách làm, có ruling boundary | không bao giờ |
+| Brief | người giao việc | `prompt-leverage` | brief 14 trường, trung lập cách làm, có ruling boundary, `Premise` tách ràng buộc có nguồn khỏi lựa chọn đang dùng | không bao giờ |
 | Implement → Commit | writer (người nhận việc có write) | `smart-commits` ở commit gate | Candidate `base..head`, không push | read-only disposition |
 | Handoff → Review → Accept | người nhận việc → (Reviewer) → người giao việc | (agent definition) | handoff 6 ô → finding @ sha → `ACCEPT`/`REJECT <sha>` | — |
 

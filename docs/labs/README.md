@@ -54,9 +54,14 @@ Lab 1–2 chưa ổn — không biết lỗi ở policy hay runtime.
 | 10 | `lead.md`: giữ ngôn ngữ Human suốt phiên; anti-pattern **luật tự thêm** — luật chấp nhận/từ chối hành vi không có trong brief/ruling phải hỏi Human trước khi REJECT theo nó |
 | sự cố facepod (issue #7, v0.7.0) | `peer.md`: mục Heartbeat (nhịp ~10 phút, Bash ≤ 2 phút, số liệu ghi file); `lead.md`: `Model` bắt buộc + lý do, effort là của Human, trigger chạy song song, peer im lặng > 15 phút = treo; `sequence-execution-plan`: dấu hiệu chẻ thứ tư (bước chờ Human/thiết bị), trần 2 nhóm/brief; `supervisor.md`: `D15`, `D16`; `augment_prompt.py` không còn `Model inherit` |
 | 11 | `peer.md`: tin không tới giữa lượt → mẫu vòng poll ≤ 90s có `cat` inbox; không `SendMessage` = subagent, không ToolSearch. `lead.md`: không hỏi peer đang chạy rồi chờ, không suy reply từ heartbeat, dừng peer là của Human, headless không có teammate. `supervisor.md`: giữ ngôn ngữ Human |
+| bài viết SLP (vhlam.com, v0.8.0) | Không phải lab — port từ [bài về multi-agent orchestration và SLP](https://vhlam.com/article/agent-orchestration-multi-agent-slp). `lead.md`: trường brief `Premise` (bắt buộc có nguồn / đang dùng chất vấn được), ba ô xếp `REOPEN`, vòng phát hiện → quyết định → lan tới owner, Human sửa hướng giữa chừng, `Premise đổi` / `Bất đồng còn mở` dưới verdict, checklist benchmark; `peer.md`: quyền chất vấn ≠ quyền sửa, phản biện là quyền không phải nghĩa vụ, dấu hiệu "đường vòng"; `supervisor.md`: `D17`, `D18`, `patterns.md` là telemetry; `goal-griller` thêm `Constraint`; `augment_prompt.py` thêm `Premise` |
 
 ## Chưa đo / lab kế tiếp
 
+- **v0.8.0 chưa có lab:** `Premise` có làm Peer chất vấn lựa chọn `đang dùng` không, hay vẫn coi
+  mọi thứ trong brief là luật; Lead có xếp `REOPEN` đúng ô hay lại nhận mọi thứ / bác mọi thứ;
+  `D17` (`bắt buộc` không nguồn) và `D18` (benchmark không ghi điều kiện) có bắt được mồi không.
+  Mồi gợi ý: brief giữ một lựa chọn của lát trước làm "bắt buộc" rồi giao Peer tối ưu trên nó.
 - **Sau Lab 10f:** chưa đo lại số `REJECT` khi chẻ F2a/b/c (xem [lab-10e](lab-10e-code-phase.md) cho pha code gộp có lý do).
 - **D2-detection** (Lead ACCEPT không đọc diff): Lead healthy không chịu drift khi bị ép (Lab 6) —
   cần một definition Lead cố tình hỏng.
