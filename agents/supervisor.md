@@ -144,6 +144,8 @@ Mỗi mục là một *cơ chế* Lead phải giữ (theo `lead.md`). Bạn ki�
 | D14 | Lead hoặc writer của nó ghi ra ngoài `Root`/`Scope` đã đăng ký: commit ở repo của Lead khác, path ngoài `Scope` trong monorepo, hai Lead đăng ký cùng `Root` hoặc `Scope` giao nhau | `SLP-REGISTER` trong roster; `git -C <Root khác> log --since=<lúc giao writer>` có commit của task này; `git show --stat <sha>` vs `Scope`; transcript Lead: `Repository root` trong brief ≠ `Root` đã đăng ký |
 | D15 | Spawn Peer không chọn model: Agent call thiếu `model`, hoặc brief thiếu dòng `Model: <model> — <lý do>` (ghi `inherit`, hoặc có model mà không có lý do) | transcript Lead: `tool_use` `Agent` → `input.model`; brief trong `input.prompt` có dòng `Model`. Bạn kiểm **có hay không**, không chấm model chọn đúng hay sai — đó là technical judgement của Lead |
 | D16 | Peer chạy > 15 phút không `HEARTBEAT`, và Lead không kiểm evidence (file/git) trước khi tiếp tục chờ | transcript Peer (`subagents/*.jsonl`): timestamp giữa hai `SendMessage` có `HEARTBEAT`, hoặc từ spawn tới message đầu; transcript Lead: sau khoảng trống đó có `stat`/`wc`/`git status` ở root của peer trước khi Lead làm việc khác. Kiểm **khi bạn được đánh thức** (checkpoint, idle notice, Human) — không polling transcript để canh giờ |
+| D17 | Brief ghi vào `Premise: bắt buộc` một ràng buộc **không có nguồn** (không có trong `CLAUDE.md`, Human không nói trong transcript) — lựa chọn của Lead hay lát trước được đóng gói thành luật cho Peer sau | brief trong transcript Lead (`input.prompt`): mỗi mục `bắt buộc` có nguồn? `grep` `CLAUDE.md` áp cho Lead; transcript Lead: message Human có câu đó không. Bạn kiểm **có nguồn hay không**, không chấm lựa chọn đúng sai. Brief không có `Premise` → hỏi một câu như thiếu trường |
+| D18 | `ACCEPT` claim hiệu năng/benchmark mà `Verification` không ghi điều kiện đo, hoặc lượt đo trùng thời điểm lane khác trên cùng máy chạy tải nặng (writer của Lead khác build/benchmark) | handoff trong transcript: ô `Verification` có tải nền + workload hai lượt không; timestamp lượt đo vs transcript Bash của Lead/Peer khác — bạn nhìn được mọi Lead, đây là lúc góc nhìn xuyên workspace có ích. Message "sẽ nhường CPU" không phải evidence |
 
 D12 là **self-test**: Supervisor tốt thỉnh thoảng gửi một yêu cầu không có evidence để xem Lead có
 giữ ranh giới không — nhưng phải **rút lại** ngay sau đó bằng message rõ ràng, để context của Lead
@@ -216,6 +218,11 @@ candidate/base SHA → verdict line → drift đã hỏi → Lead trả lời g�
 Ghi pattern drift lặp lại giữa các task (pattern chung mọi workspace được ghi ở file riêng
 `patterns.md`). **Không** ghi ruling kỹ thuật của Lead như thể là của bạn, không ghi nội dung Peer
 để "dùng lại".
+
+`patterns.md` còn là telemetry để sửa chính SLP (README § Better-SLP): drift nào lặp ở nhiều
+task; `REOPEN` nào Lead nhận rồi **đổi** quyết định, `REOPEN` nào chỉ tốn một vòng; Reviewer nào
+ra finding đổi verdict, Reviewer nào luôn "no finding"; `DRIFT` nào của bạn tới quá muộn. Ghi
+outcome, không ghi số lần: "ba lần Peer bắt lỗi" không suy ra "tăng phản biện gấp đôi".
 
 ## Anti-pattern tự soi
 

@@ -1,6 +1,6 @@
 ---
 name: prompt-leverage
-description: Nâng prompt thô thành prompt hoặc brief sẵn sàng thực thi mà không đổi ý định — bổ sung Objective, Context, Work Style, Tool Rules, Output Contract, Verification, Done. Dùng khi viết prompt giao cho một session khác, khi người giao việc viết brief 13 trường cho một bounded outcome, khi cần rút template dùng lại, hoặc khi được gọi /prompt-leverage.
+description: Nâng prompt thô thành prompt hoặc brief sẵn sàng thực thi mà không đổi ý định — bổ sung Objective, Context, Work Style, Tool Rules, Output Contract, Verification, Done. Dùng khi viết prompt giao cho một session khác, khi người giao việc viết brief 14 trường cho một bounded outcome, khi cần rút template dùng lại, hoặc khi được gọi /prompt-leverage.
 ---
 
 # Prompt Leverage — từ prompt thô tới brief thực thi được
@@ -10,7 +10,7 @@ Vị trí trong SLP: hai chỗ.
 | Chỗ | Ai | Input | Output |
 |---|---|---|---|
 | Prompt cho session khác | người yêu cầu (hoặc người giao việc nhắc lại) | ý định thô | prompt 7 khối, đủ để `goal-griller` không phải hỏi lại điều hiển nhiên |
-| Brief giao bounded outcome | người giao việc | Task Contract + (Scout brief) + một work item từ `sequence-execution-plan` | **brief 13 trường** (khung: `references/framework.md`) |
+| Brief giao bounded outcome | người giao việc | Task Contract + (Scout brief) + một work item từ `sequence-execution-plan` | **brief 14 trường** (khung: `references/framework.md`) |
 
 Ghế nào ứng với gì: `/ask-alp`.
 
@@ -28,13 +28,19 @@ ceremony cho việc nhỏ.
   hay người yêu cầu chưa cấp. Thiếu authority → ghi vào `Authority: ... không`, không bỏ trống.
 - **Verification là lệnh.** "Đảm bảo chất lượng" không phải Verification; `pytest tests/x -q` là.
 - **Done = handoff 6 ô**, không phải "báo xong".
+- **`Premise` tách ba thứ**: mục tiêu (`Objective`), ràng buộc *bắt buộc* (phải có nguồn: người
+  yêu cầu nói ở đâu, dòng nào của `CLAUDE.md`), và lựa chọn thiết kế *đang dùng* (của người giao
+  việc hoặc lát trước — người nhận việc được chất vấn). Lựa chọn không có nguồn không được ghi
+  vào `bắt buộc`; đó là pre-solve đội lốt ràng buộc.
+- **Không ép phản biện.** Brief không viết "thách thức mọi giả định" / "phải tìm ra vấn đề";
+  chất vấn là quyền của người nhận việc khi evidence buộc phải, không phải KPI.
 
 ## Luồng
 
 1. Đọc prompt thô, gọi tên **việc thật** trong một câu.
 2. Suy disposition: Engineer · Architect · Reviewer · Scout (brief), hoặc loại việc: coding ·
    research · review · planning · writing (prompt).
-3. Dựng lại bằng các khối trong `references/framework.md`; ánh xạ sang 13 trường brief khi đích
+3. Dựng lại bằng các khối trong `references/framework.md`; ánh xạ sang 14 trường brief khi đích
    là người nhận việc.
 4. Giữ tỷ lệ: việc một dòng không thành spec một trang. Depth `Quick` / `Standard` / `Deep`.
 5. Trả prompt đã nâng; kèm danh sách *đã thêm gì* khi hữu ích. Prompt đã mạnh → nói vậy, sửa tối
@@ -61,8 +67,8 @@ Trước khi trả:
 - [ ] không thêm ceremony vô ích;
 - [ ] verification đúng mức risk, là lệnh chạy được;
 - [ ] có định nghĩa xong rõ (handoff 6 ô khi đích là người nhận việc);
-- [ ] (brief) đủ 13 trường; `Base` là SHA thật; `Owned scope` là path; boundary có ruling
-      hoặc lệnh dừng; `Model` có tên model + lý do, không `inherit`; brief ôm ≤ 2 nhóm hành vi;
+- [ ] (brief) đủ 14 trường; `Base` là SHA thật; `Owned scope` là path; boundary có ruling
+      hoặc lệnh dừng; `Premise` mỗi mục `bắt buộc` có nguồn, lựa chọn của mình nằm ở `đang dùng`; `Model` có tên model + lý do, không `inherit`; brief ôm ≤ 2 nhóm hành vi;
       `Required skills` chỉ khi loại việc cần (bug → `bug-loop`);
 - [ ] không seed lời giải, verdict, hay authority.
 
@@ -70,5 +76,5 @@ Trước khi trả:
 
 | File | Khi nào đọc |
 |---|---|
-| `references/framework.md` | định nghĩa 7 khối, ánh xạ sang brief 13 trường, mức depth, điều chỉnh theo disposition |
+| `references/framework.md` | định nghĩa 7 khối, ánh xạ sang brief 14 trường, mức depth, điều chỉnh theo disposition |
 | `scripts/augment_prompt.py` | nháp khung brief/prompt từ prompt thô |

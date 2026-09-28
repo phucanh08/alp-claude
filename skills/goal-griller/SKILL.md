@@ -26,7 +26,7 @@ Chưa đủ sáu ô → chưa có Task Contract. Chưa có Task Contract → kh�
 |---|---|---|---|
 | 1 | Outcome | Cuối cùng điều gì phải đúng? Một câu, quan sát được | `Objective` của brief |
 | 2 | Proof | Chứng minh bằng lệnh/artifact nào mà người khác chạy lại được? | `Verification` của brief; ô `Verification` của handoff |
-| 3 | Scope | Được đổi gì, cấm đổi gì | `Owned scope` / `Excluded scope` |
+| 3 | Scope | Được đổi gì, cấm đổi gì; ràng buộc nào người yêu cầu *thật sự* đặt (và vì sao), cái nào chỉ là cách làm hiện tại | `Owned scope` / `Excluded scope`; `Premise: bắt buộc` của brief |
 | 4 | Context | Đọc gì trước khi làm: file, doc, log, issue, lệnh | phần context của brief |
 | 5 | Validation loop | Check rẻ chạy lặp trong lúc làm; check đầy đủ chạy cuối | `Verification` (fast vs full) |
 | 6 | Stop / pause | Xong khi nào; dừng hỏi người yêu cầu khi nào thay vì tự chế | `Authority`; điều kiện `BLOCKED` |
@@ -58,7 +58,8 @@ Trừ khi repo cho thấy chỗ tắc khác:
 
 1. Cuối cùng điều gì phải đúng?
 2. Chứng minh thế nào?
-3. Cái gì cấm đụng?
+3. Cái gì cấm đụng? Trong những thứ "phải giữ", cái nào là yêu cầu thật (đo được, có lý do), cái
+   nào chỉ là cách đang làm mà người yêu cầu chưa hề đòi giữ?
 4. Đọc gì, giữ gì trước khi làm?
 5. Check nào chạy lặp, check nào chỉ chạy cuối?
 6. Khi nào phải dừng hỏi thay vì tự chế?
@@ -82,6 +83,7 @@ Outcome        <một câu, quan sát được>
 Proof          <lệnh + kết quả mong đợi, hoặc artifact cụ thể>
 Scope          may change: <path/glob>    must not change: <path/glob>
 Boundary       <boundary trong CLAUDE.md bị chạm + ruling, hoặc: none>
+Constraint     <ràng buộc người yêu cầu đặt + nguồn/lý do, hoặc: none — cách làm hiện tại KHÔNG phải ràng buộc trừ khi họ nói thế>
 Context        <file/doc/log/lệnh phải đọc trước>
 Validation     during: <lệnh rẻ>    final: <lệnh đầy đủ>
 Done when      <điều kiện, kiểm được>
@@ -108,3 +110,6 @@ qua `prompt-leverage` (khi một item).
 - Giao Scout đi định nghĩa tính từ mơ hồ thay người yêu cầu → recon bỏ phí.
 - Coi "test pass" là Proof khi test đó chưa tồn tại và contract chưa nói ai viết.
 - Contract có Outcome nhưng Proof là "review thấy ổn".
+- Ghi cách làm hiện tại vào `Constraint` vì "đang thế" — "xe phải dừng được" là ràng buộc, "phải
+  dùng dù" chỉ là ràng buộc khi người yêu cầu nói vậy; ghi sai chỗ, người nhận việc chỉ còn được
+  làm nhẹ cái dù.

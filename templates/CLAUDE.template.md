@@ -13,6 +13,10 @@ Liệt kê boundary mà agent không được tự phát minh hoặc đổi ng�
 
 Nếu task cần thay đổi một boundary ở đây, Lead phải ruling trước khi Peer viết test đi qua boundary.
 
+Ràng buộc ở đây mới là ràng buộc *bắt buộc* (ghi kèm lý do một dòng). Lựa chọn thiết kế không
+nằm ở đây là lựa chọn *đang dùng*: Peer được chất vấn bằng `REOPEN_REQUEST` có evidence, Lead
+không được ghi nó vào `Premise: bắt buộc` của brief.
+
 ## Ownership / generated files
 - Generated files: <paths hoặc none>
 - Files không được agent sửa: <paths hoặc none>

@@ -3,7 +3,7 @@
 
     augment_prompt.py "<prompt thô>" [--mode brief|prompt] [--disposition X] [--task-id ID]
 
---mode brief   (mặc định) khung brief 13 trường (người giao việc -> người nhận việc)
+--mode brief   (mặc định) khung brief 14 trường (người giao việc -> người nhận việc)
 --mode prompt  khung 7 khối cho prompt gửi session khác
 
 Script chỉ điền phần suy được từ từ khóa. Base, Owned scope, Boundary ruling vẫn là việc của người giao việc:
@@ -120,7 +120,7 @@ def suggest_model(disposition: str, depth: str) -> str:
 
 
 def build_brief(raw_prompt: str, disposition: str | None = None, task_id: str | None = None) -> str:
-    """Khung brief 13 trường (+ `Required skills` tuỳ chọn) của SLP. Người giao việc điền các <TODO>."""
+    """Khung brief 14 trường (+ `Required skills` tuỳ chọn) của SLP. Người giao việc điền các <TODO>."""
     objective = normalize(raw_prompt)
     # Chỉ là gợi ý: người giao việc quyết có khai hay không.
     required_skills = "bug-loop  <TODO: xác nhận — gợi ý vì prompt nói về bug>" if BUG_RE.search(objective) else ""
@@ -138,6 +138,7 @@ def build_brief(raw_prompt: str, disposition: str | None = None, task_id: str | 
         Base                   <TODO: SHA thật, không phải chữ HEAD>
         Disposition            {disp.capitalize()}  (depth: {depth}; write: {write})
         Objective              {objective}
+        Premise                bắt buộc: <TODO: ràng buộc + nguồn (người yêu cầu nói ở đâu / dòng CLAUDE.md), hoặc: none>  ·  đang dùng: <TODO: lựa chọn thiết kế đang áp — người nhận việc được chất vấn>
         Owned scope            <TODO: path/glob>
         Excluded scope         <TODO: path/glob, và boundary CLAUDE.md không được chạm>
         Boundary ruling        <TODO: ruling cho boundary bị chạm, hoặc: none / BLOCKED khi chạm>

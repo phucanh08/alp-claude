@@ -8,10 +8,10 @@ verification, tiêu chí dừng). SLP thêm lớp thứ ba: *authority control* 
 
 ## Bảy khối
 
-| Khối | Nội dung | Khi viết prompt cho session khác | Khi viết brief 13 trường |
+| Khối | Nội dung | Khi viết prompt cho session khác | Khi viết brief 14 trường |
 |---|---|---|---|
 | Objective | việc + thành công quan sát được | một câu outcome + proof | `Objective` |
-| Context | file, URL, ràng buộc, giả định, ranh giới thông tin; khi nào phải tra thay vì đoán | link Task Contract / issue / log | `Repository root`, `Base`, `Excluded scope`, Scout brief đính kèm |
+| Context | file, URL, ràng buộc, giả định, ranh giới thông tin; khi nào phải tra thay vì đoán | link Task Contract / issue / log | `Repository root`, `Base`, `Excluded scope`, Scout brief đính kèm; `Premise` = ràng buộc `bắt buộc` (có nguồn) tách khỏi lựa chọn `đang dùng` (chất vấn được) |
 | Work Style | rộng trước khi cần hiểu hệ; sâu ở chỗ risk; first-principles; mắt mới cho việc không tầm thường | depth mong muốn | `Disposition`, `Model` (bắt buộc, kèm lý do một dòng; `inherit` không phải lựa chọn — effort thuộc Human `/effort`), depth |
 | Tool Rules | khi nào bắt buộc đọc file / chạy test / tra docs; không bỏ prerequisite; skill bắt buộc của gate | "đừng đoán, grep" | `Authority`, `Concurrency`, `Commit lease`, skill bắt buộc theo disposition (`xia` cho Scout, `smart-commits` cho writer); `Required skills` khi loại việc cần phương pháp riêng (bug → `bug-loop`) |
 | Output Contract | cấu trúc, độ sâu, section bắt buộc | "trả contract rồi dừng" | `Handoff contract` (6 ô) |
@@ -19,7 +19,7 @@ verification, tiêu chí dừng). SLP thêm lớp thứ ba: *authority control* 
 | Done | điều phải đúng trước khi dừng | "xong khi …" | `Outcome` trong handoff + `Ownership: released` |
 
 Trường brief không có khối tương ứng — `Project / Task ID`, `Owned scope` — người giao việc điền từ
-`sequence-execution-plan`. `Required skills` là trường thứ 14, tuỳ chọn: chỉ định *phương pháp*,
+`sequence-execution-plan`. `Required skills` là trường thứ 15, tuỳ chọn: chỉ định *phương pháp*,
 không chỉ định lời giải; bỏ trống khi skill theo disposition là đủ.
 
 ## Depth

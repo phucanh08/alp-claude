@@ -21,7 +21,13 @@ Nguyên tắc lõi: **ai chấm** mới là ranh giới. Peer viết → Lead `A
 diff `base..sha` từ Git object. Lead viết → Human accept. Supervisor không chấm ai — chỉ phát hiện
 drift và hỏi. Capability không phải authority.
 
-## Sáu bất biến và cách hiện thực trên Claude Code
+SLP không phải role-play: ghế là *trách nhiệm + quyền hạn*, không phải tính cách. Peer có thể là
+Implementer, Reviewer, Architect hay Auditor (kiểm chất lượng test và e2e proof) tuỳ brief;
+cái không đổi là ai được sửa gì và ai chấm. Nền lý thuyết: bài
+[Bàn về multi-agent orchestration và mô hình SLP](https://vhlam.com/article/agent-orchestration-multi-agent-slp)
+(v0.8.0 port phần *cái dù*, quyền chất vấn, vòng phát hiện → quyết định, Better-SLP).
+
+## Bảy bất biến và cách hiện thực trên Claude Code
 
 | # | Bất biến | Hiện thực |
 |---|---|---|
@@ -31,6 +37,7 @@ drift và hỏi. Capability không phải authority.
 | 4 | **Write ownership rõ** | mỗi moving scope một writer + commit lease; nhiều writer song song = Lead cấp worktree riêng mỗi writer, contract cho shared interface phải có trong brief trước |
 | 5 | **Candidate + evidence, không phải DONE** | handoff 6 ô: `Candidate` = SHA + base, `Scope`, `Verification` (command + output thật), `Unknown/risk`, `Ownership`; Lead bắt buộc một dòng `ACCEPT <sha>` / `REJECT <sha> — finding` |
 | 6 | **Supervisor không giành quyền Lead** | output chỉ `DRIFT` (evidence + một câu hỏi) / `ESCALATE` (Human) / `NOTE`; định nghĩa "Lead healthy" cụ thể; unhealthy → escalate, vẫn không điều khiển Peer |
+| 7 | **Quyền chất vấn tách khỏi quyền sửa; phản biện là quyền, không phải nghĩa vụ** | brief có `Premise`: ràng buộc `bắt buộc` phải có nguồn (Human / `CLAUDE.md`), lựa chọn `đang dùng` Peer được hỏi lại (`D17` soi nguồn); Peer đọc được scope người khác, sửa thì không → `DEPENDENCY_REQUEST`; Lead xếp mỗi `REOPEN` vào một trong ba ô, không thưởng tranh biện; đổi quyết định phải lan tới plan + owner bị ảnh hưởng + Human (`Premise đổi` / `Bất đồng còn mở` dưới verdict) |
 
 ## Cài
 
@@ -165,14 +172,14 @@ qua `Skill`); bản dài trong `skills/ask-alp/references/workflow.md`.
 
 Năm skill viết lại từ [`hoangnb24/skills`](https://github.com/hoangnb24/skills/tree/main/plugins/khuym/skills)
 (plugin `khuym`, gốc cho Codex) sang Claude Code + SLP: bỏ `/goal`, hook Codex, DeepWiki/Exa;
-thêm ánh xạ vào Task Contract, brief 13 trường, handoff 6 ô, luật một writer, không push.
+thêm ánh xạ vào Task Contract, brief 14 trường, handoff 6 ô, luật một writer, không push.
 
 | Skill | Phase | Vào → Ra |
 |---|---|---|
 | `goal-griller` | intake | prompt mơ hồ → **Task Contract** 6 ô; chưa đủ ô thì không giao writer |
 | `xia` | recon | câu hỏi → research brief nhãn Local/Upstream/Docs/Inference, trong handoff 6 ô |
 | `sequence-execution-plan` | sequence | contract + brief → work item, dependency, Now/Next/Later, **writer lease** (Now ≤1 writer/checkout) |
-| `prompt-leverage` | brief | work item → **brief 13 trường**; trung lập cách làm, có ruling boundary, không seed verdict; `scripts/augment_prompt.py` nháp khung |
+| `prompt-leverage` | brief | work item → **brief 14 trường**; trung lập cách làm, có ruling boundary, `Premise` tách ràng buộc có nguồn khỏi lựa chọn đang dùng, không seed verdict; `scripts/augment_prompt.py` nháp khung |
 | `smart-commits` | commit gate | working tree → commit logic trong owned scope, **không push**, block Candidate `base..head` |
 
 Một skill **phương pháp**, không gắn phase hay disposition — chỉ bắt buộc khi brief khai
@@ -192,6 +199,27 @@ sở hữu topology, có write authority…). Ánh xạ ghế ↔ từ vựng, l
 nào cấm skill nào" nằm ở một chỗ duy nhất: router **`ask-alp`** (`skills/ask-alp/SKILL.md`, bản
 dài `references/workflow.md`). Nhờ vậy đổi ghế, đổi tên agent hay dùng skill ngoài SLP không phải
 sửa skill. Skill không cấp authority.
+
+## Khi nào không dùng SLP
+
+- Sửa nhỏ, seam rõ, một người đọc diff là đủ → một session thường; SLP là chi phí, không phải
+  đức tính. Lead vẫn được tự viết (`LEAD-WROTE`), nhưng mở Lead + Supervisor cho một dòng sửa là
+  ceremony.
+- Việc cần feedback Human liên tục (cảm giác game, UI/UX, chỉnh tay theo mắt) → không giao bounded
+  outcome; Peer không có kênh hỏi Human giữa lượt, và tin gửi Peer đang chạy chỉ tới khi nó idle
+  (Lab 11).
+- Cần tách khi: nhiều owner viết song song, có thứ phải bảo vệ (tiền, auth, schema, contract giữa
+  repo), hoặc Human không đọc được hết diff trong ngày.
+
+## Better-SLP — sửa chính SLP bằng gì
+
+Đánh giá một task không bằng số lần Peer phản biện hay số `DRIFT`, mà bằng **chuỗi thay đổi**:
+Lead biết gì lúc giao → can thiệp kịp không → Peer phát hiện thêm gì → evidence có đủ đổi nhận
+định không → quyết định mới tới owner nào → kết quả cuối đổi gì. Lead ghi một dòng chuỗi này mỗi
+task vào memory; Supervisor ghi `patterns.md` theo outcome (`REOPEN` nào đổi được quyết định,
+Reviewer nào ra finding đổi verdict, `DRIFT` nào tới muộn, nghi thức nào chỉ đốt token). Sửa
+instruction từ đó — kể cả **bỏ** cơ chế — và đừng tối ưu chỉ số hoạt động: "ba lần Peer bắt lỗi"
+không suy ra "tăng phản biện gấp đôi".
 
 ## Cấu trúc repo
 
@@ -231,6 +259,26 @@ Mục lục, thứ tự chạy, lab đã đổi gì trong instruction: [`docs/la
 
 ## Tuning đã đưa vào `lead.md` từ lab
 
+- v0.8.0 (bài [SLP trên vhlam.com](https://vhlam.com/article/agent-orchestration-multi-agent-slp),
+  không phải lab): **tách ràng buộc khỏi lựa chọn, tách quyền chất vấn khỏi quyền sửa**.
+  `lead.md`: brief thêm trường `Premise` — `bắt buộc:` phải có nguồn (Human / dòng `CLAUDE.md`),
+  `đang dùng:` là lựa chọn của Lead hoặc lát trước mà Peer được hỏi lại (anti-pattern **cái dù
+  thành luật**); mỗi `REOPEN_REQUEST` xếp vào một trong ba ô (đổi quyết định / phương án khác
+  cũng đúng / không đáng gián đoạn) và Lead phải chất vấn ngược "cần redesign"; vòng phát hiện →
+  quyết định → `Premise` brief kế + plan + owner bị ảnh hưởng + evidence trên SHA sẽ accept; Human
+  sửa hướng giữa chừng → contract/plan trước, tin tới Peer chỉ khi idle; dưới verdict thêm
+  `Premise đổi` / `Bất đồng còn mở`; checklist accept đòi điều kiện đo cho claim benchmark;
+  Auditor = Reviewer với `Objective` là proof; memory ghi một dòng chuỗi thay đổi mỗi task.
+  `peer.md`: đọc `Premise` (bắt buộc → giữ hoặc `BLOCKED`, đang dùng → chất vấn được); đọc
+  scope người khác được, sửa thì không; phản biện là quyền không phải nghĩa vụ (tự xếp trước khi
+  gửi `REOPEN`); dấu hiệu **đường vòng** (thêm cơ chế thứ hai bù cùng một mâu thuẫn → mở lại);
+  điều kiện đo benchmark. `supervisor.md`: `D17` (`bắt buộc` không nguồn), `D18` (benchmark
+  không ghi điều kiện / trùng tải lane khác), `patterns.md` là telemetry theo outcome.
+  `goal-griller`: hàng `Constraint` + câu hỏi 3 tách yêu cầu thật khỏi cách đang làm;
+  `prompt-leverage` 14 trường (`Required skills` thành thứ 15), `augment_prompt.py` sinh dòng
+  `Premise`; `ask-alp`/workflow, `sequence-execution-plan`, template `CLAUDE.md`, `docs/USAGE.md`
+  cập nhật theo. README: bất biến thứ 7, "Khi nào không dùng SLP", "Better-SLP". **Chưa có lab**
+  cho v0.8.0 — xem `docs/labs/README.md` § Chưa đo.
 - v0.7.0 (sự cố facepod, [issue #7](https://github.com/phucanh08/alp-claude/issues/7)): **Peer
   phải sống có tiếng** — `peer.md` thêm mục Heartbeat (định dạng cố định, mục tiêu mỗi 10 phút,
   không tool call nào > ~90s, số liệu ghi file ngay, vòng poll tự đọc inbox của mình).
@@ -244,7 +292,7 @@ Mục lục, thứ tự chạy, lab đã đổi gì trong instruction: [`docs/la
   runtime — **tin gửi peer đang chạy chỉ giao khi peer idle** (nằm inbox 7 phút) nên `peer.md`
   đổi sang "đọc inbox của mình mỗi vòng poll"; **headless `-p` không có teammate** (subagent
   thường, không heartbeat).
-- v0.6.0: **skill phương pháp `bug-loop`** + trường brief tuỳ chọn `Required skills` (thứ 14).
+- v0.6.0: **skill phương pháp `bug-loop`** + trường brief tuỳ chọn `Required skills` (thứ 14, từ v0.8.0 là thứ 15).
   `peer.md` thêm luật test: oracle độc lập với implementation, lát dọc, mock chỉ ở rìa hệ thống,
   danh sách "làm xanh bằng mọi giá" là BLOCKING, ô `Verification` ghi proof level L1–L3.
   `lead.md` checklist accept đòi proof ≥ L2 cho claim hành vi; `D13` kiểm skill phương pháp chỉ
@@ -292,7 +340,7 @@ Mục lục, thứ tự chạy, lab đã đổi gì trong instruction: [`docs/la
   `ask-alp`. Lab 7c PASS: Lead không gọi skill nào qua `Skill` nhưng intake/brief/accept vẫn đúng; Scout gọi `xia`, writer gọi `smart-commits`; Supervisor bắt `DRIFT D9` (Reviewer trigger #2) — câu hỏi mở ghi ở `docs/labs/lab-07-runs.md`.
 - v0.3.0: thêm mục "Skills theo phase" vào `lead.md`/`peer.md`, dòng skills vào template
   `CLAUDE.md`; installer/uninstaller quản `.claude/skills/`. Lab 7 PASS: `goal-griller` hỏi đúng một
-  câu, `prompt-leverage` ra brief 13 trường có ruling, `smart-commits` 2 commit + 0 push; kiểm hook
+  câu, `prompt-leverage` ra brief 13 trường (nay 14) có ruling, `smart-commits` 2 commit + 0 push; kiểm hook
   git đổi sang `git rev-parse --git-path hooks` vì plugin hook chặn path thư mục git.
 - v0.2.x: `memory: local` (Lab 6: chạy được với `--agent`); ô `Snapshot` → `Candidate` có base SHA
   và verdict line `ACCEPT`/`REJECT` (Lab 6: Lead dùng đúng, kể cả khi Human ép chấm mù → Lead từ

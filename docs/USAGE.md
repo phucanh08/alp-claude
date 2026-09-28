@@ -89,6 +89,9 @@ Ba câu nên thuộc lòng:
 - **"Được tạo nhánh mới; không đụng main, không push."** — ranh giới side-effect rõ nhất.
 - **"Trước mắt chỉ chẩn đoán, CHƯA sửa code; anh xem rồi mới quyết."** — khi anh muốn tự chọn cách sửa.
 - **"Có test chặn tái phát."** — với bug, Lead sẽ gán `bug-loop` và đòi proof RED→GREEN.
+- **"Phải giữ X vì Y; còn Z là đang thế thôi, đổi được."** — nói rõ cái gì là ràng buộc thật
+  (kèm lý do) và cái gì chỉ là cách đang làm. Lead ghi cái đầu vào `Premise: bắt buộc` của brief,
+  cái sau vào `đang dùng`; Peer được hỏi lại cái sau, không được lách cái đầu.
 
 **Dán prompt thành một đoạn, không có dòng trống** — terminal cắt paste ở dòng trống, Lead nhận
 nửa yêu cầu.
@@ -106,6 +109,8 @@ Lead luôn kết thúc một task bằng **một trong các dòng sau**. Anh ch�
 | `LEAD-WROTE: 9c0e… — cần Human accept` | Lead tự viết code (việc quá nhỏ để giao) → Lead **không** được tự accept | đọc diff, anh quyết |
 | `BLOCKED — <lý do>` | thiếu quyền, thiếu giá trị, hoặc cần anh quyết | trả lời câu hỏi đi kèm |
 | `REOPEN_REQUEST <tầng> — …` | đề bài sai về cơ chế (tầng `foundation`/`dependency`/`API`/…) | đọc evidence; đổi đề hoặc giữ đề kèm lý do |
+| `Premise đổi: …` (dưới verdict) | Peer đưa evidence, Lead đã đổi một quyết định giữa chừng | đọc một dòng; không đồng ý thì nói ngay, vì brief sau đã dùng cái mới |
+| `Bất đồng còn mở: …` (dưới verdict) | Peer phản đối, Lead giữ hướng cũ (phương án khác cũng đúng / không đáng gián đoạn) | anh là người duy nhất đảo được; im lặng = đồng ý với Lead |
 
 Khi Lead hỏi, câu hỏi luôn có **đáp án đề xuất**. Anh trả lời ngắn cũng được: "Chọn (a)".
 

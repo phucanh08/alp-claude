@@ -35,6 +35,9 @@ Bản này chạy trên **Claude Code Agent Teams native**. Không có Paseo.
    cũng được (`Write`/`Edit`/Bash) — đó không phải viết code, không cần `LEAD-WROTE`, không
    commit (gitignored). Ghi checkpoint (task id, base/candidate SHA, verdict, finding còn mở); không ghi ruling thay cho `CLAUDE.md` — boundary
    ruling bền phải về `CLAUDE.md` qua Human. Không đọc memory dir của agent khác.
+   Mỗi task đóng, thêm **một dòng chuỗi thay đổi**: bạn biết gì lúc giao → Peer phát hiện thêm gì
+   → evidence có đủ đổi nhận định không → quyết định mới tới owner nào → kết quả cuối đổi gì. Đó
+   là telemetry để sửa chính SLP (README § Better-SLP), không phải để đếm số lần phản biện.
 7. `ListAgents`: có session `supervisor` → gửi nó block `SLP-REGISTER` (§ Supervisor) một lần.
    Không có → làm việc bình thường; Supervisor mở phiên sau thì bạn đăng ký lúc đó.
 
@@ -53,7 +56,8 @@ Khi Agent Teams bật, named Agent call trở thành **teammate**. Không truy�
 muốn tạo teammate; isolation khiến call đi theo đường ordinary subagent thay vì teammate.
 
 Không tạo agent type tùy hứng để né profile `peer`. Disposition nằm trong brief: Engineer,
-Architect, Reviewer hoặc Scout.
+Architect, Reviewer hoặc Scout. Cần kiểm chất lượng test, TDD, e2e proof (một *Auditor*) → đó là
+Reviewer với `Objective` là proof, không phải disposition mới.
 
 Claude Code Agent Teams hiện không có nested teams: **chỉ bạn quản topology của team**. Peer có
 thể nhìn thấy task list, mailbox hoặc teammate khác; visibility đó không cấp quyền routing.
@@ -73,6 +77,14 @@ thể nhìn thấy task list, mailbox hoặc teammate khác; visibility đó kh�
 Product direction, portfolio priority, mọi trade-off không đảo ngược, external side effect **ra
 ngoài máy này** → Human. Commit local thì không: nó đảo ngược được, và là của Peer khi Peer là
 writer.
+
+Human cần nhìn được ba thứ **qua bạn**, không phải qua transcript: brief nào đang chạy; ràng
+buộc nào *thật sự* đến từ Human và quyết định nào do bạn tự chọn (`Premise` của brief); bất đồng
+nào còn chưa đóng. Mỗi báo cáo cho Human (accept summary, `BLOCKED`, câu hỏi) mở bằng verdict,
+rồi hai dòng cố định khi khác rỗng: `Premise đổi: …` và `Bất đồng còn mở: …`. Human sửa hướng
+giữa chừng → cập nhật Task Contract và plan trước, rồi brief sửa cho Peer bị ảnh hưởng; nói với
+Human tin đã tới Peer hay còn nằm trong inbox (§ Monitoring) — "đã chuyển" chưa phải "đã đổi
+việc".
 
 ## Bạn implement được, nhưng KHÔNG tự accept
 
@@ -134,6 +146,7 @@ Repository root        checkout chính, hoặc worktree riêng bạn đã tạo 
 Base                   SHA writer tách từ; candidate phải là descendant của SHA này
 Disposition            Engineer | Architect | Reviewer | Scout
 Objective
+Premise                bắt buộc: <ràng buộc + nguồn: Human / dòng CLAUDE.md>  ·  đang dùng: <lựa chọn thiết kế của bạn hoặc lát trước — Peer được chất vấn>
 Owned scope            glob/path cụ thể
 Excluded scope
 Authority              được sửa gì, cấm gì; push/deploy/external side effect thì không
@@ -151,6 +164,15 @@ nhưng khai `bug-loop` cho writer thì seam của regression test vẫn phải n
 không để Peer tự đặt. Không ghi skill gate (`xia`, `smart-commits`) vào đây: chúng đã bắt buộc theo
 disposition. Việc đụng tiền/auth/state machine/security → ô `Verification` ghi thẳng **L3**, không
 "nếu được".
+
+**`Premise` tách ba thứ mà brief hay trộn**: mục tiêu (`Objective`), ràng buộc *thật sự bắt
+buộc*, và lựa chọn thiết kế *đang được dùng*. "Xe phải dừng được trong điều kiện X" là ràng buộc;
+"xe phải dùng dù để dừng" chỉ là ràng buộc khi Human hoặc `CLAUDE.md` nói thế — nếu cái dù là
+phương án bạn (hoặc Peer lát trước) chọn, nó thuộc `đang dùng` và Peer lát sau **được** hỏi vì sao
+lại là dù. Mỗi mục `bắt buộc` phải có nguồn (Human nói ở đâu, dòng nào của `CLAUDE.md`); không
+có nguồn → chuyển sang `đang dùng`. Ghi lựa chọn của mình vào `bắt buộc` là pre-solve kiểu mới:
+mục tiêu "xe nhẹ hơn" bị thu thành "làm nhẹ cái dù" mà Human chưa từng yêu cầu giữ dù.
+Supervisor kiểm nguồn (`D17`).
 
 Trung lập về *cách làm*, không phải về *boundary*. Nếu owned scope chạm một boundary mà
 `CLAUDE.md` đánh dấu (schema, public API, allowlist, contract path…), brief phải chứa **ruling
@@ -264,6 +286,34 @@ Peer trả ba loại báo cáo, luôn kèm evidence:
 Nhận `REOPEN_REQUEST`, câu hỏi đầu là **tầng nào đang bị mở lại**. Không ruling hai cuộc tranh luận
 ở hai tầng khác nhau như thể chúng là một.
 
+**Quyền chất vấn tách khỏi quyền sửa.** Peer chỉ sửa trong owned scope, nhưng được đọc và chất
+vấn mọi thứ mà việc của nó đứng trên: khung xe của owner khác, API lát trước, mục `đang dùng`
+trong brief. Finding ở scope người khác về dạng `DEPENDENCY_REQUEST` → bạn nói với owner đó (Peer
+khác, hoặc Lead khác bằng fact có SHA); không để Peer tự sửa hộ, cũng không trả lời "làm trong
+phạm vi của mình đi".
+
+**Phản biện là quyền, không phải nghĩa vụ.** Peer không cần chứng minh bạn sai; nó cần được nói
+bạn sai khi evidence buộc phải nói. Bạn cũng không bảo vệ plan: mỗi `REOPEN_REQUEST` xếp vào đúng
+một trong ba ô, và ghi ô đó vào câu trả lời:
+
+| Ô | Dấu hiệu | Bạn làm |
+|---|---|---|
+| **Đổi quyết định** | evidence cho thấy premise sai ở tầng đã nêu: test tái hiện, call site đếm được, docs đúng version | về `sequence-execution-plan` (hoặc `goal-griller` nếu contract sai); cập nhật `Premise` + plan; báo owner liên quan |
+| **Phương án khác cũng đúng** | hai cách đều thoả ràng buộc, khác ở gu | giữ hướng cũ, trả lời một dòng vì sao; accept summary ghi là bất đồng đã đóng |
+| **Không đáng gián đoạn** | failure mode hiếm ngoài contract, abstraction "sạch hơn", kiến trúc tổng quát hơn mà Human không cần | trả lời một dòng, Peer làm tiếp; hai lần liên tiếp cùng Peer → brief kế tiếp nói rõ *phản biện phải gắn với một quyết định cụ thể* |
+
+Model càng mạnh càng bẻ được mọi luận điểm nếu trả đủ token: trả token cho lỗi đáng sửa, không
+trả cho tranh biện. Ngược lại, "cần redesign" cũng phải chịu chất vấn — trước khi nhận, hỏi Peer:
+lỗi xảy ra ở điều kiện nào; sửa nhỏ có đủ không; phương án mới bỏ được trách nhiệm nào và tạo
+thêm trách nhiệm nào.
+
+**Vòng phải đi hết từ phát hiện tới quyết định.** Nhận `REOPEN`/`DEPENDENCY` mà không đổi gì là
+vòng hụt. Đổi quyết định xong: (1) `Premise` của brief kế tiếp và plan ghi cái mới; (2) owner bị
+ảnh hưởng nhận brief sửa hoặc fact có SHA — Peer đang chạy chỉ nhận tin khi idle (§ Monitoring),
+nên nếu cái mới làm việc đang chạy vô nghĩa thì xin Human dừng nó, đừng đợi handoff rồi `REJECT`;
+(3) evidence sau sửa phải nằm trên **SHA sẽ được accept**, không phải bản đã thử ở `/tmp`. Accept
+summary có dòng `Premise đổi: <gì → gì, vì evidence nào>`.
+
 ## Lane thiết kế mù — chỉ khi nhiều lời giải cùng đúng
 
 Với quyết định khó đảo ngược mà bạn chưa tự tin phản biện, có thể dùng hai Peer read-only độc lập.
@@ -368,6 +418,10 @@ Trước khi accept writer:
       update snapshot, hoặc expected tính từ implementation mà requirement không đổi → `REJECT`.
 - [ ] Brief có `Required skills` → evidence trong handoff khớp skill đó (với `bug-loop`: lệnh loop
       đỏ được, giả thuyết đúng, proof level). Kiểm transcript là việc của Supervisor (`D13`).
+- [ ] Claim hiệu năng / benchmark: ô `Verification` ghi điều kiện đo — máy, tải nền (`uptime`/`ps`
+      lúc đo), tiến trình nặng chạy cùng, workload giống nhau ở hai lượt trước/sau. "Sẽ nhường CPU"
+      từ lane khác là claim, không phải evidence. Thiếu điều kiện → số vẫn "thật" nhưng kết luận
+      không dùng được → `REJECT` hoặc đo lại (`D18`).
 - [ ] Reviewer trigger nếu trúng điều kiện ở trên đã được xử lý trên đúng SHA.
 - [ ] Public symbol/contract mới có owner quyết định rõ.
 - [ ] Mỗi finding chưa giải quyết có một dòng trong accept summary.
@@ -383,6 +437,10 @@ REJECT <sha> — <task id> — <finding blocking, path:line>
 Test pass, Reviewer "no finding", teammate idle — không cái nào là verdict. Không có dòng
 `ACCEPT`/`REJECT` thì task chưa được chấm; `REJECT` quay về Peer bằng commit mới trên cùng nhánh.
 Với `LEAD-WROTE` thì verdict thuộc Human, bạn không tự ghi `ACCEPT`.
+
+Dưới dòng verdict, khi khác rỗng: `Premise đổi: <gì → gì, evidence>` và `Bất đồng còn mở: <Peer
+phản đối gì, bạn xếp ô nào, vì sao>`. Human không đọc transcript; hai dòng này là cách Human biết
+Peer đã hỏi về bộ phanh chứ không chỉ nghe số gram dù đã giảm.
 
 Sau khi chốt, shutdown teammate không còn việc. Team runtime không phải artifact bền; SHA + brief +
 accept summary mới là checkpoint bền.
@@ -445,3 +503,9 @@ messaging. Nó chạy ngoài checkout của bạn và có thể theo dõi cả c
   bằng model suy nghĩ lâu của bạn.
 - **Một Peer ôm cả pha:** brief gộp đo + viết + hiệu chuẩn, hoặc có bước chờ Human mà không tách;
   Human nói gấp mà vẫn xếp hàng một writer.
+- **Cái dù thành luật:** lựa chọn thiết kế của bạn (hay của lát trước) ghi vào `Premise: bắt buộc`
+  hoặc `Excluded scope` mà Human chưa từng yêu cầu giữ; Peer sau chỉ còn làm nhẹ cái dù.
+- **Thưởng tranh biện:** nhận `REOPEN` không có evidence vì "Peer có tư duy độc lập", hoặc brief
+  ép "thách thức mọi giả định" — Peer sẽ tìm thứ để phản đối cho tròn vai.
+- **Vòng hụt:** nhận finding, cảm ơn, không đổi plan, không báo owner; hoặc báo Human số gram đã
+  giảm mà không nói Peer đã hỏi về bộ phanh.

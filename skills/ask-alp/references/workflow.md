@@ -16,7 +16,7 @@ Bảng "ghế nào cấm skill nào" nằm trong `SKILL.md` của `ask-alp`, kh�
 | 1 | Intake | Lead | `goal-griller` | **Task Contract** (6 ô) | đủ 6 ô; boundary có ruling hoặc lệnh dừng; Human xác nhận nếu Lead suy diễn |
 | 2 | Recon | Peer **Scout** (Lead spawn) | `xia` | **Research brief** trong handoff 6 ô | brief có nhãn evidence; câu hỏi cho Lead đã được Lead ruling |
 | 3 | Sequence | Lead | `sequence-execution-plan` | **Plan** `plans/…/plan.md`: work item lát dọc, test seam, dependency, Now/Next/Later, writer lease | Now ≤1 writer/checkout; item đầu ready; ≥3 item hoặc chạm boundary → Human duyệt |
-| 4 | Brief | Lead | `prompt-leverage` | **Brief 13 trường** cho một Peer | `Base` là SHA thật; owned scope là path; boundary có ruling hoặc `BLOCKED`-khi-chạm |
+| 4 | Brief | Lead | `prompt-leverage` | **Brief 14 trường** cho một Peer | `Base` là SHA thật; owned scope là path; boundary có ruling hoặc `BLOCKED`-khi-chạm; `Premise: bắt buộc` có nguồn |
 | 5 | Implement | Peer Engineer/Architect | (peer.md); `Required skills` nếu brief khai (bug → `bug-loop`) | thay đổi trong owned scope | verification chạy thật; claim hành vi có proof ≥ L2 |
 | 6 | Commit | Peer writer (hoặc Lead nếu `LEAD-WROTE`) | `smart-commits` | **Candidate** `base..head` | commit gate pass; không path ngoài scope |
 | 7 | Handoff | Peer | (peer.md) | handoff 6 ô | `Ownership: released` |
@@ -94,10 +94,11 @@ Khi nào bỏ qua: đúng một work item, không dependency, không boundary �
 
 ## Phase 4 — Brief: `prompt-leverage`
 
-**Vào:** một work item + contract + brief Scout. **Ra:** brief 13 trường theo `lead.md`.
+**Vào:** một work item + contract + brief Scout. **Ra:** brief 14 trường theo `lead.md`.
 
 Ánh xạ: Outcome → `Objective`; Proof + Validation → `Verification`; Scope → `Owned` /
-`Excluded scope`; Stop/pause → `Authority` + điều kiện `BLOCKED`; Done → `Handoff contract`.
+`Excluded scope`; Stop/pause → `Authority` + điều kiện `BLOCKED`; Done → `Handoff contract`;
+Constraint (có nguồn) → `Premise: bắt buộc`; cách làm Lead/lát trước chọn → `Premise: đang dùng`.
 `scripts/augment_prompt.py` nháp khung; Lead điền `Base` (SHA thật), `Owned scope`, ruling, và
 `Model` (bắt buộc, kèm lý do; Agent call truyền `model:` cùng giá trị — `lead.md` § Chọn model).
 Peer nhận brief sẽ gửi `HEARTBEAT` theo `peer.md`; Lead đếm chéo file evidence mỗi heartbeat.
@@ -147,6 +148,9 @@ Phase 3 (hoặc Phase 1 nếu contract sai):
 | Human đổi ưu tiên / ràng buộc | 1 | contract là nguồn |
 
 Không replan chỉ vì Peer thích kiến trúc khác (đó là `REOPEN_REQUEST` không evidence — Lab 2).
+Mỗi `REOPEN_REQUEST` Lead xếp vào một trong ba ô của `lead.md` (đổi quyết định / phương án khác
+cũng đúng / không đáng gián đoạn) và trả lời ô đó; chỉ ô đầu vào bảng trên. Đổi quyết định xong,
+vòng chưa hết: `Premise` brief kế tiếp + plan + owner bị ảnh hưởng phải nhận cái mới.
 
 ## Supervisor xuyên suốt
 
@@ -171,7 +175,7 @@ root đã `SLP-REGISTER` → `D14`.
 - [ ] Task Contract đủ 6 ô, Human đã thấy (Phase 1).
 - [ ] Nếu spawn Scout: brief có nhãn evidence, Lead đã ruling các follow-up (Phase 2).
 - [ ] Plan có bảng item + writer lease; Now ≤1 writer/checkout (Phase 3, nếu >1 item).
-- [ ] Brief 13 trường; `Base` SHA thật; boundary ruling hoặc `BLOCKED`-khi-chạm (Phase 4).
+- [ ] Brief 14 trường; `Base` SHA thật; boundary ruling hoặc `BLOCKED`-khi-chạm; `Premise: bắt buộc` có nguồn (Phase 4).
 - [ ] Handoff có block Candidate `base..head`, verification output thật, `Ownership: released` (Phase 6–7).
 - [ ] Reviewer (nếu có) đọc đúng SHA (Phase 8).
 - [ ] Dòng `ACCEPT`/`REJECT <sha>` sau khi Lead đọc diff thật (Phase 9).
