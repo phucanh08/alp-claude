@@ -68,7 +68,8 @@ Log nằm ở `~/.slp-mail/<workspace>/log.jsonl` (đổi bằng `SLP_MAIL_DIR`)
 - **Không đẩy.** Tin không chèn vào lượt của agent; arm `Monitor` trên `log.jsonl` thì sự kiện tới
   kèm kết quả tool call đang chạy (Lab 12: teammate thật, trễ 2–15 s), hết hạn 30 phút phải arm lại.
   Tin ghi trước lúc arm không thấy: `inbox` một lần trước khi arm.
-- **Teammate trong process Lead** có thấy tool `mcp__slp-mail__*` không: chưa đo. Không thấy →
-  `peer.md` rơi về `SendMessage` + `cat` inbox.
+- **Teammate trong process Lead thấy đủ tool** `mcp__slp-mail__*` và `Monitor` (Lab 12 bước 5,
+  teammate `calib-writer`: 6 `send`, 3 `inbox`, 2 `ack`, 1 `Monitor`). Headless `-p` không có
+  teammate → `peer.md` rơi về `SendMessage` + `cat` inbox.
 - Một seat một process. Hai Lead cùng máy: `SLP_SEAT=lead-api`, `lead-web`; Peer là
   `lead-api/peer-a`.

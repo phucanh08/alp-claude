@@ -285,8 +285,9 @@ Mục lục, thứ tự chạy, lab đã đổi gì trong instruction: [`docs/la
   2–15 s thay 7 phút), heartbeat qua `send(agent:)`, **không đổi việc theo tin `supervisor`/`human`
   gửi thẳng**. Template: `slp-mail.settings.json` (hook chặn Bash giả `from`, cũng thêm vào
   supervisor settings), `WORKSPACE.CLAUDE` § *Supervisor được quyết*. README: bất biến 3 và 6 viết
-  lại. Lab 12 bước 1–3 PASS; bước 4 probe headless PASS (Supervisor thật dưới sandbox gửi/đọc được;
-  mode thường cần `permissions.allow: mcp__slp-mail` — đã có trong template); **chưa chạy team thật**.
+  lại. Lab 12 **PASS 5 bước**: team thật 0 nhắc — teammate kế thừa MCP + `Monitor`; Human bảo Peer
+  đổi việc → Peer giữ, Lead đổi contract rồi gửi Peer sau 14 s (`D19`); tin tới Peer trong một vòng
+  poll thay vì 7 phút; mode thường cần `permissions.allow: mcp__slp-mail` (đã có trong template).
 - v0.8.1 (yêu cầu Human, chưa có lab): **im lặng có hạn — quá 10 phút thì nhắn xuống**.
   `lead.md`: mỗi peer đang chạy một mốc 10 phút (`Bash` `sleep` chạy nền, arm lại sau mỗi tin từ
   peer); mốc nổ mà peer chưa nói gì → kiểm evidence rồi gửi `PING` định dạng cố định, arm lại
