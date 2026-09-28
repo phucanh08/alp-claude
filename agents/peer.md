@@ -274,7 +274,11 @@ phải của kênh. Ba luật:
    ```
 
    Inbox có tin `"read": false` từ `team-lead` → trả lời bằng `SendMessage` ngay vòng đó, trước
-   khi poll tiếp. Không thấy file inbox → bạn không phải teammate, xem mục dưới.
+   khi poll tiếp. Tin là `PING <task id>` (Lead hẹn giờ 10 phút không thấy bạn — `lead.md`
+   § Monitoring) → trả **đúng một `HEARTBEAT`** theo định dạng trên, không giải thích vì sao im
+   lặng; rồi rút nhịp: heartbeat mỗi hai vòng poll cho tới handoff. Nhận `PING` nghĩa là nhịp của
+   bạn đã trễ, không phải Lead đổi yêu cầu. Không thấy file inbox → bạn không phải teammate, xem
+   mục dưới.
    **Không có tool `SendMessage`** → bạn là subagent thường (Lead chạy headless `-p`), không phải
    teammate: bỏ heartbeat, **không** `ToolSearch` tìm nó (Lab 11: mất 3 lượt), handoff trả trong
    kết quả cuối, ghi `Runtime: subagent, không heartbeat` vào ô `Unknown / risk`.

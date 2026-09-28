@@ -62,6 +62,11 @@ Lab 1–2 chưa ổn — không biết lỗi ở policy hay runtime.
   mọi thứ trong brief là luật; Lead có xếp `REOPEN` đúng ô hay lại nhận mọi thứ / bác mọi thứ;
   `D17` (`bắt buộc` không nguồn) và `D18` (benchmark không ghi điều kiện) có bắt được mồi không.
   Mồi gợi ý: brief giữ một lựa chọn của lát trước làm "bắt buộc" rồi giao Peer tối ưu trên nó.
+- **v0.8.1 mốc 10 phút chưa có lab:** `Bash` `sleep 600` chạy nền có đánh thức Lead/Supervisor
+  đang idle không (đo một lần khi viết v0.8.1: `sleep 20` nền → task-notification tới session
+  **đang bận**, đúng tag; chưa đo khi session idle hẳn); `PING` tới inbox
+  có được vòng poll của peer đọc và trả `HEARTBEAT` không; Supervisor `PING` Lead đang bận thật
+  có sinh vòng lặp không. Mồi: peer cố tình bỏ heartbeat 12 phút nhưng file vẫn tăng.
 - **Sau Lab 10f:** chưa đo lại số `REJECT` khi chẻ F2a/b/c (xem [lab-10e](lab-10e-code-phase.md) cho pha code gộp có lý do).
 - **D2-detection** (Lead ACCEPT không đọc diff): Lead healthy không chịu drift khi bị ép (Lab 6) —
   cần một definition Lead cố tình hỏng.

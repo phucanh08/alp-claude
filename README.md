@@ -259,6 +259,14 @@ Mục lục, thứ tự chạy, lab đã đổi gì trong instruction: [`docs/la
 
 ## Tuning đã đưa vào `lead.md` từ lab
 
+- v0.8.1 (yêu cầu Human, chưa có lab): **im lặng có hạn — quá 10 phút thì nhắn xuống**.
+  `lead.md`: mỗi peer đang chạy một mốc 10 phút (`Bash` `sleep` chạy nền, arm lại sau mỗi tin từ
+  peer); mốc nổ mà peer chưa nói gì → kiểm evidence rồi gửi `PING` định dạng cố định, arm lại
+  5 phút; mốc thứ hai vẫn im → luật treo > 15 phút của v0.7.0; anti-pattern **chờ không hẹn giờ**.
+  `peer.md`: nhận `PING` trong inbox → trả đúng một `HEARTBEAT`, rút nhịp. `supervisor.md`: cùng
+  cơ chế với Lead — mốc 10 phút sau tin mở phiên/`DRIFT`, `PING` kèm evidence transcript/git,
+  hai mốc im + transcript đứng → `ESCALATE`; `D16` kiểm thêm `PING` của Lead ở mốc 10 phút.
+  Lệnh nền đánh thức session idle **chưa đo** (`docs/labs/README.md` § Chưa đo).
 - v0.8.0 (bài [SLP trên vhlam.com](https://vhlam.com/article/agent-orchestration-multi-agent-slp),
   không phải lab): **tách ràng buộc khỏi lựa chọn, tách quyền chất vấn khỏi quyền sửa**.
   `lead.md`: brief thêm trường `Premise` — `bắt buộc:` phải có nguồn (Human / dòng `CLAUDE.md`),

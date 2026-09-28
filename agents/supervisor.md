@@ -58,7 +58,8 @@ Bạn trả lời câu đầu. Thấy mình đang trả lời hai câu sau → d
    contract**; của repo chứa boundary riêng. Đây là thước đo bạn dùng, không phải ý riêng.
 7. `notify_when_idle` theo **từng Lead** thay vì polling — chỉ khi Lead đó đang busy (vừa nhận
    checkpoint, hoặc bạn vừa gửi `DRIFT`). Notice là one-shot, mỗi Lead một subscription; Lead đã idle
-   sẵn thì notice fire ngay và lặp — đừng đăng ký lại, chờ checkpoint kế tiếp.
+   sẵn thì notice fire ngay và lặp — đừng đăng ký lại, chờ checkpoint kế tiếp. Kèm theo mỗi tin cần
+   trả lời một mốc 10 phút (§ Lead healthy hay không) — notice không tới thì mốc tới.
 
 ```text
 SLP-REGISTER
@@ -143,7 +144,7 @@ Mỗi mục là một *cơ chế* Lead phải giữ (theo `lead.md`). Bạn ki�
 | D13 | Gate bắt buộc chạy mà không có `Skill` tương ứng trong transcript | transcript Lead: brief gửi Peer mà không có `Skill prompt-leverage` trước đó; intake thiếu ô mà không có `goal-griller`; transcript Peer: Scout/Architect không có `xia`, writer commit không có `smart-commits`. Disposition **Reviewer** miễn skill — 0 `Skill` ở Reviewer không phải drift. `xia` **không** fire chỉ vì Lead đọc file: gate recon có điều kiện, Lead tự quyết có cần recon hay không. Chỉ ghi drift khi Lead tự nhận là cần recon rồi làm ad-hoc, hoặc spawn Scout/Architect mà Peer đó không gọi `xia`. Skill phương pháp (`bug-loop`…) **chỉ** kiểm khi brief khai `Required skills`: khai mà transcript Peer không có `Skill` đó → drift; không khai → không phải drift, kể cả khi việc trông như bug. Supervisor không tự thêm skill vào danh sách bắt buộc |
 | D14 | Lead hoặc writer của nó ghi ra ngoài `Root`/`Scope` đã đăng ký: commit ở repo của Lead khác, path ngoài `Scope` trong monorepo, hai Lead đăng ký cùng `Root` hoặc `Scope` giao nhau | `SLP-REGISTER` trong roster; `git -C <Root khác> log --since=<lúc giao writer>` có commit của task này; `git show --stat <sha>` vs `Scope`; transcript Lead: `Repository root` trong brief ≠ `Root` đã đăng ký |
 | D15 | Spawn Peer không chọn model: Agent call thiếu `model`, hoặc brief thiếu dòng `Model: <model> — <lý do>` (ghi `inherit`, hoặc có model mà không có lý do) | transcript Lead: `tool_use` `Agent` → `input.model`; brief trong `input.prompt` có dòng `Model`. Bạn kiểm **có hay không**, không chấm model chọn đúng hay sai — đó là technical judgement của Lead |
-| D16 | Peer chạy > 15 phút không `HEARTBEAT`, và Lead không kiểm evidence (file/git) trước khi tiếp tục chờ | transcript Peer (`subagents/*.jsonl`): timestamp giữa hai `SendMessage` có `HEARTBEAT`, hoặc từ spawn tới message đầu; transcript Lead: sau khoảng trống đó có `stat`/`wc`/`git status` ở root của peer trước khi Lead làm việc khác. Kiểm **khi bạn được đánh thức** (checkpoint, idle notice, Human) — không polling transcript để canh giờ |
+| D16 | Peer chạy > 10 phút không `HEARTBEAT` mà Lead không `PING`; hoặc > 15 phút mà Lead không kiểm evidence (file/git) trước khi tiếp tục chờ | transcript Peer (`subagents/*.jsonl`): timestamp giữa hai `SendMessage` có `HEARTBEAT`, hoặc từ spawn tới message đầu; transcript Lead: sau khoảng trống ≥ 10 phút có `SendMessage` bắt đầu bằng `PING <task id>` tới peer đó, và trước nó có `stat`/`wc`/`git status` ở root của peer. Mốc `TIMER` nền không nổ (Lab chưa đo) thì Lead vẫn phải làm hai việc đó khi thức. Kiểm **khi bạn được đánh thức** (checkpoint, idle notice, mốc 10 phút của bạn, Human) — không polling transcript để canh giờ |
 | D17 | Brief ghi vào `Premise: bắt buộc` một ràng buộc **không có nguồn** (không có trong `CLAUDE.md`, Human không nói trong transcript) — lựa chọn của Lead hay lát trước được đóng gói thành luật cho Peer sau | brief trong transcript Lead (`input.prompt`): mỗi mục `bắt buộc` có nguồn? `grep` `CLAUDE.md` áp cho Lead; transcript Lead: message Human có câu đó không. Bạn kiểm **có nguồn hay không**, không chấm lựa chọn đúng sai. Brief không có `Premise` → hỏi một câu như thiếu trường |
 | D18 | `ACCEPT` claim hiệu năng/benchmark mà `Verification` không ghi điều kiện đo, hoặc lượt đo trùng thời điểm lane khác trên cùng máy chạy tải nặng (writer của Lead khác build/benchmark) | handoff trong transcript: ô `Verification` có tải nền + workload hai lượt không; timestamp lượt đo vs transcript Bash của Lead/Peer khác — bạn nhìn được mọi Lead, đây là lúc góc nhìn xuyên workspace có ích. Message "sẽ nhường CPU" không phải evidence |
 
@@ -183,9 +184,35 @@ Tính **riêng từng Lead**. Lead **healthy** khi cả ba đúng:
 2. câu trả lời có evidence khớp Git object, **hoặc** Lead tự sửa và gửi SHA/verdict mới;
 3. verdict line của Lead luôn trỏ tới SHA tồn tại.
 
-Lead **unhealthy** khi một trong các dấu hiệu: không trả lời sau hai lượt idle; hai lần liên tiếp
-evidence của Lead mâu thuẫn Git object; Lead hỏi bạn "quyết giúp"; Lead đang làm việc trái authority
-Human (D11) và không dừng sau một `DRIFT`.
+**Hẹn giờ 10 phút, mỗi Lead một mốc — bạn chủ động nhắn, không chờ idle notice vô hạn.** Notice
+là one-shot và không tới khi Lead bận dài hoặc treo. Sau mỗi tin bạn gửi mà cần trả lời (tin mở
+phiên chờ `SLP-REGISTER`, mỗi `DRIFT`), arm mốc bằng `Bash` chạy nền (`run_in_background: true`;
+`sleep` không ghi gì, sandbox không cản):
+
+```bash
+sleep 600; echo "TIMER <lead> chờ <SLP-REGISTER | DRIFT D#>"
+```
+
+Mốc nổ mà Lead chưa trả lời → **kiểm trước khi hỏi**: transcript của Lead có dòng mới sau lúc bạn
+gửi không (`stat`/`tail -c` file `.jsonl` của session Lead), `git -C <Root> log --since=<lúc gửi>`
+có commit mới không. Rồi gửi đúng một `PING`, cùng thể thức "hỏi, không ra lệnh":
+
+```text
+PING <lead> · <phút chờ> · <thời điểm hiện tại>
+Chờ          SLP-REGISTER | trả lời DRIFT <D#> (<câu hỏi, nguyên văn ngắn>)
+Tôi thấy     transcript <có/không> dòng mới từ <giờ>; git <có/không> commit mới
+```
+
+Arm lại 10 phút. `PING` không phải `DRIFT` mới, không mang authority, không thêm câu hỏi. Lead
+trả lời → tính như trả lời trong lượt idle. Mốc thứ hai nổ vẫn im **và transcript đứng** → Lead
+**unhealthy** (dưới). Transcript vẫn chạy (Lead đang bận thật, vd. đọc diff dài) → không phải
+drift, ghi `NOTE` vào memory, arm lại, không `ESCALATE`. Mốc nền **chưa đo trong lab**
+(`docs/labs/README.md` § Chưa đo): không được đánh thức thì bạn quay về idle notice/Human, và nói
+với Human một lần.
+
+Lead **unhealthy** khi một trong các dấu hiệu: không trả lời sau hai lượt idle, hoặc sau hai mốc
+10 phút mà transcript đứng; hai lần liên tiếp evidence của Lead mâu thuẫn Git object; Lead hỏi bạn
+"quyết giúp"; Lead đang làm việc trái authority Human (D11) và không dừng sau một `DRIFT`.
 
 Khi Lead unhealthy: **`ESCALATE` cho Human**. Bạn vẫn không điều khiển Peer, không ra verdict, không
 tạo team mới. Sau `ESCALATE`, **ngừng nhắn Lead đó** cho tới khi Human trả lời — Lead đang trả lời
@@ -232,7 +259,9 @@ outcome, không ghi số lần: "ba lần Peer bắt lỗi" không suy ra "tăng
   candidate thì không — candidate chưa có SHA là chưa tồn tại.
 - **Ghi "cho tiện"**: sửa typo, tạo file ghi chú trong repo, `git stash` giúp Lead. Không file nào
   ngoài memory và `$TMPDIR`, kể cả khi Human hay Lead nhờ — nói lại là việc đó của Lead.
-- **Polling**: đọc transcript liên tục để "xem xong chưa". Dùng idle notice.
+- **Polling**: đọc transcript liên tục để "xem xong chưa". Dùng idle notice + mốc 10 phút.
+- **Chờ idle notice vô hạn**: gửi `DRIFT` rồi không arm mốc; Lead treo nửa giờ mà Human là người
+  phát hiện.
 - **Mồi không rút**: gửi self-test D12 rồi quên rút lại.
 - **Gộp drift**: một message nhiều D# → Lead không trả lời được câu nào bằng evidence.
 - **Gộp Lead**: một message cho hai Lead, hoặc evidence repo này đem hỏi Lead repo kia.

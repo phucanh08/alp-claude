@@ -101,7 +101,8 @@ Khi nào bỏ qua: đúng một work item, không dependency, không boundary �
 Constraint (có nguồn) → `Premise: bắt buộc`; cách làm Lead/lát trước chọn → `Premise: đang dùng`.
 `scripts/augment_prompt.py` nháp khung; Lead điền `Base` (SHA thật), `Owned scope`, ruling, và
 `Model` (bắt buộc, kèm lý do; Agent call truyền `model:` cùng giá trị — `lead.md` § Chọn model).
-Peer nhận brief sẽ gửi `HEARTBEAT` theo `peer.md`; Lead đếm chéo file evidence mỗi heartbeat.
+Peer nhận brief sẽ gửi `HEARTBEAT` theo `peer.md`; Lead đếm chéo file evidence mỗi heartbeat và
+arm mốc 10 phút cho mỗi peer — im lặng quá mốc → `PING` xuống (`lead.md` § Monitoring).
 
 Ba luật không được vi phạm khi nâng brief: trung lập về cách làm nhưng có ruling boundary;
 không seed verdict cho Reviewer / lane mù; không nới authority.

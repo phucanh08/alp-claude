@@ -358,7 +358,8 @@ Reviewer phải đọc **đúng SHA**, không review moving working tree.
 ## Monitoring
 
 Event-driven. Sau khi teammate start, dựa vào message/idle/completion notification. **Không
-polling** task list hoặc transcript chỉ để xem “xong chưa”.
+polling** task list hoặc transcript chỉ để xem “xong chưa”. Mốc hẹn giờ 10 phút (dưới) không
+phải polling: một lần thức, kiểm một lần, nhắn một tin.
 
 Peer gửi `HEARTBEAT` theo `peer.md` (mục tiêu mỗi 10 phút; luôn có ô `Evidence` là đường dẫn
 file số liệu). Mỗi heartbeat bạn làm đúng một việc: **đếm chéo** — `wc -l`/`stat` file evidence,
@@ -366,19 +367,51 @@ file số liệu). Mỗi heartbeat bạn làm đúng một việc: **đếm ché
 file có 400 dòng, hoặc ngược lại) thì hỏi peer đúng một câu vào cơ chế, không chờ handoff.
 
 **Message tới peer đang chạy không tới giữa lượt.** Runtime ghi vào inbox và chỉ giao khi peer
-idle (Lab 11: 7 phút, tới lúc handoff). Vì vậy: (a) đừng hỏi peer đang chạy rồi chờ — heartbeat
-+ file evidence là kênh sống duy nhất; (b) đừng suy "peer trả lời sau N phút" từ mốc giờ heartbeat
+idle (Lab 11: 7 phút, tới lúc handoff). Vì vậy: (a) đừng hỏi peer đang chạy rồi chờ câu trả
+lời — heartbeat + file evidence là kênh sống; `PING` (dưới) là ngoại lệ có định dạng: gửi rồi
+arm mốc, không ngồi chờ; (b) đừng suy "peer trả lời sau N phút" từ mốc giờ heartbeat
 — heartbeat theo nhịp không phải reply (Lab 11: Lead kết luận sai đúng chỗ này); muốn biết tin
 đã tới chưa thì đọc `~/.claude/teams/<team>/inboxes/<peer>.json` (`read`); (c) `shutdown_request`
 cũng là message — không dừng được peer đang chạy; dừng ngay là việc của Human (`x`/Esc ở agent
 panel), bạn nói một câu.
 
-**Peer im lặng > 15 phút** (tính từ heartbeat/message cuối, bạn ghi giờ vào memory) → coi là
-treo, không coi là "đang làm". Bạn không có timer; người đánh thức bạn là Human, idle notice, hay
-teammate khác — nhưng đã thức thì kiểm trước khi hỏi: `stat` file evidence, `git status`/`git log`
-ở root của peer, thiết bị nếu có. File còn tăng → peer sống nhưng câm, nhắn nó một tin nhắc luật
-heartbeat (tới khi nó idle); file đứng → xin Human dừng peer, spawn peer mới với brief ghi rõ dữ
-liệu đã có ở đâu; handoff muộn của peer cũ không chấm. Không để Human là người phát hiện.
+**Hẹn giờ 10 phút cho mỗi peer đang chạy — bạn chủ động nhắn xuống, không chờ được đánh thức.**
+Runtime không cho bạn timer, nhưng `Bash` chạy nền (`run_in_background: true`) thì có: lệnh nền
+kết thúc → runtime gửi notification đánh thức bạn, kể cả khi bạn đang idle. Ngay sau khi spawn
+writer, và sau **mỗi** `HEARTBEAT`/message nhận từ peer đó, arm lại một mốc — mỗi peer một lệnh,
+tag theo task id, không chặn lượt của bạn:
+
+```bash
+sleep 600; echo "TIMER <task id> 10 phút không tin từ <tên peer>"    # Bash, run_in_background: true
+```
+
+Ghi `date` của lần liên lạc cuối vào memory. Mốc nổ → so với memory: peer có gửi gì trong 10
+phút qua thì bỏ qua (mốc mới đã arm lúc đó); peer đã handoff/idle thì bỏ qua, không nhắn. Chưa
+có gì → đúng ba việc, theo thứ tự:
+
+1. **Kiểm evidence trước khi hỏi**: `stat`/`wc -l` file evidence, `git status`/`git log` ở root
+   của peer, thiết bị nếu có.
+2. **`PING` xuống peer** bằng `SendMessage` — đúng định dạng, một tin, không tường thuật, không
+   ruling mới:
+
+   ```text
+   PING <task id> · <phút im lặng> · <thời điểm hiện tại>
+   Lead thấy   <file evidence: đường dẫn + số dòng/mtime, hoặc "không có file">
+   Cần         HEARTBEAT theo `peer.md` ngay vòng poll này, hoặc BLOCKED kèm lệnh + output
+   ```
+
+   Tin này nằm inbox; peer đang chạy chỉ đọc được ở vòng poll (`peer.md` § Heartbeat, mẫu có
+   `cat` inbox) hoặc khi idle. Bạn không dừng được peer bằng tin này.
+3. **Arm lại 5 phút** (`sleep 300`, cùng tag) rồi làm việc khác. Không hỏi câu thứ hai trong lúc chờ.
+
+**Mốc thứ hai nổ mà vẫn không có gì từ peer (> 15 phút im lặng)** → coi là **treo**, không coi là
+"đang làm": file evidence còn tăng → peer sống nhưng câm, ghi memory, nhắc thêm một `PING` và tính
+là finding lúc accept (vi phạm luật heartbeat); file đứng → xin Human dừng peer (`x`/Esc ở agent
+panel), spawn peer mới với brief ghi rõ dữ liệu đã có ở đâu; handoff muộn của peer cũ không chấm.
+Peer trả lời `PING` → đếm chéo như một heartbeat thường, arm lại 10 phút. Không để Human là người
+phát hiện. Notification của lệnh nền **chưa đo trong lab** (`docs/labs/README.md` § Chưa đo):
+nếu mốc không đánh thức được bạn, người đánh thức vẫn là Human/idle notice — nhưng đã thức thì
+làm đúng ba việc trên, và nói với Human một lần rằng mốc nền không chạy.
 
 **Headless (`claude -p`) không có teammate.** Docs + Lab 11 run 1: Agent call thành subagent
 thường — không `SendMessage`, không heartbeat, kết quả về khi xong. Đó là anti-pattern *Subagent
@@ -499,6 +532,8 @@ messaging. Nó chạy ngoài checkout của bạn và có thể theo dõi cả c
   Human và `CLAUDE.md`.
 - **Peer im lặng > 15 phút mà vẫn "đang làm":** không heartbeat, không kiểm file evidence, chờ
   handoff. Treo cho tới khi chứng minh ngược lại bằng file/git/thiết bị.
+- **Chờ không hẹn giờ:** spawn peer rồi ngồi chờ idle notice; 10 phút không tin mà không có
+  `TIMER` nào arm, không `PING` nào gửi. Human hỏi "peer đâu rồi" là bạn đã trễ.
 - **Model mặc định:** spawn Peer không truyền `model:`, brief không có lý do — việc cơ khí chạy
   bằng model suy nghĩ lâu của bạn.
 - **Một Peer ôm cả pha:** brief gộp đo + viết + hiệu chuẩn, hoặc có bước chờ Human mà không tách;

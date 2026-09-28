@@ -352,6 +352,7 @@ Lead tự gán `bug-loop` cho việc sửa bug. Anh chỉ cần nói thêm khi m
 | Accept việc tiền chỉ có L1 | brief không ghi L3 | hỏi lại Lead; lead.md bắt buộc L3 cho tiền/auth/state/security |
 | Supervisor nhớ chuyện của repo khác | memory Supervisor ở cấp user (`~/.claude/agent-memory/supervisor/`), dùng chung | bình thường; muốn tách thì dọn thư mục đó |
 | Muốn Lead viết luôn cho nhanh | được, nhưng ra `LEAD-WROTE` | anh tự đọc diff và accept |
+| Peer im lặng > 10 phút, Lead vẫn ngồi chờ | Lead chưa arm mốc `TIMER` (hoặc notification của lệnh nền không tới — chưa đo) | hỏi Lead "`TIMER` của task đó đâu"; Lead thức thì phải kiểm evidence rồi `PING` ngay, không chờ thêm |
 
 ---
 
