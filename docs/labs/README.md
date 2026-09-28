@@ -33,7 +33,7 @@ Quy ước dùng chung (ràng buộc cứng, cách kiểm evidence, đọc trans
 | 10d | Lab hẹp (dừng ở plan pha code): mẫu plan tách file + `Read` trước `Write`, chẻ theo ruling, `plans/.gitignore` | **PASS**: plan theo mẫu cả hai pha, chẻ có lý do, gate duyệt giữ | [lab-10d](lab-10d-plan-template-narrow.md) |
 | 10e | Chạy trọn pha code có Supervisor sau gói plan; item gộp nhiều boundary có lý do; đọc Git bằng lệnh `git` | **PASS có nhắc 1 lần**: 1 `REJECT`, 0 `D9`, 0 drift; mẫu plan FAIL lúc đầu vì skill global cũ che bản repo | [lab-10e](lab-10e-code-phase.md) |
 | 10f | Lab hẹp: đường dẫn mẫu cụ thể + skill repo thắng global; nhánh task, không commit lên nhánh chính | **PASS**: mẫu đúng cả hai plan, 0 nhắc, dù skill global vẫn cũ; `main` không đổi | [lab-10f](lab-10f-template-path-branch.md) |
-| 12 | `Monitor` giao sự kiện giữa lượt; `mcp/slp-mail` prototype (danh tính theo process, tự cc Lead) | **Đang chạy**: bước 1 đo trong session chính (sự kiện tới ở ranh giới tool call, không chờ idle), bước 2 selftest 18/18; chưa đo teammate, chưa mồi thật | [lab-12](lab-12-mailbox-monitor.md) |
+| 12 | `Monitor` giao sự kiện giữa lượt; `mcp/slp-mail` prototype (danh tính theo process, tự cc Lead, hook chặn CLI) | **PASS bước 1–3** (2.1.283): sự kiện tới ở ranh giới tool call, teammate thật nhận PING giữa vòng poll trễ 2–15 s; Lead headless từ chối `from: imposter`, hỏi lại ruling không mã, nhận S1 làm premise treo, không giả `from: human`; hook chặn CLI. Phát hiện: `tools:` frontmatter loại MCP tool, phải thêm `mcp__slp-mail__*`. Bước 4 chưa làm | [lab-12](lab-12-mailbox-monitor.md) |
 | 11 | Peer `HEARTBEAT` + không Bash dài + số liệu ra file; Lead truyền `model:` có lý do; chẻ theo bước chờ thiết bị, gấp → hai writer worktree song song; Supervisor `D15`/`D16` | **PASS có 2 phát hiện runtime** (v0.7.0, 2.1.281, 3 run: headless, PTY, PTY + Supervisor): luật Lead/plan ăn lần đầu, 0 nhắc; `D15`/`D16` kiểm đúng; **tin gửi peer đang chạy chỉ giao khi idle** (đo 2 lần); headless `-p` = subagent; peer chưa tự đọc inbox (0/1) → thêm mẫu vòng poll; 1 `D13` | [lab-11](lab-11-heartbeat-model-parallel.md) |
 
 **Thứ tự chạy:** 1 → 2 trước (repo disposable, rồi repo thật có `CLAUDE.md` đủ contract) → 3 → 4
@@ -63,8 +63,9 @@ Lab 1–2 chưa ổn — không biết lỗi ở policy hay runtime.
   mọi thứ trong brief là luật; Lead có xếp `REOPEN` đúng ô hay lại nhận mọi thứ / bác mọi thứ;
   `D17` (`bắt buộc` không nguồn) và `D18` (benchmark không ghi điều kiện) có bắt được mồi không.
   Mồi gợi ý: brief giữ một lựa chọn của lát trước làm "bắt buộc" rồi giao Peer tối ưu trên nó.
-- **Lab 12 còn dở:** teammate có nhận sự kiện `Monitor` như session chính không (cần `Monitor` trong
-  `tools:` của peer); `slp-mail` dưới `--mcp-config` của Lead/Supervisor thật; mồi 1–5 trong lab-12.
+- **Lab 12 còn mở:** Supervisor thật (`--agent supervisor`, sandbox) chạy server `slp-mail` ghi
+  `~/.slp-mail` được không; teammate có kế thừa MCP của Lead không; mồi 2 phần hành vi (Lead nhận
+  cc → cập nhật plan trước khi Peer đổi) sau khi viết lại definition; Peer re-arm `Monitor` sau 30 phút.
 - **v0.8.1 mốc 10 phút chưa có lab:** `Bash` `sleep 600` chạy nền có đánh thức Lead/Supervisor
   đang idle không (đo một lần khi viết v0.8.1: `sleep 20` nền → task-notification tới session
   **đang bận**, đúng tag; chưa đo khi session idle hẳn); `PING` tới inbox

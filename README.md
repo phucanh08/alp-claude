@@ -262,8 +262,11 @@ Mục lục, thứ tự chạy, lab đã đổi gì trong instruction: [`docs/la
 - **Đang làm cho v0.9.0** (theo bài gốc: Supervisor tới được Peer, Human tới được mọi ghế, can
   thiệp quay về trạng thái chung của Lead): prototype [`mcp/slp-mail`](mcp/slp-mail/README.md)
   (MCP + CLI, một file Python stdlib; `from` theo process, tự cc Lead, log chung); Lab 12 đo
-  `Monitor` giao sự kiện **giữa lượt** ở ranh giới tool call, không chờ idle — mở đường bỏ luật
-  "tin tới peer chỉ khi idle". Definition chưa đổi. Xem [lab-12](docs/labs/lab-12-mailbox-monitor.md).
+  `Monitor` giao sự kiện **giữa lượt** ở ranh giới tool call, không chờ idle; teammate thật nhận
+  `PING` giữa vòng poll trễ 2–15 s — mở đường bỏ luật "tin tới peer chỉ khi idle". Lead headless
+  với server thật: từ chối `from: imposter`, hỏi lại `ruling` không mã, nhận `S1` làm premise treo,
+  không giả `from: human`; hook chặn CLI. `tools:` frontmatter loại MCP tool → definition phải ghi
+  `mcp__slp-mail__*`. Definition chưa đổi. Xem [lab-12](docs/labs/lab-12-mailbox-monitor.md).
 - v0.8.1 (yêu cầu Human, chưa có lab): **im lặng có hạn — quá 10 phút thì nhắn xuống**.
   `lead.md`: mỗi peer đang chạy một mốc 10 phút (`Bash` `sleep` chạy nền, arm lại sau mỗi tin từ
   peer); mốc nổ mà peer chưa nói gì → kiểm evidence rồi gửi `PING` định dạng cố định, arm lại
