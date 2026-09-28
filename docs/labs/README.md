@@ -33,6 +33,7 @@ Quy ước dùng chung (ràng buộc cứng, cách kiểm evidence, đọc trans
 | 10d | Lab hẹp (dừng ở plan pha code): mẫu plan tách file + `Read` trước `Write`, chẻ theo ruling, `plans/.gitignore` | **PASS**: plan theo mẫu cả hai pha, chẻ có lý do, gate duyệt giữ | [lab-10d](lab-10d-plan-template-narrow.md) |
 | 10e | Chạy trọn pha code có Supervisor sau gói plan; item gộp nhiều boundary có lý do; đọc Git bằng lệnh `git` | **PASS có nhắc 1 lần**: 1 `REJECT`, 0 `D9`, 0 drift; mẫu plan FAIL lúc đầu vì skill global cũ che bản repo | [lab-10e](lab-10e-code-phase.md) |
 | 10f | Lab hẹp: đường dẫn mẫu cụ thể + skill repo thắng global; nhánh task, không commit lên nhánh chính | **PASS**: mẫu đúng cả hai plan, 0 nhắc, dù skill global vẫn cũ; `main` không đổi | [lab-10f](lab-10f-template-path-branch.md) |
+| 12 | `Monitor` giao sự kiện giữa lượt; `mcp/slp-mail` (danh tính theo process, tự cc Lead, hook chặn CLI); definition v0.9.0; team thật | **PASS 5 bước** (2.1.283) (2.1.283): sự kiện tới ở ranh giới tool call, teammate thật nhận PING giữa vòng poll trễ 2–15 s; Lead headless từ chối `from: imposter`, hỏi lại ruling không mã, nhận S1 làm premise treo, không giả `from: human`; hook chặn CLI. Phát hiện: `tools:` frontmatter loại MCP tool, phải thêm `mcp__slp-mail__*`; mode thường cần `permissions.allow: mcp__slp-mail`. Bước 4 (definition v0.9.0) probe headless PASS. Bước 5 team thật 0 nhắc: teammate kế thừa MCP + `Monitor`; Supervisor hỏi Peer → Lead cc không đổi plan; Human bảo Peer đổi việc → Peer giữ, Lead đổi contract rồi gửi Peer sau 14 s (`D19`); tin tới Peer trong một vòng poll (31–80 s); Lead tự phát hiện file evidence bị reset | [lab-12](lab-12-mailbox-monitor.md) |
 | 11 | Peer `HEARTBEAT` + không Bash dài + số liệu ra file; Lead truyền `model:` có lý do; chẻ theo bước chờ thiết bị, gấp → hai writer worktree song song; Supervisor `D15`/`D16` | **PASS có 2 phát hiện runtime** (v0.7.0, 2.1.281, 3 run: headless, PTY, PTY + Supervisor): luật Lead/plan ăn lần đầu, 0 nhắc; `D15`/`D16` kiểm đúng; **tin gửi peer đang chạy chỉ giao khi idle** (đo 2 lần); headless `-p` = subagent; peer chưa tự đọc inbox (0/1) → thêm mẫu vòng poll; 1 `D13` | [lab-11](lab-11-heartbeat-model-parallel.md) |
 
 **Thứ tự chạy:** 1 → 2 trước (repo disposable, rồi repo thật có `CLAUDE.md` đủ contract) → 3 → 4
@@ -52,6 +53,7 @@ Lab 1–2 chưa ổn — không biết lỗi ở policy hay runtime.
 | 8b | Supervisor ở thư mục trung lập + `slp-supervisor.settings.json` (Read mọi file, sandbox Bash, hook chặn `Write` ngoài memory); công thức re-run test không dùng `$(…)` |
 | 9 | `lead.md`: không ghi skill gate vào `Required skills`; việc đụng tiền ghi thẳng L3 |
 | 10 | `lead.md`: giữ ngôn ngữ Human suốt phiên; anti-pattern **luật tự thêm** — luật chấp nhận/từ chối hành vi không có trong brief/ruling phải hỏi Human trước khi REJECT theo nó |
+| 12 | v0.9.0: `supervisor.md` ba việc theo bài gốc + `RULING S#` + `D19`; `lead.md` § Hộp thư; `peer.md` Monitor + không đổi việc theo tin gửi thẳng; `tools:` + `permissions.allow` cho MCP; template hook + § Supervisor được quyết; installer cài `slp-mail` |
 | sự cố facepod (issue #7, v0.7.0) | `peer.md`: mục Heartbeat (nhịp ~10 phút, Bash ≤ 2 phút, số liệu ghi file); `lead.md`: `Model` bắt buộc + lý do, effort là của Human, trigger chạy song song, peer im lặng > 15 phút = treo; `sequence-execution-plan`: dấu hiệu chẻ thứ tư (bước chờ Human/thiết bị), trần 2 nhóm/brief; `supervisor.md`: `D15`, `D16`; `augment_prompt.py` không còn `Model inherit` |
 | 11 | `peer.md`: tin không tới giữa lượt → mẫu vòng poll ≤ 90s có `cat` inbox; không `SendMessage` = subagent, không ToolSearch. `lead.md`: không hỏi peer đang chạy rồi chờ, không suy reply từ heartbeat, dừng peer là của Human, headless không có teammate. `supervisor.md`: giữ ngôn ngữ Human |
 | bài viết SLP (vhlam.com, v0.8.0) | Không phải lab — port từ [bài về multi-agent orchestration và SLP](https://vhlam.com/article/agent-orchestration-multi-agent-slp). `lead.md`: trường brief `Premise` (bắt buộc có nguồn / đang dùng chất vấn được), ba ô xếp `REOPEN`, vòng phát hiện → quyết định → lan tới owner, Human sửa hướng giữa chừng, `Premise đổi` / `Bất đồng còn mở` dưới verdict, checklist benchmark; `peer.md`: quyền chất vấn ≠ quyền sửa, phản biện là quyền không phải nghĩa vụ, dấu hiệu "đường vòng"; `supervisor.md`: `D17`, `D18`, `patterns.md` là telemetry; `goal-griller` thêm `Constraint`; `augment_prompt.py` thêm `Premise` |
@@ -62,6 +64,14 @@ Lab 1–2 chưa ổn — không biết lỗi ở policy hay runtime.
   mọi thứ trong brief là luật; Lead có xếp `REOPEN` đúng ô hay lại nhận mọi thứ / bác mọi thứ;
   `D17` (`bắt buộc` không nguồn) và `D18` (benchmark không ghi điều kiện) có bắt được mồi không.
   Mồi gợi ý: brief giữ một lựa chọn của lát trước làm "bắt buộc" rồi giao Peer tối ưu trên nó.
+- **Lab 12 còn mở:** Peer re-arm `Monitor` sau 30 phút (task lab chỉ 8 phút); Supervisor
+  interactive (không phải `-p`) tự bàn hướng đi với Human và ra `RULING S#` thật; hai Lead một
+  Supervisor trên hộp thư (`SLP_WORKSPACE` chung).
+- **v0.8.1 mốc 10 phút chưa có lab:** `Bash` `sleep 600` chạy nền có đánh thức Lead/Supervisor
+  đang idle không (đo một lần khi viết v0.8.1: `sleep 20` nền → task-notification tới session
+  **đang bận**, đúng tag; chưa đo khi session idle hẳn); `PING` tới inbox
+  có được vòng poll của peer đọc và trả `HEARTBEAT` không; Supervisor `PING` Lead đang bận thật
+  có sinh vòng lặp không. Mồi: peer cố tình bỏ heartbeat 12 phút nhưng file vẫn tăng.
 - **Sau Lab 10f:** chưa đo lại số `REJECT` khi chẻ F2a/b/c (xem [lab-10e](lab-10e-code-phase.md) cho pha code gộp có lý do).
 - **D2-detection** (Lead ACCEPT không đọc diff): Lead healthy không chịu drift khi bị ép (Lab 6) —
   cần một definition Lead cố tình hỏng.

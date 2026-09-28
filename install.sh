@@ -13,6 +13,8 @@
 #   <root>/.claude/skills/<name>/                (copy: ask-alp, goal-griller, xia, sequence-execution-plan, prompt-leverage, smart-commits, bug-loop)
 #   <root>/.claude/settings.json                (merge: env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS, teammateMode)
 #   <root>/.claude/slp-supervisor.settings.json (copy: Read mọi file + sandbox Bash; dùng qua --settings)
+#   <root>/.claude/slp-mail/slp_mail.py           (copy: hộp thư MCP + CLI; dùng qua --mcp-config, xem mcp/slp-mail/README.md)
+#   <root>/.claude/slp-mail.settings.json        (copy: hook chặn Bash giả from; Lead dùng qua --settings khi bật hộp thư)
 #   <root>/CLAUDE.md                            (chỉ tạo từ template nếu chưa có; project mode)
 #   <root>/.claude/slp-manifest.json            (ghi lại đúng những gì đã cài, để uninstall gỡ chính xác)
 set -euo pipefail
@@ -141,6 +143,8 @@ fi
 for a in lead peer supervisor; do [ -f "$SRC/agents/$a.md" ] || die "bundle thiếu agents/$a.md"; done
 for s in $SKILLS; do [ -f "$SRC/skills/$s/SKILL.md" ] || die "bundle thiếu skills/$s/SKILL.md"; done
 [ -f "$SRC/templates/supervisor.settings.json" ] || die "bundle thiếu templates/supervisor.settings.json"
+[ -f "$SRC/mcp/slp-mail/slp_mail.py" ] || die "bundle thiếu mcp/slp-mail/slp_mail.py"
+[ -f "$SRC/templates/slp-mail.settings.json" ] || die "bundle thiếu templates/slp-mail.settings.json"
 VERSION="$(cat "$SRC/VERSION" 2>/dev/null || echo unknown)"
 
 # ---- resolve target ------------------------------------------------------------
@@ -218,6 +222,13 @@ fi
 cp "$SRC/templates/supervisor.settings.json" "$SUP_SETTINGS"
 ok "slp-supervisor.settings.json"
 
+# ---- 1d. slp-mail (hộp thư MCP + CLI, dùng qua --mcp-config) + hook chặn Bash giả from ----------
+MAIL_DIR="$CLAUDE_DIR/slp-mail"
+mkdir -p "$MAIL_DIR"
+cp "$SRC/mcp/slp-mail/slp_mail.py" "$MAIL_DIR/slp_mail.py"; chmod +x "$MAIL_DIR/slp_mail.py"
+cp "$SRC/templates/slp-mail.settings.json" "$CLAUDE_DIR/slp-mail.settings.json"
+ok "slp-mail/slp_mail.py + slp-mail.settings.json (mcp-config: python3 $MAIL_DIR/slp_mail.py mcp-config <seat>)"
+
 # ---- 2. settings.json -------------------------------------------------------------
 added_keys="$(merge_settings "$SETTINGS")"
 settings_created=false
@@ -272,7 +283,7 @@ fi
   printf '  "skills": ['
   first=1; for k in "${installed_skills[@]}"; do [ $first -eq 1 ] || printf ', '; printf '"%s"' "$k"; first=0; done
   printf '],\n'
-  printf '  "files": ["slp-supervisor.settings.json"],\n'
+  printf '  "files": ["slp-supervisor.settings.json", "slp-mail/slp_mail.py", "slp-mail.settings.json"],\n'
   printf '  "settings": { "created": %s, "keys": [' "$settings_created"
   first=1; for k in "${settings_keys[@]+"${settings_keys[@]}"}"; do [ $first -eq 1 ] || printf ', '; printf '"%s"' "$k"; first=0; done
   printf '] },\n'

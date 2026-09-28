@@ -23,7 +23,7 @@ nhất.
 | Human | **người yêu cầu** | chốt outcome; cấp authority ngoài máy (push, deploy, service ngoài); accept khi người giao việc tự viết | — |
 | Lead | **người giao việc** | chẻ việc, sở hữu topology; ruling boundary; viết brief; chấm `ACCEPT`/`REJECT <sha>`; kênh hỏi người yêu cầu | accept việc chính mình viết (`LEAD-WROTE`) |
 | Peer | **người nhận việc** | đúng những gì brief ghi: owned scope, write hoặc read-only, commit lease | kênh hỏi người yêu cầu (thiếu → `BLOCKED` về người giao việc); topology; ruling |
-| Supervisor | **người quan sát** | đọc Git object và transcript; hỏi `DRIFT` / `ESCALATE` | mọi thứ khác; không dùng skill nào |
+| Supervisor | **người quan sát** có quyền được giao | đọc Git object, log hộp thư, transcript; hỏi `DRIFT` / `ESCALATE`; `RULING S#` đúng danh sách `CLAUDE.md` workspace; hỏi Peer một câu qua hộp thư (Lead cc); bàn hướng đi với Human | brief, verdict, task cho Peer; ruling không mã; không dùng skill nào |
 
 Disposition (Engineer · Architect · Reviewer · Scout) là *chế độ làm việc* ghi trong brief, không
 phải ghế; skill được nhắc disposition.

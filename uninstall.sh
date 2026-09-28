@@ -153,6 +153,9 @@ if [ ! -f "$MANIFEST" ]; then
   done
   rmdir "$SKILLS_DIR" 2>/dev/null && ok "xóa thư mục skills/ (rỗng)" || true
   if [ -f "$CLAUDE_DIR/slp-supervisor.settings.json" ]; then rm -f "$CLAUDE_DIR/slp-supervisor.settings.json"; ok "xóa slp-supervisor.settings.json"; fi
+  if [ -f "$CLAUDE_DIR/slp-mail.settings.json" ]; then rm -f "$CLAUDE_DIR/slp-mail.settings.json"; ok "xóa slp-mail.settings.json"; fi
+  if [ -f "$CLAUDE_DIR/slp-mail/slp_mail.py" ]; then rm -f "$CLAUDE_DIR/slp-mail/slp_mail.py"; ok "xóa slp-mail/slp_mail.py"; fi
+  rmdir "$CLAUDE_DIR/slp-mail" 2>/dev/null && ok "xóa thư mục slp-mail/ (rỗng)" || true
   log "settings.json và CLAUDE.md giữ nguyên (không có manifest để biết SLP đã thêm gì)."
   exit 0
 fi
@@ -168,10 +171,11 @@ rmdir "$AGENTS_DIR" 2>/dev/null && ok "xóa thư mục agents/ (rỗng)" || true
 # ---- 1a. file lẻ (manifest ≥ 0.5.0) — chỉ nhận tên đã biết ----------------------------
 while IFS= read -r rel; do
   [ -z "$rel" ] && continue
-  case "$rel" in slp-supervisor.settings.json) ;; *) warn "manifest có path lạ '$rel' → bỏ qua"; continue ;; esac
+  case "$rel" in slp-supervisor.settings.json|slp-mail/slp_mail.py|slp-mail.settings.json) ;; *) warn "manifest có path lạ '$rel' → bỏ qua"; continue ;; esac
   f="$CLAUDE_DIR/$rel"
   if [ -f "$f" ]; then rm -f "$f"; ok "xóa $rel"; else log "$rel đã không còn"; fi
 done <<<"$(manifest_get "$MANIFEST" files)"
+rmdir "$CLAUDE_DIR/slp-mail" 2>/dev/null && ok "xóa thư mục slp-mail/ (rỗng)" || true
 
 # ---- 1b. skills (manifest ≥ 0.3.0; manifest cũ không có key → bỏ qua) ------------
 while IFS= read -r rel; do

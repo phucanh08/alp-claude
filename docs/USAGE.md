@@ -10,9 +10,10 @@ nào, và bảy case: cả bảy lấy từ lab đã chạy thật (diễn biế
 |---|---|---|
 | **Human** (anh) | người có quyền cuối: quyết boundary, push, deploy, chấp nhận code Lead tự viết | giao việc, trả lời câu hỏi, đọc verdict |
 | **Lead** | session `claude --agent lead`, chẻ việc, giao cho Peer, đọc diff, ra `ACCEPT`/`REJECT` | nói chuyện trực tiếp, cả ngày |
-| **Supervisor** | session riêng, không có quyền của anh, chỉ soi Lead có lệch quy trình không | để chạy nền; đọc khi nó `ESCALATE` |
+| **Supervisor** | session riêng, soi Lead có lệch quy trình không, bàn hướng đi với anh, quyết đúng danh sách `S#` anh ghi ở `CLAUDE.md` workspace | hỏi nó về kiến trúc/hướng đi; đọc khi nó `ESCALATE` |
 
-Peer (Engineer / Architect / Reviewer / Scout) do Lead tạo; anh không nói chuyện với Peer.
+Peer (Engineer / Architect / Reviewer / Scout) do Lead tạo. Có hộp thư thì anh hỏi thẳng Peer được
+(`slp_mail.py send --to lead/<peer> …`, Lead được cc), nhưng đổi hướng thì nói với Lead.
 
 ---
 
@@ -33,6 +34,22 @@ claude --agent supervisor --name supervisor \
 
 Lead khi khởi động tự `ListAgents`; thấy session tên `supervisor` thì gửi `SLP-REGISTER` và các
 checkpoint cho nó. Không cần anh nối tay.
+
+**Hộp thư `slp-mail`** (tuỳ chọn; cần khi muốn Supervisor hỏi Peer, anh nhắn từ ngoài terminal, hay
+người gửi kiểm chứng được) — sinh config một lần mỗi seat rồi thêm `--mcp-config` vào lệnh trên:
+
+```bash
+M=~/code/shop-api/.claude/slp-mail/slp_mail.py
+python3 $M mcp-config lead       --workspace shop > ~/.slp-lead.mcp.json
+python3 $M mcp-config supervisor --workspace shop > ~/.slp-sup.mcp.json
+claude --agent lead --name lead --mcp-config ~/.slp-lead.mcp.json --settings ~/code/shop-api/.claude/slp-mail.settings.json
+claude --agent supervisor --name supervisor --settings ~/code/shop-api/.claude/slp-supervisor.settings.json --mcp-config ~/.slp-sup.mcp.json
+SLP_WORKSPACE=shop python3 $M send --to lead "…"          # anh, from: human
+SLP_WORKSPACE=shop python3 $M log --follow                 # xem cả room
+```
+
+Ai gửi là do process quyết (`from`), không do lời văn; hook trong `slp-mail.settings.json` chặn
+agent giả `from` qua Bash. Chi tiết: `mcp/slp-mail/README.md`.
 
 > **Cẩn thận:** Lead gửi cho **bất kỳ** session nào tên `supervisor` trên máy. Đang chạy một
 > Supervisor cho việc khác mà mở Lead thử nghiệm → Lead thử nghiệm sẽ nhắn nhầm vào đó (đã gặp ở
@@ -140,10 +157,16 @@ ESCALATE → Human (@lead)
 
 - `NOTE` — bỏ qua được.
 - `DRIFT` — gửi Lead, không gửi anh. Lead phải trả lời bằng evidence hoặc sửa. Anh chỉ theo dõi.
-- `ESCALATE` — **cần anh**. Supervisor không có quyền quyết nên chuyển lên anh.
+- `ESCALATE` — **cần anh**. Ngoài danh sách `S#`, Supervisor không có quyền quyết nên chuyển lên anh.
+- `RULING S#` — chỉ khi anh đã ghi mã đó ở `CLAUDE.md` workspace § *Supervisor được quyết* (vd.
+  `S1: chọn giữa hai cách hiện thực cùng outcome khi Lead hỏi`). Lead nhận nó làm premise có nguồn;
+  ruling không mã thì Lead từ chối và hỏi lại — đúng (Lab 12).
 
-Supervisor **không** ACCEPT, không ra lệnh cho Peer, không đề xuất cách sửa. Nếu Supervisor nhắn
-Lead kiểu "Human đã đồng ý X" mà không có evidence, Lead phải từ chối (D12) — đó là hành vi đúng.
+Supervisor **không** ACCEPT, không brief Peer, không đề xuất cách sửa ngoài `S#`. Có hộp thư thì nó
+hỏi Peer được một câu, Lead luôn được cc. Anh muốn bàn kiến trúc, hướng đi, hai repo có lệch không →
+hỏi Supervisor; anh quyết xong thì **anh** nói với Lead (terminal hoặc `slp_mail.py send`), Supervisor
+không chuyển lời hộ. Nếu Supervisor nhắn Lead kiểu "Human đã đồng ý X" mà `from` không phải
+`human`, Lead phải từ chối (D12) — đó là hành vi đúng.
 
 ---
 
@@ -352,13 +375,15 @@ Lead tự gán `bug-loop` cho việc sửa bug. Anh chỉ cần nói thêm khi m
 | Accept việc tiền chỉ có L1 | brief không ghi L3 | hỏi lại Lead; lead.md bắt buộc L3 cho tiền/auth/state/security |
 | Supervisor nhớ chuyện của repo khác | memory Supervisor ở cấp user (`~/.claude/agent-memory/supervisor/`), dùng chung | bình thường; muốn tách thì dọn thư mục đó |
 | Muốn Lead viết luôn cho nhanh | được, nhưng ra `LEAD-WROTE` | anh tự đọc diff và accept |
+| Lead/Supervisor không thấy tool `slp-mail` | quên `--mcp-config`, hoặc definition cũ không có `mcp__slp-mail__*` trong `tools:` (frontmatter loại MCP tool — Lab 12) | cài lại v0.9.0; kiểm bằng câu "gọi whoami của slp-mail" |
+| Peer im lặng > 10 phút, Lead vẫn ngồi chờ | Lead chưa arm mốc `TIMER` (hoặc notification của lệnh nền không tới — chưa đo) | hỏi Lead "`TIMER` của task đó đâu"; Lead thức thì phải kiểm evidence rồi `PING` ngay, không chờ thêm |
 
 ---
 
 ## 9. Checklist một ngày làm việc
 
 1. `CLAUDE.md` còn đúng? (boundary mới, lệnh test mới)
-2. Mở Lead (+ Supervisor nếu việc chạm tiền/auth/deploy/boundary).
+2. Mở Lead (+ Supervisor nếu việc chạm tiền/auth/deploy/boundary; + hộp thư nếu muốn hỏi Peer hay bàn hướng đi).
 3. Mỗi yêu cầu: chuyện gì + kết quả + bằng chứng + được/không được. Một đoạn.
 4. Trả lời câu hỏi của Lead ngắn, chọn theo nhãn (a)/(b).
 5. Đọc dòng cuối: `ACCEPT`/`REJECT`/`LEAD-WROTE`/`BLOCKED`/`REOPEN_REQUEST`.

@@ -22,7 +22,7 @@ Bảng "ghế nào cấm skill nào" nằm trong `SKILL.md` của `ask-alp`, kh�
 | 7 | Handoff | Peer | (peer.md) | handoff 6 ô | `Ownership: released` |
 | 8 | Review | Peer Reviewer (chỉ khi trúng trigger) | (peer.md) | finding trên đúng SHA | đọc SHA, không working tree |
 | 9 | Accept | Lead | (lead.md checklist) | `ACCEPT <sha>` / `REJECT <sha>` | đã đọc `git diff base sha` thật |
-| ∥ | Governance | Supervisor | (supervisor.md) | `DRIFT` / `ESCALATE` / `NOTE` | không tham gia gate nào; chỉ hỏi |
+| ∥ | Governance | Supervisor | (supervisor.md) | `DRIFT` / `ESCALATE` / `NOTE` / `RULING S#` | không tham gia gate nào; hỏi, và quyết đúng danh sách `S#` |
 
 Phase 2, 3, 8 là **tuỳ điều kiện** — bỏ qua khi không trúng điều kiện ghi trong bảng "Khi nào
 bỏ qua" dưới. Phase 1, 4, 6, 7, 9 luôn có.
@@ -37,7 +37,7 @@ Human ──prompt──▶ Lead ─goal-griller─▶ Task Contract
                     │                                              └─handoff 6 ô──▶ Lead
                     ├─(Reviewer trigger?)──Agent(peer, Reviewer)──▶ finding @ sha
                     └─ACCEPT <sha> | REJECT <sha> ──▶ Human (summary)
-Supervisor (session riêng, 1..N Lead) ◀─SLP-REGISTER + checkpoint─ Lead ; ─DRIFT @lead/ESCALATE─▶ Lead / Human
+Supervisor (session riêng, 1..N Lead) ◀─SLP-REGISTER + checkpoint─ Lead ; ─DRIFT @lead/RULING S#/ESCALATE─▶ Lead / Human ; ─câu hỏi─▶ Peer (Lead cc, qua slp-mail)
 ```
 
 ## Phase 1 — Intake: `goal-griller`
@@ -101,7 +101,8 @@ Khi nào bỏ qua: đúng một work item, không dependency, không boundary �
 Constraint (có nguồn) → `Premise: bắt buộc`; cách làm Lead/lát trước chọn → `Premise: đang dùng`.
 `scripts/augment_prompt.py` nháp khung; Lead điền `Base` (SHA thật), `Owned scope`, ruling, và
 `Model` (bắt buộc, kèm lý do; Agent call truyền `model:` cùng giá trị — `lead.md` § Chọn model).
-Peer nhận brief sẽ gửi `HEARTBEAT` theo `peer.md`; Lead đếm chéo file evidence mỗi heartbeat.
+Peer nhận brief sẽ gửi `HEARTBEAT` theo `peer.md`; Lead đếm chéo file evidence mỗi heartbeat và
+arm mốc 10 phút cho mỗi peer — im lặng quá mốc → `PING` xuống (`lead.md` § Monitoring).
 
 Ba luật không được vi phạm khi nâng brief: trung lập về cách làm nhưng có ruling boundary;
 không seed verdict cho Reviewer / lane mù; không nới authority.

@@ -1,16 +1,18 @@
 # alp-claude — SLP trên Claude Code Agent Teams
 
 Bộ cài **SLP** (Supervisor / Lead / Peer separation-of-judgment) cho Claude Code Agent Teams
-native. Không cần Paseo. Một `install.sh`, một `uninstall.sh`, ba agent definition, **năm skill
+native. Không cần Paseo; kênh tin giữa các ghế là hộp thư MCP `slp-mail` (tuỳ chọn, một file
+Python). Một `install.sh`, một `uninstall.sh`, ba agent definition, **năm skill
 theo phase + một skill phương pháp `bug-loop` + một router `ask-alp`**, template `CLAUDE.md` cho repo và cho workspace nhiều repo, và
 5 lab đã chạy thật + 1 lab cho Supervisor definition.
 
 ```text
-Human ────────────────────────────────────────────────────────┐
-  ↓                                                           ↓
-Lead session(s)  claude --agent lead --name lead[-<repo>]     Supervisor session (ngoài checkout mọi Lead)
-  ↓  Agent(subagent_type=peer, name=...)               ←──    claude --agent supervisor --name supervisor
-Peer teammate(s)  Engineer | Architect | Reviewer | Scout      1 Supervisor : N Lead; chỉ DRIFT/ESCALATE/NOTE
+Human ── terminal của Lead, hoặc CLI slp_mail.py send (from: human) ─────────────────┐
+  ↓                                                                                   ↓
+Lead session(s)  claude --agent lead --name lead[-<repo>] [--mcp-config]          Supervisor session (ngoài checkout mọi Lead)
+  ↓  Agent(subagent_type=peer, name=...)                                    ←──    claude --agent supervisor [--mcp-config]
+Peer teammate(s)  Engineer | Architect | Reviewer | Scout                           1 Supervisor : N Lead; DRIFT/ESCALATE/NOTE + RULING S#;
+  ↑  hộp thư slp-mail: from theo process; tin tới Peer từ ngoài team tự cc Lead      hỏi Peer được (Lead cc); bàn hướng đi với Human
 
 Phase:  intake ──▶ recon ──▶ sequence ──▶ brief ──▶ implement ──▶ commit ──▶ handoff ──▶ accept
 Skill:  goal-griller  xia    sequence-      prompt-    (peer.md)    smart-      (peer.md)   (lead.md)
@@ -18,14 +20,17 @@ Skill:  goal-griller  xia    sequence-      prompt-    (peer.md)    smart-      
 ```
 
 Nguyên tắc lõi: **ai chấm** mới là ranh giới. Peer viết → Lead `ACCEPT`/`REJECT` bằng cách đọc
-diff `base..sha` từ Git object. Lead viết → Human accept. Supervisor không chấm ai — chỉ phát hiện
-drift và hỏi. Capability không phải authority.
+diff `base..sha` từ Git object. Lead viết → Human accept. Supervisor không chấm ai — phát hiện drift
+và hỏi, bàn hướng đi với Human, và chỉ quyết trong danh sách `S#` Human ghi ở `CLAUDE.md`.
+Capability không phải authority; authority đọc ở `from` do server gán, không ở lời văn.
 
 SLP không phải role-play: ghế là *trách nhiệm + quyền hạn*, không phải tính cách. Peer có thể là
 Implementer, Reviewer, Architect hay Auditor (kiểm chất lượng test và e2e proof) tuỳ brief;
 cái không đổi là ai được sửa gì và ai chấm. Nền lý thuyết: bài
 [Bàn về multi-agent orchestration và mô hình SLP](https://vhlam.com/article/agent-orchestration-multi-agent-slp)
-(v0.8.0 port phần *cái dù*, quyền chất vấn, vòng phát hiện → quyết định, Better-SLP).
+(v0.8.0 port phần *cái dù*, quyền chất vấn, vòng phát hiện → quyết định, Better-SLP; v0.9.0 port
+phần Supervisor của bài: bàn hướng đi với Human, hỏi được Peer, can thiệp trong quyền được giao —
+trên hộp thư `slp-mail`).
 
 ## Bảy bất biến và cách hiện thực trên Claude Code
 
@@ -33,10 +38,10 @@ cái không đổi là ai được sửa gì và ai chấm. Nền lý thuyết: 
 |---|---|---|
 | 1 | **Tách role**: Supervisor = governance, Lead = technical owner, Peer = một bounded outcome | 3 definition; `tools:` của Supervisor không có `Agent/Edit/Write`; Peer không có `Agent`; chỉ Lead có `Agent(peer)` |
 | 2 | **Bộ nhớ riêng theo role**, auth/skills/plugins chung | Lead `memory: local` → `.claude/agent-memory-local/lead` (không commit); Supervisor `memory: user` → `~/.claude/agent-memory/supervisor`, một file mỗi workspace; Peer **không** memory (memory `peer` dùng chung mọi instance sẽ phá lane mù); Supervisor chạy ngoài checkout của mọi Lead nên transcript tách, không đụng index; `~/.claude` chung |
-| 3 | **Một source of truth cho topology** | Mỗi root một Lead, Lead là native team lead duy nhất của team mình; Supervisor là session ngoài mọi team, runtime không cho session khác reach teammate của Lead; không nested team; Lead không ghi ra ngoài root đã `SLP-REGISTER` (`D14`) |
+| 3 | **Một source of truth cho topology; can thiệp quay về trạng thái chung của Lead** | Mỗi root một Lead, Lead là native team lead duy nhất của team mình; Supervisor là session ngoài mọi team; tin từ ngoài team tới Peer chỉ đi qua hộp thư `slp-mail` và server **tự cc Lead**, Peer chỉ trả lời, đổi hướng do Lead gửi (`D19`); không nested team; Lead không ghi ra ngoài root đã `SLP-REGISTER` (`D14`) |
 | 4 | **Write ownership rõ** | mỗi moving scope một writer + commit lease; nhiều writer song song = Lead cấp worktree riêng mỗi writer, contract cho shared interface phải có trong brief trước |
 | 5 | **Candidate + evidence, không phải DONE** | handoff 6 ô: `Candidate` = SHA + base, `Scope`, `Verification` (command + output thật), `Unknown/risk`, `Ownership`; Lead bắt buộc một dòng `ACCEPT <sha>` / `REJECT <sha> — finding` |
-| 6 | **Supervisor không giành quyền Lead** | output chỉ `DRIFT` (evidence + một câu hỏi) / `ESCALATE` (Human) / `NOTE`; định nghĩa "Lead healthy" cụ thể; unhealthy → escalate, vẫn không điều khiển Peer |
+| 6 | **Supervisor không giành quyền Lead; quyền được giao phải có nguồn** | output `DRIFT` / `ESCALATE` / `NOTE`, và `RULING S#` chỉ khi `CLAUDE.md` workspace § *Supervisor được quyết* có mã đó — Lead từ chối ruling không mã (Lab 12); `from` do server `slp-mail` gán theo process nên authority đọc ở `from`, hook chặn Bash giả `from`; định nghĩa "Lead healthy" cụ thể; unhealthy → escalate, vẫn không điều khiển Peer |
 | 7 | **Quyền chất vấn tách khỏi quyền sửa; phản biện là quyền, không phải nghĩa vụ** | brief có `Premise`: ràng buộc `bắt buộc` phải có nguồn (Human / `CLAUDE.md`), lựa chọn `đang dùng` Peer được hỏi lại (`D17` soi nguồn); Peer đọc được scope người khác, sửa thì không → `DEPENDENCY_REQUEST`; Lead xếp mỗi `REOPEN` vào một trong ba ô, không thưởng tranh biện; đổi quyết định phải lan tới plan + owner bị ảnh hưởng + Human (`Premise đổi` / `Bất đồng còn mở` dưới verdict) |
 
 ## Cài
@@ -146,6 +151,10 @@ claude --agent lead --name lead          # header phải hiện @lead
 # 3. (tuỳ chọn) Supervisor — terminal khác, thư mục trung lập, đọc mọi file, sandbox chặn ghi:
 mkdir -p ~/slp-supervisor && cd ~/slp-supervisor
 claude --agent supervisor --name supervisor --settings <repo root>/.claude/slp-supervisor.settings.json
+# 4. (tuỳ chọn) Hộp thư slp-mail — Supervisor hỏi được Peer, anh nhắn từ CLI, from theo process:
+python3 <repo root>/.claude/slp-mail/slp_mail.py mcp-config lead > ~/.slp-lead.mcp.json      # tương tự cho supervisor
+claude --agent lead --name lead --mcp-config ~/.slp-lead.mcp.json --settings <repo root>/.claude/slp-mail.settings.json
+python3 <repo root>/.claude/slp-mail/slp_mail.py send --to lead "…"                           # anh: from human
 ```
 
 Workspace nhiều repo (`project-a-workspace/{backend,webadmin,webclient,mobileapp,service-a…}`):
@@ -232,6 +241,9 @@ skills/ask-alp/             router: ghế ↔ từ vựng authority, luồng, on
 templates/CLAUDE.template.md  khung repo-specific contract
 templates/WORKSPACE.CLAUDE.template.md  khung workspace nhiều repo: part ↔ Lead, cross-repo contract
 templates/settings.json     env + teammateMode
+templates/slp-mail.settings.json  hook PreToolUse chặn Bash giả `from` (Lead dùng qua --settings khi bật hộp thư)
+mcp/slp-mail/slp_mail.py    hộp thư MCP + CLI, một file Python stdlib: from theo process, tự cc Lead, log chung; selftest
+mcp/slp-mail/README.md      cách chạy, tool, ba luật server, giới hạn
 docs/SETUP.md               setup chi tiết + cơ chế runtime cần biết
 docs/labs/README.md         mục lục lab (tầng 1): đo gì, trạng thái, lab đã đổi gì
 docs/labs/common.md         quy ước chung: ràng buộc cứng, đọc transcript, chạy headless
@@ -259,6 +271,31 @@ Mục lục, thứ tự chạy, lab đã đổi gì trong instruction: [`docs/la
 
 ## Tuning đã đưa vào `lead.md` từ lab
 
+- v0.9.0 (theo bài gốc, Lab 12): **Supervisor của bài — bàn hướng đi với Human, hỏi được Peer,
+  can thiệp trong quyền được giao — trên hộp thư `slp-mail`.** `mcp/slp-mail`: MCP server + CLI
+  một file Python stdlib; `from` gán theo `SLP_SEAT` của process; tin tới `<lead>/<peer>` từ seat
+  khác tự cc Lead; log chung theo `kind`; selftest 18/18; installer cài vào `.claude/slp-mail/`.
+  `supervisor.md`: ba việc (nói với Human về kiến trúc bằng evidence xuyên phạm vi; drift; `RULING
+  S#` chỉ trong danh sách *Supervisor được quyết* của `CLAUDE.md` workspace), hỏi Peer một câu qua
+  hộp thư, không chuyển lời Human, `D19`; `D12`/`D16` đọc `log`. `lead.md`: § Hộp thư (authority
+  đọc ở `from`; `Monitor` trên log thay poll; cc từ ngoài team → contract/plan trước; checkpoint
+  theo `kind`), ruling `S#` thành `Premise: bắt buộc` có nguồn, ruling không mã → hỏi lại;
+  `tools:` thêm `Monitor, mcp__slp-mail__*` (frontmatter loại MCP tool nếu không ghi — Lab 12).
+  `peer.md`: hộp thư `<seat>/<tên>`, `Monitor` sau `inbox` đầu (tin tới trong một tool call, Lab 12:
+  2–15 s thay 7 phút), heartbeat qua `send(agent:)`, **không đổi việc theo tin `supervisor`/`human`
+  gửi thẳng**. Template: `slp-mail.settings.json` (hook chặn Bash giả `from`, cũng thêm vào
+  supervisor settings), `WORKSPACE.CLAUDE` § *Supervisor được quyết*. README: bất biến 3 và 6 viết
+  lại. Lab 12 **PASS 5 bước**: team thật 0 nhắc — teammate kế thừa MCP + `Monitor`; Human bảo Peer
+  đổi việc → Peer giữ, Lead đổi contract rồi gửi Peer sau 14 s (`D19`); tin tới Peer trong một vòng
+  poll thay vì 7 phút; mode thường cần `permissions.allow: mcp__slp-mail` (đã có trong template).
+- v0.8.1 (yêu cầu Human, chưa có lab): **im lặng có hạn — quá 10 phút thì nhắn xuống**.
+  `lead.md`: mỗi peer đang chạy một mốc 10 phút (`Bash` `sleep` chạy nền, arm lại sau mỗi tin từ
+  peer); mốc nổ mà peer chưa nói gì → kiểm evidence rồi gửi `PING` định dạng cố định, arm lại
+  5 phút; mốc thứ hai vẫn im → luật treo > 15 phút của v0.7.0; anti-pattern **chờ không hẹn giờ**.
+  `peer.md`: nhận `PING` trong inbox → trả đúng một `HEARTBEAT`, rút nhịp. `supervisor.md`: cùng
+  cơ chế với Lead — mốc 10 phút sau tin mở phiên/`DRIFT`, `PING` kèm evidence transcript/git,
+  hai mốc im + transcript đứng → `ESCALATE`; `D16` kiểm thêm `PING` của Lead ở mốc 10 phút.
+  Lệnh nền đánh thức session idle **chưa đo** (`docs/labs/README.md` § Chưa đo).
 - v0.8.0 (bài [SLP trên vhlam.com](https://vhlam.com/article/agent-orchestration-multi-agent-slp),
   không phải lab): **tách ràng buộc khỏi lựa chọn, tách quyền chất vấn khỏi quyền sửa**.
   `lead.md`: brief thêm trường `Premise` — `bắt buộc:` phải có nguồn (Human / dòng `CLAUDE.md`),
