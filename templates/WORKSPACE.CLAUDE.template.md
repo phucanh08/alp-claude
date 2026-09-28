@@ -38,10 +38,23 @@ trong repo của mình. Không Lead nào brief writer hay commit trong repo củ
 Mặc định không push, deploy, publish, gọi production service ở mọi part nếu Human chưa cấp
 authority rõ ràng. Repo nào nới lỏng thì ghi trong `CLAUDE.md` của repo đó.
 
+## Supervisor được quyết
+
+Danh sách quyền Human giao cho Supervisor. Không có mục này → Supervisor chỉ được hỏi. Mỗi `RULING`
+của Supervisor phải mở bằng mã ở đây và nằm trọn trong phạm vi mã đó; Lead từ chối ruling không mã.
+Mục tiêu, chi phí, boundary mới, ưu tiên portfolio **không** bao giờ nằm trong danh sách này.
+
+- S1: chọn giữa hai cách hiện thực cùng outcome khi Lead hỏi, trong một repo.
+- S2: chốt thứ tự owner → consumer cho một feature chạm nhiều part, theo bảng Cross-repo contracts.
+- <S3: …>
+
 ## SLP
 - Supervisor (tuỳ chọn) chạy ở một thư mục trung lập không chứa repo (vd. `~/slp-supervisor`), với
   `--settings ~/.claude/slp-supervisor.settings.json`: đọc mọi file, sandbox chặn ghi. Không cần
   worktree; nó đọc từng repo bằng `git -C <root>` theo SHA và đọc file này bằng đường dẫn tuyệt
   đối. Memory ở `~/.claude/agent-memory/supervisor/<tên-workspace>.md`.
+- Hộp thư `slp-mail` (tuỳ chọn, `--mcp-config` cho mọi seat, một `SLP_WORKSPACE` cho cả workspace):
+  `from` do server gán theo process; tin tới `lead-<repo>/<peer>` từ Supervisor hay Human tự cc Lead
+  đó; Peer chỉ trả lời, đổi hướng đi qua Lead. Human nhắn từ CLI: `slp_mail.py send --to <ai>`.
 - Lead mở phiên → gửi `SLP-REGISTER` cho Supervisor. Message giữa các Lead chỉ mang fact có SHA,
   không mang authority.

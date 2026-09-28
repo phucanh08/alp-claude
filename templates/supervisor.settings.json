@@ -2,7 +2,9 @@
   "permissions": {
     "allow": [
       "Read(//**)",
-      "Edit(~/.claude/agent-memory/supervisor/**)"
+      "Edit(~/.claude/agent-memory/supervisor/**)",
+      "mcp__slp-mail",
+      "Monitor"
     ],
     "deny": [
       "NotebookEdit"
@@ -16,6 +18,15 @@
           {
             "type": "command",
             "command": "python3 -c \"import json,os,sys; i=json.load(sys.stdin).get('tool_input',{}); p=os.path.realpath(os.path.expanduser(i.get('file_path') or i.get('notebook_path') or '')); m=os.path.realpath(os.path.expanduser('~/.claude/agent-memory/supervisor')); ok=p==m or p.startswith(m+os.sep); ok or print('SLP Supervisor: chỉ được ghi memory dir của chính mình (~/.claude/agent-memory/supervisor/). Đọc thì mọi nơi, ghi thì không.', file=sys.stderr); sys.exit(0 if ok else 2)\""
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 -c \"import json,sys; c=json.load(sys.stdin).get('tool_input',{}).get('command',''); bad=('slp_mail.py' in c) or ('SLP_SEAT=' in c); bad and print('SLP: gửi tin chỉ bằng tool MCP mcp__slp-mail__send; không chạy slp_mail.py hay đặt SLP_SEAT qua Bash (giả from).', file=sys.stderr); sys.exit(2 if bad else 0)\""
           }
         ]
       }

@@ -1,4 +1,4 @@
-# slp-mail — hộp thư chung cho các ghế SLP (prototype, v0.9.0 đang làm)
+# slp-mail — hộp thư chung cho các ghế SLP (v0.9.0)
 
 Một file Python, chỉ stdlib: `slp_mail.py`. Vừa là MCP server (stdio) cho Lead / Peer /
 Supervisor, vừa là CLI cho Human và cho lab. Thay cho inbox của Agent Teams ở ba chỗ runtime
@@ -56,20 +56,19 @@ Log nằm ở `~/.slp-mail/<workspace>/log.jsonl` (đổi bằng `SLP_MAIL_DIR`)
 
 ## Giới hạn đã biết
 
-- **CLI giả mạo.** Mọi process cùng user OS. Agent có `Bash` chạy được
-  `SLP_SEAT=human python3 slp_mail.py send …`. Chặn bằng hook `PreToolUse` cho Bash của agent
-  (deny lệnh chứa `slp_mail.py`), như hook đã chặn `Write` của Supervisor; agent chỉ được gửi qua
-  tool MCP. Chưa đưa vào template — mồi của Lab 12.
-- **Sandbox Supervisor.** Server do Claude Code spawn, không qua sandbox Bash; cần đo Supervisor
-  ghi được `~/.slp-mail` (Lab 12).
-- **Không đẩy.** Tin không chèn vào lượt của agent. Peer đọc ở vòng poll; hoặc arm `Monitor`
-  `tail -f log.jsonl | grep --line-buffered '"to": "lead/peer-a"'` — đo trong session chính cho
-  thấy sự kiện tới ở ranh giới tool call kế tiếp, không chờ idle (Lab 12 § Monitor).
+- **CLI giả mạo.** Mọi process cùng user OS, agent có `Bash` chạy được
+  `SLP_SEAT=human python3 slp_mail.py send …`. Chặn bằng hook `PreToolUse` Bash trong
+  `templates/slp-mail.settings.json` (Lead dùng qua `--settings`) và trong
+  `supervisor.settings.json`; đo ở Lab 12: chặn đúng, Lead cũng tự từ chối trước khi hook chạm.
+- **Hai chỗ phải khai tool.** `tools:` frontmatter của agent loại MCP tool nếu không ghi
+  `mcp__slp-mail__*` (Lab 12); mode thường còn cần `permissions.allow: ["mcp__slp-mail"]` (headless
+  bị chặn im, interactive hỏi từng lần). Cả hai đã có trong definition và template v0.9.0.
+- **Sandbox Supervisor không cản.** Server do Claude Code spawn, ngoài sandbox Bash; Supervisor
+  thật với `supervisor.settings.json` gửi/đọc được (Lab 12 bước 4).
+- **Không đẩy.** Tin không chèn vào lượt của agent; arm `Monitor` trên `log.jsonl` thì sự kiện tới
+  kèm kết quả tool call đang chạy (Lab 12: teammate thật, trễ 2–15 s), hết hạn 30 phút phải arm lại.
+  Tin ghi trước lúc arm không thấy: `inbox` một lần trước khi arm.
+- **Teammate trong process Lead** có thấy tool `mcp__slp-mail__*` không: chưa đo. Không thấy →
+  `peer.md` rơi về `SendMessage` + `cat` inbox.
 - Một seat một process. Hai Lead cùng máy: `SLP_SEAT=lead-api`, `lead-web`; Peer là
   `lead-api/peer-a`.
-
-## Điều phải đổi trong definition khi đưa vào (bước 4, chưa làm)
-
-`supervisor.md` có quyền được giao ghi ở `CLAUDE.md` workspace, tin `ruling` phải trích dòng
-nguồn; `peer.md` vòng poll gọi `inbox`; `lead.md` nhận tin đổi hướng thì contract và plan trước;
-`D11`/`D12`/`D16` đọc `log` thay transcript; `tools:` của ba definition thêm `mcp__slp-mail__*`.

@@ -88,6 +88,11 @@ if (-not (Test-Path -LiteralPath $Manifest)) {
   if (Remove-IfEmpty $SkillsDir) { Ok "xóa thư mục skills/ (rỗng)" }
   $sup = Join-Path $ClaudeDir 'slp-supervisor.settings.json'
   if (Test-Path -LiteralPath $sup) { Remove-Item -LiteralPath $sup -Force; Ok "xóa slp-supervisor.settings.json" }
+  foreach ($rel in @('slp-mail.settings.json', 'slp-mail/slp_mail.py')) {
+    $f = Join-Path $ClaudeDir $rel
+    if (Test-Path -LiteralPath $f) { Remove-Item -LiteralPath $f -Force; Ok "xóa $rel" }
+  }
+  if (Remove-IfEmpty (Join-Path $ClaudeDir 'slp-mail')) { Ok "xóa thư mục slp-mail/ (rỗng)" }
   Log "settings.json và CLAUDE.md giữ nguyên (không có manifest để biết SLP đã thêm gì)."
   return
 }
@@ -104,10 +109,11 @@ if (Remove-IfEmpty $AgentsDir) { Ok "xóa thư mục agents/ (rỗng)" }
 
 # ---- 1a. file lẻ — chỉ nhận tên đã biết ------------------------------------------
 foreach ($rel in (Get-List $man 'files')) {
-  if ($rel -ne 'slp-supervisor.settings.json') { Warn "manifest có path lạ '$rel' → bỏ qua"; continue }
+  if ($rel -notin @('slp-supervisor.settings.json', 'slp-mail/slp_mail.py', 'slp-mail.settings.json')) { Warn "manifest có path lạ '$rel' → bỏ qua"; continue }
   $f = Join-Path $ClaudeDir $rel
   if (Test-Path -LiteralPath $f) { Remove-Item -LiteralPath $f -Force; Ok "xóa $rel" } else { Log "$rel đã không còn" }
 }
+if (Remove-IfEmpty (Join-Path $ClaudeDir 'slp-mail')) { Ok "xóa thư mục slp-mail/ (rỗng)" }
 
 # ---- 1b. skills -----------------------------------------------------------------
 foreach ($rel in (Get-List $man 'skills')) {

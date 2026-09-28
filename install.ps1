@@ -119,6 +119,8 @@ try {
   foreach ($a in $Agents) { if (-not (Test-Path (Join-Path $Src "agents/$a.md"))) { Die "bundle thiếu agents/$a.md" } }
   foreach ($s in $Skills) { if (-not (Test-Path (Join-Path $Src "skills/$s/SKILL.md"))) { Die "bundle thiếu skills/$s/SKILL.md" } }
   if (-not (Test-Path (Join-Path $Src 'templates/supervisor.settings.json'))) { Die "bundle thiếu templates/supervisor.settings.json" }
+  if (-not (Test-Path (Join-Path $Src 'mcp/slp-mail/slp_mail.py'))) { Die "bundle thiếu mcp/slp-mail/slp_mail.py" }
+  if (-not (Test-Path (Join-Path $Src 'templates/slp-mail.settings.json'))) { Die "bundle thiếu templates/slp-mail.settings.json" }
   $Version = if (Test-Path (Join-Path $Src 'VERSION')) { (Get-Content -Raw (Join-Path $Src 'VERSION')).Trim() } else { 'unknown' }
 
   # ---- resolve target ----------------------------------------------------------
@@ -195,6 +197,13 @@ try {
   Copy-Item -LiteralPath $supSrc -Destination $SupSettings -Force
   Ok "slp-supervisor.settings.json"
 
+  # ---- 1d. slp-mail (hộp thư MCP + CLI, dùng qua --mcp-config) + hook chặn Bash giả from ----
+  $MailDir = Join-Path $ClaudeDir 'slp-mail'
+  New-Item -ItemType Directory -Force -Path $MailDir | Out-Null
+  Copy-Item -LiteralPath (Join-Path $Src 'mcp/slp-mail/slp_mail.py') -Destination (Join-Path $MailDir 'slp_mail.py') -Force
+  Copy-Item -LiteralPath (Join-Path $Src 'templates/slp-mail.settings.json') -Destination (Join-Path $ClaudeDir 'slp-mail.settings.json') -Force
+  Ok "slp-mail/slp_mail.py + slp-mail.settings.json (mcp-config: python3 $MailDir\slp_mail.py mcp-config <seat>)"
+
   # ---- 2. settings.json --------------------------------------------------------
   $merge = Merge-Settings $Settings
   if ($merge.Keys.Count -gt 0) { Ok "settings.json: thêm $($merge.Keys -join ' ')" } else { Ok "settings.json: đã có đủ key, không đổi" }
@@ -238,7 +247,7 @@ try {
     installedAt   = (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ')
     agents        = [string[]]$installedAgents
     skills        = [string[]]$installedSkills
-    files         = [string[]]@('slp-supervisor.settings.json')
+    files         = [string[]]@('slp-supervisor.settings.json', 'slp-mail/slp_mail.py', 'slp-mail.settings.json')
     settings      = [ordered]@{ created = $merge.Created; keys = [string[]]$merge.Keys }
     claudeMd      = [ordered]@{ created = $claudeMdCreated; sha256 = $claudeMdSha }
   }

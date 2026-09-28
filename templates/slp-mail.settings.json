@@ -1,0 +1,21 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 -c \"import json,sys; c=json.load(sys.stdin).get('tool_input',{}).get('command',''); bad=('slp_mail.py' in c) or ('SLP_SEAT=' in c); bad and print('SLP: gửi tin chỉ bằng tool MCP mcp__slp-mail__send; không chạy slp_mail.py hay đặt SLP_SEAT qua Bash (giả from).', file=sys.stderr); sys.exit(2 if bad else 0)\""
+          }
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "allow": [
+      "mcp__slp-mail",
+      "Monitor"
+    ]
+  }
+}
