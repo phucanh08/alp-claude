@@ -6,8 +6,9 @@
 > (2) dựng `mcp/slp-mail` và kiểm protocol + ba luật server bằng selftest.
 > · **Trạng thái:** bước 1 đo xong (session chính + teammate thật); bước 2 selftest 18/18 và
 > chạy thật với Lead headless; bước 3 **PASS** lane A 4/4 (imposter, ruling không mã, ruling S1,
-> Bash CLI + hook) và lane B 4/4 (Monitor tới giữa vòng poll, trễ 2–15 s). Bước 4 (viết lại
-> definition) chưa làm. 2026-09-28, Claude Code 2.1.283.
+> Bash CLI + hook) và lane B 4/4 (Monitor tới giữa vòng poll, trễ 2–15 s). Bước 4 (definition
+> v0.9.0) **viết xong, probe runtime PASS**, chưa chạy team thật với definition mới. 2026-09-28,
+> Claude Code 2.1.283.
 
 ## Bước 1 — `Monitor` giao sự kiện ở đâu trong lượt?
 
@@ -111,7 +112,32 @@ mỗi poll khớp hoàn toàn với sự kiện nhận được."* Tin `brief` g
 phải có `mcp__slp-mail__*` và Peer cần `Monitor`. Còn mở: Supervisor thật dưới sandbox, teammate
 kế thừa MCP của Lead, mồi 2 phần hành vi, re-arm sau 30 phút.
 
-## Bước 4 — viết lại definition (chưa làm)
+## Bước 4 — definition v0.9.0 + probe runtime
 
-Xem `mcp/slp-mail/README.md` § "Điều phải đổi trong definition". Lên v0.9.0 sau khi mồi 1–5 có
-kết quả.
+**Đã đổi** (chi tiết: README § Tuning, v0.9.0): `supervisor.md` ba việc theo bài gốc (nói với Human
+về hướng đi bằng evidence xuyên phạm vi; drift; `RULING S#` chỉ trong danh sách *Supervisor được
+quyết*), hỏi Peer một câu qua hộp thư, không chuyển lời Human, `D19`, `D12`/`D16` đọc `log`;
+`lead.md` § Hộp thư (authority đọc ở `from`, `Monitor` trên log, cc → contract/plan trước, checkpoint
+theo `kind`), ruling `S#` → `Premise: bắt buộc` có nguồn; `peer.md` hộp thư `<seat>/<tên>`,
+`Monitor` sau `inbox` đầu, heartbeat qua `send(agent:)`, không đổi việc theo tin gửi thẳng; `tools:`
+ba definition thêm `Monitor, mcp__slp-mail__*`; template `slp-mail.settings.json` (hook + allow) và
+hook vào `supervisor.settings.json`; `WORKSPACE.CLAUDE` § *Supervisor được quyết*; installer cài
+`.claude/slp-mail/slp_mail.py` + `slp-mail.settings.json`, manifest và uninstall biết hai file đó
+(vòng cài/gỡ trên repo rỗng: sạch).
+
+**Probe runtime với definition mới (headless, `-p`):**
+
+| Probe | Kết quả |
+|---|---|
+| `install.sh --dir fixture --force` | ba `tools:` mới, `slp-mail/`, `slp-mail.settings.json`, manifest `files` đủ ba mục |
+| Supervisor thật: `--agent supervisor --settings supervisor.settings.json --mcp-config`, cwd trung lập, **chưa** có allow rule | `whoami`/`send`/`inbox` **bị chặn**: *"requested permissions to use mcp__slp-mail__whoami, but you haven't granted it yet"* — mode thường + headless không có ai duyệt; hook chặn Bash giả `from` đúng |
+| Cùng lệnh, sau khi thêm `permissions.allow: ["mcp__slp-mail", "Monitor"]` vào template | **PASS**: `whoami` → `seat: supervisor`; `send` → `from: supervisor`, id `bcf4ab28094e`; `inbox` → 2 tin `from: lead`; Supervisor tự nhận xét *"Lead hỏi lại ruling thiếu mã là hành vi đúng"*. **Sandbox không cản server ghi `~/.slp-lab/…/mail`** (MCP server do Claude Code spawn, ngoài sandbox Bash) |
+| Lead thật, frontmatter mới, **mode thường** với `--settings slp-mail.settings.json` (không skip permission) | **PASS**: `whoami` → `seat: lead` khớp tên session; `inbox` → 1 tin `from: supervisor kind: note`, Lead tự nói *"kind note, không mang authority"* |
+
+**Phát hiện runtime thứ hai (Local).** Ngoài `tools:` frontmatter, tool MCP còn cần
+`permissions.allow` (`mcp__slp-mail` = cả server) trong settings khi session chạy mode thường —
+interactive thì Human bị hỏi từng lần, headless thì bị chặn im. Cả hai template settings đã có.
+
+**Còn mở.** Chạy team thật (Lead interactive spawn Peer) với definition v0.9.0: teammate có kế thừa
+`mcp__slp-mail__*` và `Monitor` của Lead không; Peer có arm Monitor sau `inbox` đầu và re-arm sau 30
+phút không; mồi 2 phần hành vi (`D19`): Supervisor hỏi Peer → Lead nhận cc, Peer chỉ trả lời.
