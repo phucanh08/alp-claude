@@ -42,6 +42,32 @@ Brief là delta cho đúng một việc; nó không nới được ranh giới c
    `inbox(mailbox: <seat>/<tên bạn>)` một lần, rồi arm `Monitor` (§ Heartbeat). Gửi chỉ bằng tool
    `send` với `agent: <tên bạn>`; không chạy `slp_mail.py` qua Bash. Không thấy tool → không có hộp
    thư, dùng `SendMessage` và inbox Agent Teams; không `ToolSearch` tìm.
+8. Ngay khi nhận brief, tạo scratch riêng cho session/task/peer (ưu tiên path Lead cấp trong
+   `Resources`, rồi scratch riêng runtime cấp; nếu chưa có,
+   dùng `mktemp -d /tmp/slp-<task-id>-<peer>-XXXXXX`). Ghi giờ bắt đầu, task id và brief tóm tắt
+   vào `start.log`; dùng đường dẫn tuyệt đối này làm Evidence cho heartbeat đầu. Đây chỉ là
+   bằng chứng đã nhận việc, chưa phải tiến độ verification. Mọi disposition được ghi log vận
+   hành vào scratch, kể cả read-only; quyền này không cho sửa artifact trong repo.
+
+## Tài nguyên của lane
+
+- Trước khi chạy server/emulator/browser, đối chiếu `Resources` trong brief: port dịch vụ/CDP,
+  scratch, `TMPDIR`, Chrome `--user-data-dir` và tài nguyên dùng chung được cấp. Thiếu hoặc
+  trùng allocation → báo `BLOCKED` cho phần phụ thuộc, tiếp tục phần độc lập.
+- Kiểm port được giao còn trống trước khi start; kiểm service bind thành công sau khi start.
+  Port bận hoặc bind lỗi → báo Lead, không tự chọn port khác, không kill tiến trình giữ port.
+  Kiểm port trống không thay thế allocation của Lead.
+- Dùng `TMPDIR` riêng trong scratch cho tiến trình của lane và truyền vào lúc khởi động;
+  Chrome phải có `--user-data-dir` riêng. Chỉ gắn CDP vào Chrome mình khởi động và đã xác nhận
+  PID/profile/port; không dùng browser của lane khác chỉ vì thấy endpoint đang mở.
+- Ghi PID cùng lệnh, thời điểm khởi động và đường dẫn log vào scratch ngay khi start. Chỉ dừng
+  tiến trình mình khởi động; kiểm lại danh tính trước khi kill để tránh PID cũ đã được dùng lại.
+  Có tiến trình con → theo dõi và dừng đúng cây tiến trình của mình; không coi PID wrapper là
+  bằng chứng mọi tiến trình con đã thoát. Cấm `pkill -f` theo tên project/lệnh dùng chung và
+  `killall` theo tên executable dùng chung.
+- Khi xong, dừng tài nguyên mình sở hữu và kiểm đã thoát trước khi báo trả tài nguyên. Cần giữ
+  service cho bước sau → bàn giao rõ PID, port, thư mục và owner nhận cho Lead; không dọn scratch
+  chứa evidence trước khi Lead kiểm.
 
 ## Skills
 
@@ -233,6 +259,16 @@ git show --stat "$sha"
 
 Read-only disposition bỏ Candidate. Writer phải commit và trả candidate SHA + base.
 
+Ngay trước khi gửi handoff, đọc inbox một lần trên đúng kênh đang dùng: tool `inbox` của
+`slp-mail` với mailbox đã xác định ở Bootstrap (`<seat>/<tên bạn>`), nếu không thì đọc
+`~/.claude/teams/<team>/inboxes/<tên bạn>.json` của đúng team hiện tại.
+Không dùng wildcard qua nhiều team; chưa xác định được inbox hoặc đọc lỗi → báo Lead, không coi
+là inbox rỗng. Ordinary subagent không có inbox thì ghi rõ giới hạn đó. Tin Lead đổi scope →
+đối chiếu brief mới, áp dụng trong authority được giao và chạy lại verification bị ảnh hưởng;
+chưa áp dụng được thì trả `partial`/`blocked`, ghi tin nào chưa áp dụng và lý do vào `Unknown / risk`.
+Đọc inbox không bảo đảm tin gửi sau thời điểm đó đã tới: handoff ghi mốc kiểm và brief đang dùng
+trong ô `Scope`, để Lead đối chiếu trước accept.
+
 ```text
 Outcome            complete | partial | blocked | reopen
 Candidate          SHA + base SHA + branch + repository root (bỏ nếu read-only)
@@ -262,13 +298,15 @@ phải của kênh. Ba luật:
    Tiến độ     <x/y bước của Verification, hoặc số đo cụ thể: "42 mẫu / cần 30">
    Chờ ai      none | Human (<việc gì>) | Lead (<ruling gì>)
    Bất thường  none | <dấu hiệu: "file capture không tăng 3 phút">
-   Evidence    <đường dẫn file số liệu/log trong scratchpad, hoặc —>
+   Evidence    <đường dẫn tuyệt đối tới file log/số liệu có nội dung trong scratch>
    ```
 
    Nhịp: **mục tiêu mỗi 10 phút wall-clock**. Bạn không có đồng hồ, nên cơ chế là: gửi khi xong
    một bước Verification, **trước** khi vào bất kỳ vòng poll/chờ nào, mỗi vòng lặp poll thứ N,
    và muộn nhất sau ~10 tool call kể từ heartbeat trước. Ghi `date` lúc nhận brief để tự tính phút.
    Đang chờ Human (quẹt mẫu, cắm máy) vẫn heartbeat — "Chờ ai: Human" chính là thông tin Lead cần.
+   `—`, file rỗng hoặc đường dẫn thư mục không phải Evidence hợp lệ. Chưa có kết quả thì dùng
+   `start.log` và ghi tiến độ 0; có kết quả rồi thì trỏ tới log/output thật tương ứng claim.
 2. **Không tool call nào chạy quá ~90 giây** (Lab 11: peer chọn 24 × 5s và ra 121s — để dư).
    Poll = lệnh ngắn lặp lại, mỗi vòng trả về rồi mới vòng tiếp; không `sleep` dài, không
    `adb logcat` không giới hạn.
@@ -289,23 +327,43 @@ phải của kênh. Ba luật:
    ```bash
    for i in $(seq 1 15); do [ -f "$DONE_FLAG" ] && break; sleep 5; done   # ≤ 75s
    wc -l < "$DATA_FILE"                                                     # tiến độ
-   cat ~/.claude/teams/*/inboxes/<tên bạn>.json                             # tin chưa đọc? (read-only)
+   cat "$PEER_INBOX"                                                     # inbox đúng team, read-only
    ```
+
+   Đặt `PEER_INBOX` thành đường dẫn tuyệt đối tới inbox của bạn trong team hiện tại trước vòng
+   poll; không dùng `teams/*` và không sửa file inbox bằng tay.
 
    Tin từ Lead (`from` là seat của Lead qua hộp thư, hay inbox có `"read": false` từ `team-lead`)
    → trả lời ngay vòng đó, trước khi poll tiếp. Tin là `PING <task id>` (Lead hẹn giờ 10 phút không thấy bạn — `lead.md`
    § Monitoring) → trả **đúng một `HEARTBEAT`** theo định dạng trên, không giải thích vì sao im
    lặng; rồi rút nhịp: heartbeat mỗi hai vòng poll cho tới handoff. Nhận `PING` nghĩa là nhịp của
-   bạn đã trễ, không phải Lead đổi yêu cầu. Không thấy file inbox → bạn không phải teammate, xem
-   mục dưới.
-   **Không có tool `SendMessage`** → bạn là subagent thường (Lead chạy headless `-p`), không phải
+   bạn đã trễ, không phải Lead đổi yêu cầu. Không thấy file inbox → kiểm lại team/path và báo Lead; riêng dấu hiệu này
+   không đủ kết luận bạn không phải teammate.
+   **Không có hộp thư và không có tool `SendMessage`** → bạn là subagent thường (Lead chạy headless `-p`), không phải
    teammate: bỏ heartbeat, **không** `ToolSearch` tìm nó (Lab 11: mất 3 lượt), handoff trả trong
    kết quả cuối, ghi `Runtime: subagent, không heartbeat` vào ô `Unknown / risk`.
 3. **Số liệu ghi file ngay khi nhận, không giữ trong context.** Log, mẫu đo, output probe →
-   append vào file trong scratchpad của session (runtime cho sẵn; không có thì
-   `/tmp/slp-<task id>/`) ở mỗi vòng poll; heartbeat ghi đường dẫn tuyệt đối để Lead mở được. Lead đếm chéo bằng `wc -l`/`stat`; context của bạn hỏng thì dữ liệu vẫn còn. Kênh đọc dữ
-   liệu trả 0 quá hai vòng poll trong khi kỳ vọng có → đó là **Bất thường**, và tới vòng thứ ba
+   append vào file trong scratch riêng đã tạo ở Bootstrap ở mỗi vòng poll; heartbeat ghi đường
+   dẫn tuyệt đối để Lead mở được. Lead đếm chéo bằng `wc -l`/`stat`; context của bạn hỏng thì
+   dữ liệu vẫn còn. Kênh đọc dữ liệu trả 0 quá hai vòng poll trong khi kỳ vọng có → đó là
+   **Bất thường**, và tới vòng thứ ba
    là `BLOCKED` kèm lệnh + output, không tiếp tục chờ.
+
+## Shutdown
+
+Nhận `shutdown_request` → xử lý theo schema `SendMessage` runtime thực sự cấp và request id
+vừa nhận. Mẫu dưới có trong hướng dẫn runtime Claude Code 2.1.288; `message` là object,
+không phải chuỗi JSON, và `request_id` chép nguyên giá trị `requestId` của request:
+
+```json
+{"to":"team-lead","message":{"type":"shutdown_response","request_id":"<requestId vừa nhận>","approve":true}}
+```
+
+Trước approve, dọn hoặc bàn giao tài nguyên của lane. Chưa thể dừng an toàn → phản hồi từ chối
+theo schema runtime kèm lý do. Tool không hỗ trợ mẫu này hoặc vẫn từ chối sau khi đối chiếu
+schema → báo Lead một lần kèm lỗi, dừng làm việc và chờ Lead/Human xử lý; không thử liên tiếp
+nhiều định dạng, không tự kill process chứa team. Tin nhắn thường hoặc trạng thái idle không
+chứng minh shutdown thành công.
 
 ## Nhịp lượt
 
