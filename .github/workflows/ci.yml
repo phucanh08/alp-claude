@@ -2,6 +2,7 @@ name: ci
 
 on:
   push:
+    branches: [main]
   pull_request:
   workflow_dispatch:
 
@@ -53,7 +54,9 @@ jobs:
         with:
           python-version: "3.12"
       - name: smoke (local clone + irm | iex từ commit này)
-        run: ./tests/installer-smoke.ps1 -Remote ${{ github.event_name == 'push' && github.sha || '' }}
+        env:
+          REMOTE: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: ./tests/installer-smoke.ps1 -Remote $env:REMOTE
 
   installer-unix:
     name: install.sh (${{ matrix.os }})
@@ -70,7 +73,7 @@ jobs:
       - name: smoke
         shell: bash
         env:
-          REMOTE: ${{ github.event_name == 'push' && github.sha || '' }}
+          REMOTE: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
           set -euo pipefail
           check() {
