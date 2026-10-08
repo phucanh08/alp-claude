@@ -122,10 +122,10 @@ class AdapterTest(Installed):
     @unittest.skipUnless(os.name == "nt" and shutil.which("pwsh"), "chỉ Windows có pwsh")
     def test_per_seat_hook_powershell(self):
         with open(self.p(".alp", "agents", "lead", "hooks", "PostToolUse.ps1"), "w", encoding="utf-8") as fh:
-            fh.write("$null = [Console]::In.ReadToEnd(); Write-Output 'PS-HOOK-RAN'; exit 2\n")
+            fh.write("$null = [Console]::In.ReadToEnd(); [Console]::Error.WriteLine('PS-HOOK-RAN'); exit 2\n")
         r = self.hook("PostToolUse", {"agent_type": "lead", "tool_name": "Read"})
-        self.assertEqual(r.returncode, 2)
-        self.assertIn("PS-HOOK-RAN", r.stdout.decode("utf-8"))
+        self.assertEqual(r.returncode, 2)  # exit 2: Claude Code đọc lý do ở stderr
+        self.assertIn("PS-HOOK-RAN", r.stderr.decode("utf-8"))
 
     @unittest.skipUnless(shutil.which("bash"), "cần bash")
     def test_per_seat_hook_shell(self):
