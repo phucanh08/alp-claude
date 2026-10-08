@@ -44,13 +44,15 @@ jobs:
       matrix:
         shell: [powershell, pwsh]
     runs-on: windows-latest
+    defaults:
+      run:
+        shell: ${{ matrix.shell }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
       - name: smoke (local clone + irm | iex từ commit này)
-        shell: ${{ matrix.shell }}
         run: ./tests/installer-smoke.ps1 -Remote ${{ github.event_name == 'push' && github.sha || '' }}
 
   installer-unix:
