@@ -1,0 +1,8 @@
+{
+  "main": ["goal-griller", "xia", "sequence-execution-plan", "prompt-leverage", "smart-commits", "bug-loop"],
+  "lead": ["goal-griller", "xia", "sequence-execution-plan", "prompt-leverage", "smart-commits", "bug-loop"],
+  "peer": ["xia", "smart-commits", "bug-loop"],
+  "supervisor": [],
+  "oracle": [],
+  "reviewer": []
+}

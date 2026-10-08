@@ -2,7 +2,7 @@
 
 Tài liệu cho người dùng hằng ngày: mở phiên thế nào, viết yêu cầu ra sao, đọc kết quả của Lead thế
 nào, và bảy case: cả bảy lấy từ lab đã chạy thật (diễn biến và kết quả có thật; prompt ghi rõ khi là bản minh hoạ). Cài đặt xem
-[SETUP.md](SETUP.md); luồng phase/skill xem `/ask-alp`.
+[SETUP.md](SETUP.md); luồng phase/skill xem [`templates/WORKFLOW.md`](../templates/WORKFLOW.md) (cài ra `.alp/WORKFLOW.md`).
 
 **Ba vai, một câu mỗi vai:**
 
@@ -12,7 +12,9 @@ nào, và bảy case: cả bảy lấy từ lab đã chạy thật (diễn biế
 | **Lead** | session `claude --agent lead`, chẻ việc, giao cho Peer, đọc diff, ra `ACCEPT`/`REJECT` | nói chuyện trực tiếp, cả ngày |
 | **Supervisor** | session riêng, soi Lead có lệch quy trình không, bàn hướng đi với anh, quyết đúng danh sách `S#` anh ghi ở `CLAUDE.md` workspace | hỏi nó về kiến trúc/hướng đi; đọc khi nó `ESCALATE` |
 
-Peer (Engineer / Architect / Reviewer / Scout) do Lead tạo. Có hộp thư thì anh hỏi thẳng Peer được
+Peer (Engineer / Architect / Scout) do Lead tạo. Hai ghế advisor — `oracle` (cố vấn kỹ thuật, một
+lượt) và `reviewer` (soi diff trước khi accept, một lượt) — do Lead (hoặc anh ở mode Smart) spawn
+khi trúng trigger; verdict vẫn về người gọi. Có hộp thư thì anh hỏi thẳng Peer được
 (`slp_mail.py send --to lead/<peer> …`, Lead được cc), nhưng đổi hướng thì nói với Lead.
 
 ---
@@ -57,10 +59,18 @@ agent giả `from` qua Bash. Chi tiết: `mcp/slp-mail/README.md`.
 
 ---
 
-## 2. Viết `CLAUDE.md` — phần anh phải tự làm
+**Mode Smart** — việc mới/nhỏ không cần mở Lead: mở `claude` bình thường ở repo root (session chạy
+ghế `main`), soi phase ở `.alp/WORKFLOW.md`; session của anh cầm vai *người giao việc* (tự `goal-griller` →
+`prompt-leverage` → spawn Peer trực tiếp, gọi được `oracle`/`reviewer`). Tự viết code thì mở
+summary bằng `LEAD-WROTE: <sha> — cần Human accept` — không có máy nào tự accept việc chính nó
+viết. Mode chọn lúc mở phiên; việc lớn → mở Lead như trên (mode Supervised). Chi tiết:
+`.alp/WORKFLOW.md` § Mode.
 
-Lead chỉ ruling đúng khi `CLAUDE.md` nói rõ cái gì là boundary. Bắt đầu từ
-`templates/CLAUDE.template.md`. Ví dụ đã điền cho một API bán hàng:
+## 2. Viết `ALP.md` — phần anh phải tự làm
+
+Lead chỉ ruling đúng khi contract của repo nói rõ cái gì là boundary. Contract nằm ở `ALP.md`
+(installer tạo từ `templates/ALP.md`; `CLAUDE.md` chỉ có `@ALP.md` — dưới đây "`CLAUDE.md`" là nội
+dung nạp qua đó). Ví dụ đã điền cho một API bán hàng:
 
 ```markdown
 ## Purpose
@@ -288,7 +298,7 @@ nằm trong prompt (file config bị phục vụ công khai) — Reviewer độc
 
 ```bash
 ./install.sh --global
-cp templates/WORKSPACE.CLAUDE.template.md ~/code/shop-workspace/CLAUDE.md   # điền bảng part + contract chéo repo
+cp adapters/claude/WORKSPACE.CLAUDE.md ~/code/shop-workspace/CLAUDE.md   # điền bảng part + contract chéo repo
 cd ~/code/shop-workspace/api && claude --agent lead --name lead-api
 cd ~/code/shop-workspace/web && claude --agent lead --name lead-web
 cd ~/slp-supervisor && claude --agent supervisor --name supervisor --settings <.claude>/slp-supervisor.settings.json

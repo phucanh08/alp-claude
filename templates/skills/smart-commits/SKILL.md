@@ -8,7 +8,7 @@ description: Gom working tree hiện tại thành các commit logic theo convent
 Vị trí trong SLP: **commit gate** của writer, ngay trước handoff. Skill này chỉ *đóng gói việc đã
 làm*; nó không được biến thành phiên sửa feature.
 
-Điều kiện dùng: bạn có **write authority** trong một owned scope (ghế nào ứng với gì: `/ask-alp`).
+Điều kiện dùng: bạn có **write authority** trong một owned scope (ghế nào ứng với gì: `.alp/WORKFLOW.md`).
 
 - **Writer nhận việc qua brief** (Engineer/Architect có write) — commit trong owned scope, trả
   candidate.

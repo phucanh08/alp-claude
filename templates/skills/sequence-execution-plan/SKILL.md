@@ -12,7 +12,7 @@ writer lease trước.
 
 Điều kiện dùng: bạn **sở hữu topology** (quyền chẻ việc và cấp writer lease). Nhận việc qua brief
 → không sequence. Người yêu cầu có thể dùng để sắp backlog trước khi giao. Ghế nào ứng với gì:
-`/ask-alp`.
+`.alp/WORKFLOW.md`.
 
 ## Giữ năm trường tách biệt
 
@@ -135,7 +135,7 @@ Ràng buộc runtime của SLP:
   và **contract cho interface dùng chung đã có trong brief**. Không có worktree thì không phải
   song song, là xếp hàng — plan phải nói thẳng.
 - Reviewer là item `validates` sau khi có candidate SHA, chỉ khi trúng trigger review (danh sách
-  trong `ask-alp/references/workflow.md`, Phase 8).
+  trong `.alp/WORKFLOW.md`, Phase 8).
 - **Song song là bắt buộc, không phải tuỳ chọn**, khi người yêu cầu nói **gấp** *và* Now có ≥ 2
   item ready không phụ thuộc nhau: mỗi item một worktree + writer riêng; plan ghi rõ worktree nào,
   contract interface chung ở đâu. Xếp hàng lúc này là drift, plan phải nói lý do nếu vẫn xếp hàng

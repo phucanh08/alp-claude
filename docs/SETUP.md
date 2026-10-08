@@ -29,15 +29,24 @@ claude update         # nếu native install chưa mới
 Agent Teams là experimental và disabled mặc định. Bật bằng env trong settings hoặc shell.
 Khuyến nghị project-local setting để không làm thay đổi mọi repo.
 
-## 1. Agent definitions
+## 1. Agent definitions — layout `.alp/` (giống alp-paseo)
 
-`install.sh` copy `agents/lead.md`, `peer.md`, `supervisor.md` → `.claude/agents/` và năm thư mục
-`skills/<name>/` → `.claude/skills/`. Làm tay:
+`install.sh` dựng nguồn sự thật trong `.alp/` rồi sinh phần Claude Code đọc được:
+
+- `templates/agents/<ghế>/AGENT.md` → `.alp/agents/<ghế>/AGENT.md` (main, lead, peer, supervisor,
+  oracle, reviewer), kèm `skills/` (theo `templates/role-skills.json`), `hooks/` rỗng, `.mcp.json`
+  rỗng; `templates/WORKFLOW.md` → `.alp/WORKFLOW.md`; `.alp/settings.json` mặc định
+  `{ defaultAgent: main, workflow: { mode: smart, maxPeers: 2 } }`.
+- Adapter `.claude/slp/alp.py sync` sinh `.claude/agents/<ghế>.md` (= `AGENT.md`, cộng `mcpServers` từ
+  `.mcp.json` nếu có server) và `.claude/skills/<skill>/` (hợp bộ skill mọi ghế). Hook `SessionStart`
+  chạy lại sync, nên **sửa ở `.alp/`**, không sửa `.claude/agents|skills` (bị sinh đè).
+- Bản cũ còn `.claude/skills/ask-alp` (< 0.10.0) → installer dời vào backup.
+
+Làm tay (từ clone của repo này, tại repo đích):
 
 ```bash
-mkdir -p .claude/agents .claude/skills
-cp agents/lead.md agents/peer.md agents/supervisor.md .claude/agents/
-cp -R skills/goal-griller skills/xia skills/sequence-execution-plan skills/prompt-leverage skills/smart-commits .claude/skills/
+python3 /path/to/alp-claude/adapters/claude/alp.py install --src /path/to/alp-claude   # = install.sh
+python3 .claude/slp/alp.py sync                                                         # sau khi sửa .alp/
 claude plugin validate .claude/agents && claude plugin validate .claude/skills
 ```
 
@@ -55,22 +64,38 @@ claude plugin validate .claude/agents && claude plugin validate .claude/skills
 }
 ```
 
-File đã tồn tại → **merge** key `env`, không overwrite (installer làm đúng vậy).
+File đã tồn tại → **merge** key `env`, không overwrite (installer làm đúng vậy). Installer còn thêm
+`"agent": "main"` (session `claude` thường chạy ghế main — mode Smart; `--agent lead` vẫn đè được)
+và hook dispatcher `f="$CLAUDE_PROJECT_DIR/.claude/slp/alp.py"; [ ! -f "$f" ] || python3 "$f" hook <Event>`
+(thiếu adapter → thoát 0, không chặn nhầm; Windows ghi đúng interpreter đã cài thay `python3`).
+Luôn có `SessionStart` và `PreToolUse` matcher `Skill`; `UserPromptSubmit`, `PreToolUse`/`PostToolUse`
+matcher `*`, `Stop` chỉ được thêm (bởi sync) khi có ghế đặt hook cho event đó:
+
+- `PreToolUse` + `Skill`: ghế gọi skill SLP không có trong `.alp/agents/<agent_type>/skills/` → exit 2
+  kèm lý do (Claude Code đưa `agent_type` vào hook cho cả `--agent` lẫn subagent; không có →
+  `defaultAgent`). Skill/agent ngoài SLP không bị đụng. Tắt: `ALP_SKILL_GUARD=0`.
+- Mọi event trên: chạy `.alp/agents/<agent_type>/hooks/<Event>` hoặc `<Event>.<ext>` (`.sh` — Git Bash
+  trên Windows, `.py`, `.js`, `.ps1`, hoặc file thực thi) với stdin là JSON hook; exit 2 = chặn. Stdout
+  gửi Claude Code đúng một object JSON (JSON chặn thắng ngay; còn lại lấy cái đầu) hoặc text thường. Ví dụ
+  chặn Peer `git push`: `.alp/agents/peer/hooks/PreToolUse.sh` đọc stdin, `exit 2` khi lệnh Bash có
+  `git push`.
 
 `in-process` là mode đơn giản nhất. Split panes cần tmux/iTerm2 và chưa đem thêm giá trị cho
 kiểm chứng SLP cơ bản — nhưng xem "cơ chế cần biết" §c dưới đây nếu anh thấy header lạ.
 
-## 3. `CLAUDE.md`
+## 3. `ALP.md` (+ `CLAUDE.md` = `@ALP.md`)
 
-Installer copy `templates/CLAUDE.template.md` nếu repo chưa có. Điền tối thiểu:
+Installer tạo `ALP.md` từ `templates/ALP.md` và `CLAUDE.md` một dòng `@ALP.md` nếu repo chưa có;
+mọi chỗ agent/skill nói "`CLAUDE.md` của repo" là contract nạp qua import này. Repo đã có `CLAUDE.md`
+kiểu cũ (không import) → giữ nguyên, không tạo `ALP.md`. Điền tối thiểu:
 
 - contract boundaries;
 - lệnh unit/full test (và test nào chiếm tài nguyên độc quyền: port, DB, docker);
 - path generated / cấm sửa;
 - external side-effect policy.
 
-Đừng nhét toàn bộ SLP vào `CLAUDE.md`: Lead/Peer invariant đã nằm trong agent definition;
-`CLAUDE.md` giữ **repo-specific contract**: cái gì Lead phải ruling trước khi Peer đi qua, lệnh nào
+Đừng nhét toàn bộ SLP vào `ALP.md`: Lead/Peer invariant đã nằm trong agent definition;
+`ALP.md` giữ **repo-specific contract**: cái gì Lead phải ruling trước khi Peer đi qua, lệnh nào
 là proof, tài nguyên nào độc quyền, việc gì cấm làm ra ngoài máy.
 
 ## 4. Start đúng Lead seat
@@ -201,9 +226,9 @@ mỗi thư mục con là repo riêng):
 # vì runtime chỉ quét .claude/agents từ cwd lên tới repository root
 install.sh --global
 # CLAUDE.md chung (cross-repo contract, bảng part ↔ Lead) ở gốc workspace
-curl -fsSL https://raw.githubusercontent.com/phucanh08/alp-claude/main/templates/WORKSPACE.CLAUDE.template.md \
+curl -fsSL https://raw.githubusercontent.com/phucanh08/alp-claude/main/adapters/claude/WORKSPACE.CLAUDE.md \
   -o project-a-workspace/CLAUDE.md
-# mỗi repo con vẫn cần CLAUDE.md riêng: templates/CLAUDE.template.md
+# mỗi repo con vẫn cần ALP.md (templates/ALP.md) + CLAUDE.md `@ALP.md` riêng
 
 cd project-a-workspace/backend   && claude --agent lead --name lead-backend     # terminal 1
 cd project-a-workspace/webclient && claude --agent lead --name lead-webclient   # terminal 2
@@ -267,7 +292,7 @@ trong `slp-supervisor.settings.json`; không chạy với settings đó thì ch�
 NOTE và không lách.
 
 **Worktree + `CLAUDE.md` chưa commit:** installer (≥ 0.2.1) phát hiện target là linked worktree và
-copy `CLAUDE.md` từ main worktree thay vì template. Chỉ còn cần khi Lead (monorepo) hoặc Supervisor
+copy `ALP.md`/`CLAUDE.md` từ main worktree thay vì template. Chỉ còn cần khi Lead (monorepo) hoặc Supervisor
 chạy trong worktree.
 
 ## 11. Skills theo phase
@@ -285,10 +310,12 @@ phải authority:
 | commit gate | `smart-commits` | Peer writer / Lead khi `LEAD-WROTE` |
 | theo `Required skills` | `bug-loop` | Peer (read-only: Phase 1–4; writer: đủ) |
 
-Kiểm skill đã được load: trong session Lead gõ `/` — bảy tên (năm skill phase + `bug-loop` + `ask-alp`) phải hiện trong danh sách; hoặc
-`claude plugin validate .claude/skills`. Skill dir bị sửa tay → lần `install.sh` sau backup vào
-`.claude/backups/slp-<timestamp>/skills/<name>` rồi ghi bản mới (ngoài `skills/`, để runtime không nạp
-bản backup thành skill trùng).
+Kiểm skill đã được load: trong session Lead gõ `/` — sáu tên (năm skill phase + `bug-loop`) phải hiện trong danh sách; hoặc
+`claude plugin validate .claude/skills`. Sửa skill ở `.alp/agents/<ghế>/skills/<name>` (bản trong
+`.claude/skills` bị sinh đè). Hai ghế giữ hai bản khác nhau của cùng skill → Claude Code chỉ có một
+bản mỗi tên: sync dùng bản của ghế mặc định (rồi lead, peer) và cảnh báo. Lần `install.sh` sau giữ
+file `.alp/` đã sửa, để bản mới ở `.claude/backups/slp-<timestamp>/upstream/` (ngoài `skills/`, để
+runtime không nạp bản backup thành skill trùng).
 
 Script `prompt-leverage/scripts/augment_prompt.py` chỉ cần python3 stdlib:
 
@@ -297,7 +324,7 @@ python3 .claude/skills/prompt-leverage/scripts/augment_prompt.py "<prompt thô>"
 python3 .claude/skills/prompt-leverage/scripts/test_augment_prompt.py
 ```
 
-Luồng đầy đủ và gate giữa các phase: `/ask-alp` (router) và `skills/ask-alp/references/workflow.md`.
+Luồng đầy đủ và gate giữa các phase: `.alp/WORKFLOW.md` (nguồn: `templates/WORKFLOW.md`).
 
 ## Official references
 

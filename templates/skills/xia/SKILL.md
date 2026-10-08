@@ -9,7 +9,7 @@ Vị trí trong SLP: sau Task Contract (`goal-griller`), trước khi người g
 viết brief cho writer. Câu hỏi của Xia là *cái gì đã có, cái gì dùng lại được, docs nói gì, đường nào nhẹ nhất* —
 không phải *code thế nào*.
 
-Điều kiện dùng (ghế nào ứng với gì: `/ask-alp`):
+Điều kiện dùng (ghế nào ứng với gì: `.alp/WORKFLOW.md`):
 
 - **Disposition Scout, read-only** — chủ yếu. Brief nêu câu hỏi cần trả lời; Scout trả research
   brief trong handoff.

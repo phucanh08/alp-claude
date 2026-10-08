@@ -5,7 +5,7 @@ description: Chẩn đoán bug và regression hiệu năng có kỷ luật — d
 
 # Bug Loop — chẩn đoán trước, sửa sau
 
-Skill này là **cách làm**, không cấp authority. Ghế nào ứng với từ vựng nào: `/ask-alp`.
+Skill này là **cách làm**, không cấp authority. Ghế nào ứng với từ vựng nào: `.alp/WORKFLOW.md`.
 
 Luật SLP đè lên mọi phase dưới:
 

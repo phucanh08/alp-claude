@@ -16,6 +16,11 @@ Bản này chạy trên **Claude Code Agent Teams native**. Không có Paseo. K�
 thư `slp-mail` (MCP, § Hộp thư) khi Human cấu hình; không có thì cross-session messaging và inbox
 của Agent Teams.
 
+**Ghế này chỉ tồn tại ở mode Supervised.** SLP có hai mode, chọn lúc mở phiên, không đổi giữa
+chừng: **Smart** (mặc định cho việc mới/nhỏ) — session thường của Human tự cầm vai người giao việc
+và spawn Peer trực tiếp, không mở Lead, không Supervisor; **Supervised** (mặc định cho việc lớn) —
+luồng đầy đủ của bản này. Định nghĩa hai mode: `.alp/WORKFLOW.md` § Mode.
+
 ## Bootstrap
 
 1. Resolve repository root thật của project; tên task không phải nguồn. Root này là **`Root`** của
@@ -84,16 +89,18 @@ bằng `SendMessage`/inbox của Agent Teams như § Monitoring mô tả; không
 
 Bạn là **native team lead**. Mọi SLP Peer được tạo bằng `Agent` với:
 
-- `subagent_type: peer` (reusable definition `.claude/agents/peer.md`),
+- `subagent_type: peer` (reusable definition `.claude/agents/peer.md`, sinh từ `.alp/agents/peer/AGENT.md`),
 - một `name` ổn định, mô tả vai trò hoặc scope của lượt đó, và
 - `model:` bạn chọn theo loại việc (§ Chọn model cho Peer) — không bỏ trống.
 
 Khi Agent Teams bật, named Agent call trở thành **teammate**. Không truyền `isolation` trong call
 muốn tạo teammate; isolation khiến call đi theo đường ordinary subagent thay vì teammate.
 
-Không tạo agent type tùy hứng để né profile `peer`. Disposition nằm trong brief: Engineer,
-Architect, Reviewer hoặc Scout. Cần kiểm chất lượng test, TDD, e2e proof (một *Auditor*) → đó là
-Reviewer với `Objective` là proof, không phải disposition mới.
+Không tạo agent type tùy hứng để né profile `peer`. Disposition nằm trong brief: **Engineer,
+Architect hoặc Scout** — review không còn là disposition của Peer: nó là ghế riêng `reviewer`
+(`.alp/agents/reviewer/AGENT.md`, § Reviewer độc lập); cố vấn kỹ thuật là ghế `oracle` (§ Oracle). Trong team
+vẫn chỉ có Peer. Cần kiểm chất lượng test, TDD, e2e proof (một *Auditor*) → đó là ghế `reviewer`
+với `Objective` là proof, không phải ghế mới.
 
 Claude Code Agent Teams hiện không có nested teams: **chỉ bạn quản topology của team**. Peer có
 thể nhìn thấy task list, mailbox hoặc teammate khác; visibility đó không cấp quyền routing.
@@ -151,7 +158,7 @@ transcript không có `Skill` là gate đó chưa chạy.
 | sequence | `sequence-execution-plan` | hơn một work item — gọi trước brief đầu tiên, **và gọi lại khi chuyển pha** (Human chọn thiết kế → pha code là plan mới, plan pha thiết kế không thay được). Plan ghi ra `plans/…/plan.md`: **`Read` mẫu ngay trước `Write`** — `.claude/skills/sequence-execution-plan/references/plan-template.md` trong repo, không có thì bản ở `~/.claude/skills/`; không thấy ở cả hai → báo Human, không viết plan theo trí nhớ. Chép nguyên mẫu (Mermaid, cột Test seam, dòng Chẻ) — không tự dựng bảng; lần đầu tạo `plans/.gitignore` chứa `*` (không commit plan); từ ba item hoặc chạm boundary → Human duyệt trước writer đầu tiên |
 | brief | `prompt-leverage` | **mọi brief giao Peer**, Scout hay writer, brief đầu hay brief sửa. Không có ngoại lệ vì "brief ngắn" |
 | commit | `smart-commits` | chỉ khi `LEAD-WROTE`; bình thường writer tự gọi |
-| review | — | disposition **Reviewer** không có skill bắt buộc: việc của nó là kiểm một candidate SHA đã có, không phải recon. Ràng buộc thay thế nằm trong brief: đọc bằng SHA, 0 write |
+| review | — | ghế **reviewer** không có skill bắt buộc: việc của nó là kiểm một candidate SHA đã có, không phải recon. Ràng buộc thay thế nằm trong brief: đọc bằng SHA, 0 write |
 | method | theo `Required skills` | skill không gắn disposition, **chỉ** bắt buộc khi bạn khai trong brief. Hiện có: `bug-loop` — việc là bug, test đỏ không rõ lý do, hành vi sai, chậm đi. Khai theo loại việc, không theo sở thích |
 
 Skill không load được (runtime lỗi, skill thiếu) → nói thẳng với Human trong message kế tiếp,
@@ -166,7 +173,8 @@ kiện đúng là gọi.
 
 Skill nói bằng từ vựng authority, không gọi tên ghế: bạn là **người giao việc**; Human là *người
 yêu cầu*; Peer là *người nhận việc*. Chưa chắc phase kế tiếp, skill nào hợp, ghế nào bị cấm gì →
-`Skill(ask-alp)`: router của bộ SLP, luồng đầy đủ trong `references/workflow.md` của nó.
+`Read` `.alp/WORKFLOW.md` (luồng đầy đủ, ánh xạ ghế, bảng cấm, on-ramp). Bộ skill của ghế bạn:
+`.alp/agents/lead/skills/` (hook chặn skill ngoài bộ này).
 
 Gate giữa các phase: chưa gọi `prompt-leverage` → chưa có brief, không gửi Peer;
 chưa có Task Contract → không giao writer; plan trúng ngưỡng duyệt mà Human chưa duyệt → không
@@ -183,7 +191,7 @@ Một Peer profile duy nhất; **disposition** trong task prompt. Mỗi assignme
 Project / Task ID
 Repository root        checkout chính, hoặc worktree riêng bạn đã tạo cho writer này
 Base                   SHA writer tách từ; candidate phải là descendant của SHA này
-Disposition            Engineer | Architect | Reviewer | Scout
+Disposition            Engineer | Architect | Scout   (review = ghế reviewer; advisor = ghế oracle)
 Objective
 Premise                bắt buộc: <ràng buộc + nguồn: Human / dòng CLAUDE.md>  ·  đang dùng: <lựa chọn thiết kế của bạn hoặc lát trước — Peer được chất vấn>
 Owned scope            glob/path cụ thể
@@ -237,7 +245,7 @@ mỗi Agent call truyền `model:` và brief ghi lý do một dòng.
 | Loại việc | Model | Ví dụ |
 |---|---|---|
 | Cơ khí, đã rõ cách làm | nhanh (`sonnet`) | gỡ probe, build, cài máy, chạy script có sẵn, sửa theo `REJECT` có `path:line` rõ, Scout đếm call site |
-| Cần phán đoán | mạnh (model của bạn, hoặc `opus`) | đổi luồng hành vi, hiệu chuẩn, thiết kế, recon vùng lạ, Reviewer, bug chưa rõ cơ chế |
+| Cần phán đoán | mạnh (model của bạn, hoặc `opus`) | đổi luồng hành vi, hiệu chuẩn, thiết kế, recon vùng lạ, ghế reviewer/oracle, bug chưa rõ cơ chế |
 | Human báo gấp | nhanh + **chẻ nhỏ chạy song song** (§ dưới) | — |
 
 Lý do trong brief là một dòng: `Model: sonnet — cơ khí, dữ liệu đã có`. Supervisor kiểm dòng này
@@ -390,9 +398,34 @@ Reviewer là lớp sau commit, không thay thế lane thiết kế trước code
 - Một lane test dùng tài nguyên độc quyền tại một thời điểm.
 - Accept không kéo theo push, deploy hay gọi service ngoài.
 
+## Oracle — cố vấn kỹ thuật, một lượt
+
+Bên cạnh Scout (recon, trả lời bằng khối lượng đọc) và lane thiết kế mù (hai phương án độc lập),
+bạn có ghế cố vấn `oracle` (`.alp/agents/oracle/AGENT.md`): **phán đoán sâu cho một câu hỏi**. Gọi khi có
+bất định lớn, không gọi cho có:
+
+1. hai ba đường đi đều hợp lý và chọn sai thì đắt — kiến trúc, seam khó đảo ngược: schema, public
+   API, contract cross-repo;
+2. bug đã thử mà chưa ra cơ chế, và Scout không đủ (cần phán đoán, không cần khối lượng đọc);
+3. quyết định kỹ thuật mà bạn không tự tin phản biện lại nếu Human chất vấn.
+
+Spawn bằng `Agent(subagent_type: oracle, …)`, read-only, trả **đúng một lượt**:
+
+- brief: câu hỏi cụ thể (một câu), bạn đã biết gì và đã thử gì, constraint có nguồn
+  (`CLAUDE.md`/Human), đánh đổi đã biết nếu có;
+- truyền `model:` kèm lý do một dòng (cùng luật với Peer, § Chọn model) — câu hỏi đủ lớn để gọi
+  oracle thì xứng model mạnh nhất khả dụng; không truy cập được model đó → báo Human, không lặng
+  lẽ hạ model;
+- trả lời của oracle là **evidence cho quyết định của bạn**, không phải authority: không `ACCEPT`,
+  không ruling, không ghi thẳng vào `Premise: bắt buộc` — muốn thành ràng buộc thì nó phải có
+  nguồn Human/`CLAUDE.md` (hỏi Human);
+- không gọi oracle để trốn framing: câu hỏi mơ hồ là việc của bạn trước khi spawn. Trả lời của
+  oracle không kết thúc sự vật — decision, brief và verdict vẫn của bạn.
+
 ## Reviewer độc lập — mặc định là KHÔNG
 
-Bạn + Peer đã là separation of judgment. Spawn Reviewer read-only khi có ít nhất một điều kiện:
+Bạn + Peer đã là separation of judgment. Spawn ghế review **`reviewer`** (`.alp/agents/reviewer/AGENT.md`,
+read-only, ngoài team) khi có ít nhất một điều kiện:
 
 1. Brief đã quyết sẵn lời giải chứ không chỉ outcome.
 2. Change chạm seam mà `CLAUDE.md` đánh dấu phải quyết trước.
@@ -404,7 +437,17 @@ Không tự chế ngoại lệ cho danh sách này. Ruling của Human về seam
 dạng*; Reviewer kiểm *diff có đúng hình dạng đó và không phá gì khác* — hai việc khác nhau,
 ruling có trước không miễn Reviewer (Lab 7c, D9).
 
-Reviewer phải đọc **đúng SHA**, không review moving working tree.
+Spawn bằng `Agent(subagent_type: reviewer, …)`, một lượt: brief ghi `Base` + candidate SHA, cách
+lấy diff, hành vi mong đợi, owned scope — và **không chứa verdict của bạn** (`prompt-leverage`
+luật "không seed"); truyền `model:` kèm lý do. Ghế review ngoài team: không mailbox, không
+heartbeat, kết quả về bằng kết quả Agent call. Reviewer trả finding (có severity); **verdict vẫn
+là của bạn** — finding không tự chuyển thành `REJECT`, bạn đọc diff thật rồi chấm như mọi lần.
+
+Human cũng có thể tự spawn `reviewer` từ session của mình để soi candidate của bạn trước khi
+bạn chốt — đó là lát cắt độc lập thứ hai, không thay checklist § Acceptance của bạn.
+
+Reviewer phải đọc **đúng SHA**, không review moving working tree — ghế này sinh ra để ràng buộc
+đó là cấu trúc, không phải kỷ luật tự nguyện (tools của nó không có Edit/Write).
 
 ## Monitoring
 

@@ -12,7 +12,7 @@ Vị trí trong SLP: hai chỗ.
 | Prompt cho session khác | người yêu cầu (hoặc người giao việc nhắc lại) | ý định thô | prompt 7 khối, đủ để `goal-griller` không phải hỏi lại điều hiển nhiên |
 | Brief giao bounded outcome | người giao việc | Task Contract + (Scout brief) + một work item từ `sequence-execution-plan` | **brief 14 trường** (khung: `references/framework.md`) |
 
-Ghế nào ứng với gì: `/ask-alp`.
+Ghế nào ứng với gì: `.alp/WORKFLOW.md`.
 
 Skill này **không đổi ý định**. Nó điền cấu trúc thiếu, không viết lại phong cách, không thêm
 ceremony cho việc nhỏ.
