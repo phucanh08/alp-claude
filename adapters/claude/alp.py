@@ -39,6 +39,7 @@ APP = "alp-claude-slp"
 SCHEMA = 2
 HOOK_EVENTS = ["SessionStart", "UserPromptSubmit", "PreToolUse", "PostToolUse", "Stop"]
 HOOK_MARK = "slp/alp.py"  # nhận diện hook entry do SLP thêm
+SEATS = ("main", "lead", "peer", "supervisor", "oracle", "reviewer")
 DEFAULT_ALP_SETTINGS = {"defaultAgent": "main", "workflow": {"mode": "smart", "maxPeers": 2}}
 LEGACY_FILES = ["slp-role-skills.json", "slp-workflow.md"]  # bản dev 0.10.0 trước layout .alp
 ADAPTER_FILES = {
@@ -99,10 +100,15 @@ def write_bytes(path, data):
         fh.write(data)
 
 
+def read_text(path):
+    with open(path, encoding="utf-8") as fh:
+        return fh.read()
+
+
 def load_json(path, default=None):
     if not os.path.exists(path):
         return default
-    raw = open(path, encoding="utf-8").read().strip()
+    raw = read_text(path).strip()
     return json.loads(raw) if raw else default
 
 
@@ -233,7 +239,7 @@ def yaml_lines(value, indent):
 
 def render_agent(lay, name):
     """Nội dung .claude/agents/<name>.md: AGENT.md + mcpServers từ .mcp.json (nếu có server)."""
-    text = open(os.path.join(lay.agent_dir(name), "AGENT.md"), encoding="utf-8").read()
+    text = read_text(os.path.join(lay.agent_dir(name), "AGENT.md"))
     mcp = load_json(os.path.join(lay.agent_dir(name), ".mcp.json"), {}) or {}
     servers = mcp.get("mcpServers") if isinstance(mcp, dict) else None
     if servers and text.startswith("---\n"):
@@ -248,10 +254,11 @@ def render_agent(lay, name):
 
 def skill_sources(lay):
     """{skill: [ghế có skill đó]}; ghế mặc định đứng đầu, rồi lead, peer, còn lại theo tên."""
-    order = [lay.default_agent(), "lead", "peer"] + lay.agents()
+    agents = lay.agents()
+    order = [lay.default_agent(), "lead", "peer"] + agents
     seen, ranked = set(), []
     for a in order:
-        if a in lay.agents() and a not in seen:
+        if a in agents and a not in seen:
             seen.add(a)
             ranked.append(a)
     out = {}
@@ -292,13 +299,15 @@ def sync(lay, adopt=(), backup_dir=None, quiet=False):
         return False
 
     # agents
+    agents = lay.agents()
     agents_out = []
-    for name in lay.agents():
+    for name in agents:
         rel = "agents/%s.md" % name
         target = os.path.join(lay.claude, rel)
         data = render_agent(lay, name)
         if os.path.isfile(target) and read_bytes(target) == data:
-            agents_out.append(name)
+            if name in prev_agents or rel in adopt:  # trùng nội dung nhưng của người dùng → không nhận
+                agents_out.append(name)
             continue
         if not claim(target, name in prev_agents, "agent", rel):
             continue
@@ -307,23 +316,26 @@ def sync(lay, adopt=(), backup_dir=None, quiet=False):
         changes.append(rel)
     for name in sorted(prev_agents - set(agents_out)):
         target = os.path.join(lay.claude, "agents", name + ".md")
-        if os.path.isfile(target) and name not in lay.agents():
+        if os.path.isfile(target) and name not in agents:
             os.remove(target)
             changes.append("-agents/%s.md" % name)
 
     # skills: hợp bộ skill của mọi ghế
     skills_out = {}
-    for skill, owners in skill_sources(lay).items():
+    sources = skill_sources(lay)
+    for skill, owners in sources.items():
         src = os.path.join(lay.agent_dir(owners[0]), "skills", skill)
         sig = dir_sig(src)
-        diverged = [a for a in owners[1:] if dir_sig(os.path.join(lay.agent_dir(a), "skills", skill)) != sig]
-        if diverged and not quiet:
+        diverged = [] if quiet else [
+            a for a in owners[1:] if dir_sig(os.path.join(lay.agent_dir(a), "skills", skill)) != sig]
+        if diverged:
             warn("skill %s: bản của %s khác bản của %s — Claude Code chỉ có một bản mỗi tên, dùng bản %s"
                  % (skill, ", ".join(diverged), owners[0], owners[0]))
         rel = "skills/" + skill
         target = os.path.join(lay.claude, rel)
         if os.path.isdir(target) and dir_sig(target) == sig:
-            skills_out[skill] = owners[0]
+            if skill in prev_skills or rel in adopt:
+                skills_out[skill] = owners[0]
             continue
         if not claim(target, skill in prev_skills, "skill", rel):
             continue
@@ -332,18 +344,27 @@ def sync(lay, adopt=(), backup_dir=None, quiet=False):
         changes.append(rel)
     for skill in sorted(prev_skills - set(skills_out)):
         target = os.path.join(lay.claude, "skills", skill)
-        if os.path.isdir(target) and skill not in skill_sources(lay):
+        if os.path.isdir(target) and skill not in sources:
             shutil.rmtree(target)
             changes.append("-skills/" + skill)
 
-    # ghế mặc định của session thường (chỉ khi key `agent` do SLP quản)
+    # settings.json: hook dispatcher theo hooks/ hiện có; `agent` chỉ khi vẫn là giá trị SLP đặt
     man = load_json(lay.manifest, {}) or {}
-    if "agent" in (man.get("settings") or {}).get("keys", []):
+    ms = man.get("settings") or {}
+    if "hooks" in ms.get("keys", []) or "agent" in ms.get("keys", []):
         st = load_json(lay.settings, {}) or {}
-        if st.get("agent") != lay.default_agent():
-            st["agent"] = lay.default_agent()
-            dump_json(lay.settings, st)
+        dirty = False
+        if "hooks" in ms.get("keys", []) and write_hooks(st, lay):
+            dirty = True
+            changes.append("settings.json:hooks")
+        if ("agent" in ms.get("keys", []) and st.get("agent") == ms.get("agent")
+                and st.get("agent") != lay.default_agent()):
+            st["agent"] = ms["agent"] = lay.default_agent()
+            dirty = True
             changes.append("settings.json:agent=" + lay.default_agent())
+            dump_json(lay.manifest, man)
+        if dirty:
+            dump_json(lay.settings, st)
 
     dump_json(lay.generated, {"agents": agents_out, "skills": skills_out})
     return changes
@@ -379,7 +400,8 @@ def agent_hooks(lay, agent, event):
     out = []
     for f in sorted(os.listdir(base)):
         p = os.path.join(base, f)
-        if not os.path.isfile(p) or f.startswith(".") or f.endswith((".md", ".json", ".txt")):
+        if (not os.path.isfile(p) or f.startswith(".")
+                or f.endswith((".md", ".json", ".txt", "~", ".bak", ".orig", ".swp", ".tmp", ".disabled"))):
             continue
         if f == event or f.startswith(event + "."):
             out.append(p)
@@ -431,6 +453,7 @@ def cmd_hook(args):
     own = os.path.join(lay.claude, "slp", "alp.py")
     if os.path.isfile(own) and os.path.realpath(own) != me:
         return 0
+    texts, jsons = [], []  # stdout gửi Claude Code: text thường, hoặc đúng MỘT object JSON
     if event == "SessionStart":
         try:
             changes = sync(lay, quiet=True)
@@ -438,8 +461,8 @@ def cmd_hook(args):
             print("SLP: sync .alp → .claude lỗi: %s" % exc, file=sys.stderr)
             changes = []
         if changes:
-            print("SLP: đã đồng bộ .alp → .claude (%s). Định nghĩa agent mới có hiệu lực từ session sau."
-                  % ", ".join(changes))
+            texts.append("SLP: đã đồng bộ .alp → .claude (%s). Định nghĩa agent/hook mới có hiệu lực từ session sau."
+                         % ", ".join(changes))
     agent = data.get("agent_type") or lay.default_agent()
     if event == "PreToolUse" and data.get("tool_name") == "Skill":
         reason = guard_skill(lay, agent, data)
@@ -453,22 +476,105 @@ def cmd_hook(args):
         except Exception as exc:
             print("SLP hook %s: %s" % (path, exc), file=sys.stderr)
             continue
-        if r.stdout:
-            sys.stdout.write(r.stdout.decode("utf-8", "replace"))
+        out = r.stdout.decode("utf-8", "replace").strip()
         if r.returncode == 2:
             sys.stderr.write(r.stderr.decode("utf-8", "replace"))
             return 2
         if r.returncode != 0:
             sys.stderr.write("SLP hook %s exit %d: %s" % (path, r.returncode, r.stderr.decode("utf-8", "replace")))
+            continue
+        if not out:
+            continue
+        try:
+            obj = json.loads(out)
+        except ValueError:
+            obj = None
+        if not isinstance(obj, dict):
+            texts.append(out)
+            continue
+        if blocks(obj):  # deny/block: dừng ngay, trả đúng quyết định này
+            sys.stdout.write(json.dumps(obj, ensure_ascii=False))
+            return 0
+        jsons.append((path, obj))
+    if jsons:  # Claude Code chỉ đọc một object JSON: lấy cái đầu, text còn lại sang stderr
+        for path, _ in jsons[1:]:
+            sys.stderr.write("SLP: bỏ JSON thứ hai trở đi (%s) — mỗi event chỉ một hook được trả JSON\n" % path)
+        if texts:
+            sys.stderr.write("\n".join(texts) + "\n")
+        sys.stdout.write(json.dumps(jsons[0][1], ensure_ascii=False))
+    elif texts:
+        sys.stdout.write("\n".join(texts) + "\n")
     return 0
+
+
+def blocks(obj):
+    """JSON hook có chặn không (decision block, hoặc permissionDecision deny / continue false)."""
+    hso = obj.get("hookSpecificOutput") or {}
+    return (obj.get("decision") == "block" or obj.get("continue") is False
+            or hso.get("permissionDecision") == "deny")
 
 
 # ---- install -----------------------------------------------------------------------------
 
 
 def hook_command(lay, event):
+    """Lệnh hook. Thiếu alp.py (đã gỡ, hoặc clone chưa có .claude/slp/) → exit 0, không chặn tool nào.
+
+    POSIX dùng `python3` (settings.json commit được, chạy trên máy khác); Windows ghi đúng interpreter
+    đã chạy installer, vì `python3` ở đó thường là stub WindowsApps.
+    """
     base = "$HOME/.claude" if lay.is_global else "$CLAUDE_PROJECT_DIR/.claude"
-    return 'python3 "%s/slp/alp.py" hook %s' % (base, event)
+    py = '"%s"' % sys.executable.replace("\\", "/") if os.name == "nt" else "python3"
+    return 'f="%s/slp/alp.py"; [ ! -f "$f" ] || %s "$f" hook %s' % (base, py, event)
+
+
+def needed_hooks(lay):
+    """{event: matcher|None}: SessionStart + PreToolUse(Skill) luôn có; event khác chỉ khi một ghế có hooks/<Event>*."""
+    seats = lay.agents()
+    has = {ev: any(agent_hooks(lay, a, ev) for a in seats) for ev in HOOK_EVENTS}
+    out = {"SessionStart": None, "PreToolUse": "*" if has["PreToolUse"] else "Skill"}
+    for ev in ("UserPromptSubmit", "Stop"):
+        if has[ev]:
+            out[ev] = None
+    if has["PostToolUse"]:
+        out["PostToolUse"] = "*"
+    return out
+
+
+def strip_slp_hooks(data):
+    """Gỡ hook object của SLP khỏi settings (giữ hook khác trong cùng entry). True nếu có đổi."""
+    hooks = data.get("hooks")
+    if not isinstance(hooks, dict):
+        return False
+    changed = False
+    for event in list(hooks):
+        entries = []
+        for e in hooks[event]:
+            hs = e.get("hooks", [])
+            keep = [h for h in hs if HOOK_MARK not in (h.get("command") or "")]
+            if len(keep) != len(hs):
+                changed = True
+            if keep:
+                entries.append(dict(e, hooks=keep))
+        hooks[event] = entries
+        if not entries:
+            hooks.pop(event)
+    if not hooks:
+        data.pop("hooks", None)
+    return changed
+
+
+def write_hooks(data, lay):
+    """Đặt hook dispatcher đúng needed_hooks(). True nếu settings đổi."""
+    before = json.dumps(data.get("hooks"), sort_keys=True)
+    strip_slp_hooks(data)
+    hooks = data.setdefault("hooks", {})
+    for event, matcher in needed_hooks(lay).items():
+        entry = {"hooks": [{"type": "command", "command": hook_command(lay, event)}]}
+        if matcher:
+            entry = dict({"matcher": matcher}, **entry)
+        hooks.setdefault(event, []).append(entry)
+    return json.dumps(data.get("hooks"), sort_keys=True) != before
 
 
 def merge_settings(lay):
@@ -488,36 +594,25 @@ def merge_settings(lay):
     if not lay.is_global and "agent" not in data:
         data["agent"] = lay.default_agent()
         keys.append("agent")
-    hooks = data.setdefault("hooks", {})
-    for event in HOOK_EVENTS:
-        entries = hooks.setdefault(event, [])
-        entries[:] = [e for e in entries if not any(HOOK_MARK in (h.get("command") or "") for h in e.get("hooks", []))]
-        entry = {"hooks": [{"type": "command", "command": hook_command(lay, event)}]}
-        if event in ("PreToolUse", "PostToolUse"):
-            entry = dict({"matcher": "*"}, **entry)
-        entries.append(entry)
+    write_hooks(data, lay)
     keys.append("hooks")
     dump_json(lay.settings, data)
     return created, keys
 
 
-def unmerge_settings(lay, created, keys):
+def unmerge_settings(lay, created, keys, agent_value=None):
+    """Gỡ key SLP đã thêm. Hook SLP luôn gỡ (kể cả không có manifest) — để lại thì hook trỏ vào alp.py đã xóa."""
     if not os.path.exists(lay.settings):
         return "missing"
     data = load_json(lay.settings, {}) or {}
+    strip_slp_hooks(data)
     for k in keys:
         if k.startswith("env."):
             (data.get("env") or {}).pop(k[4:], None)
-        elif k == "hooks":
-            hooks = data.get("hooks") or {}
-            for event in list(hooks):
-                hooks[event] = [e for e in hooks[event]
-                                if not any(HOOK_MARK in (h.get("command") or "") for h in e.get("hooks", []))]
-                if not hooks[event]:
-                    hooks.pop(event)
-            if not hooks:
-                data.pop("hooks", None)
-        else:
+        elif k == "agent":
+            if data.get("agent") == agent_value:  # anh tự đổi sang ghế khác → giữ
+                data.pop("agent", None)
+        elif k != "hooks":
             data.pop(k, None)
     if isinstance(data.get("env"), dict) and not data["env"]:
         data.pop("env")
@@ -575,7 +670,7 @@ def cmd_install(args):
     files, dirs = scaffold(src)
     shipped_old = old.get("alp", {}) if old.get("schemaVersion", 1) >= 2 else {}
     shipped = {}
-    counts = {"created": 0, "updated": 0, "unchanged": 0, "kept": 0}
+    counts = {"created": 0, "updated": 0, "unchanged": 0, "kept": 0, "removed": 0}
     for d in [""] + dirs:
         os.makedirs(os.path.join(lay.alp, d), exist_ok=True)
     for rel, data in sorted(files.items()):
@@ -599,12 +694,27 @@ def cmd_install(args):
             if new_sha != shipped_old.get(rel):  # upstream đổi từ lần cài trước → để bản mới cạnh backup
                 write_bytes(os.path.join(backup, "upstream", "alp", rel), data)
                 warn(".alp/%s đã sửa → giữ; bản mới để tham khảo: %s" % (rel, os.path.join(backup, "upstream", "alp", rel)))
+    for rel, old_sha in sorted(shipped_old.items()):  # bản trước ship, bản này bỏ (vd. role-skills đổi)
+        if rel in files:
+            continue
+        target = os.path.join(lay.alp, rel)
+        if not os.path.isfile(target):
+            continue
+        if sha_file(target) == old_sha or args.force:
+            if sha_file(target) != old_sha:
+                write_bytes(os.path.join(backup, "alp", rel), read_bytes(target))
+            os.remove(target)
+            prune_empty(os.path.dirname(target), lay.alp)
+            counts["removed"] += 1
+        else:
+            shipped[rel] = old_sha
+            warn(".alp/%s: bản này không còn ship nhưng anh đã sửa → giữ" % rel)
     alp_settings_created = False
     st_path = os.path.join(lay.alp, "settings.json")
     if not os.path.exists(st_path):
         dump_json(st_path, DEFAULT_ALP_SETTINGS)
         alp_settings_created = True
-    ok(".alp/: tạo %(created)d, cập nhật %(updated)d, giữ bản đã sửa %(kept)d, không đổi %(unchanged)d" % counts)
+    ok(".alp/: tạo %(created)d, cập nhật %(updated)d, giữ bản đã sửa %(kept)d, không đổi %(unchanged)d, bỏ %(removed)d" % counts)
 
     # 2. ALP.md + CLAUDE.md (project)
     docs = {}
@@ -612,10 +722,11 @@ def cmd_install(args):
         claude_md = os.path.join(lay.root, "CLAUDE.md")
         alp_md = os.path.join(lay.root, "ALP.md")
         main_root = ""
-        common = subprocess.run(["git", "-C", lay.root, "rev-parse", "--path-format=absolute", "--git-common-dir"],
-                                capture_output=True, text=True).stdout.strip()
-        if common and os.path.abspath(common) != os.path.join(lay.root, ".git"):
-            main_root = os.path.dirname(common)  # linked worktree: lấy bản thật chưa commit từ main worktree
+        g = subprocess.run(["git", "-C", lay.root, "rev-parse", "--path-format=absolute", "--git-dir",
+                            "--git-common-dir", "--show-toplevel"], capture_output=True, text=True).stdout.split("\n")
+        if len(g) >= 3 and g[0] and g[1] and os.path.normcase(os.path.abspath(g[0])) != os.path.normcase(os.path.abspath(g[1])):
+            # linked worktree: lấy bản thật chưa commit từ main worktree, cùng đường dẫn con
+            main_root = os.path.join(os.path.dirname(os.path.abspath(g[1])), os.path.relpath(lay.root, g[2]))
         legacy = os.path.exists(claude_md) and "@ALP.md" not in open(claude_md, encoding="utf-8").read()
         if os.path.exists(alp_md):
             log("ALP.md đã có — giữ nguyên.")
@@ -667,10 +778,14 @@ def cmd_install(args):
 
     # 5. settings.json
     s_created, s_keys = merge_settings(lay)
+    agent_value = (old.get("settings") or {}).get("agent")
+    if "agent" in s_keys:
+        agent_value = lay.default_agent()
     if old.get("settings"):
         s_created = s_created or old["settings"].get("created", False)
         s_keys = sorted(set(s_keys) | set(old["settings"].get("keys", [])))
-    ok("settings.json: env, teammateMode%s, hook dispatcher (%s)" % ("" if lay.is_global else ", agent", ", ".join(HOOK_EVENTS)))
+    ok("settings.json: env, teammateMode%s, hook dispatcher (%s)" % (
+        "" if lay.is_global else ", agent", ", ".join("%s%s" % (e, "(%s)" % m if m else "") for e, m in needed_hooks(lay).items())))
 
     # 6. manifest trước sync (sync đọc settings.keys để quản key `agent`)
     adopt = list(old.get("agents", [])) + list(old.get("skills", []))  # bản schema 1: file SLP cài thẳng vào .claude
@@ -680,7 +795,7 @@ def cmd_install(args):
         "installedAt": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "alp": shipped, "alpSettingsCreated": alp_settings_created or bool(old.get("alpSettingsCreated")),
         "docs": docs, "files": sorted(ADAPTER_FILES),
-        "settings": {"created": s_created, "keys": s_keys},
+        "settings": dict({"created": s_created, "keys": s_keys}, **({"agent": agent_value} if agent_value else {})),
     }
     dump_json(lay.manifest, manifest)
 
@@ -743,10 +858,22 @@ def cmd_uninstall(args):
             warn("không thấy %s — không biết SLP đã cài gì ở đây. Dùng --force để gỡ theo generated.json/.alp." % lay.manifest)
             return 1
         # không manifest: gỡ theo tên SLP từng ship (kể cả router ask-alp < 0.10.0)
-        man = {"schemaVersion": SCHEMA,
-               "agents": ["agents/%s.md" % a for a in ("main", "lead", "peer", "supervisor", "oracle", "reviewer")],
+        man = {"schemaVersion": SCHEMA, "forced": True,
+               "agents": ["agents/%s.md" % a for a in SEATS],
                "skills": ["skills/" + s for s in ("goal-griller", "xia", "sequence-execution-plan", "prompt-leverage",
                                                   "smart-commits", "bug-loop", "ask-alp")]}
+
+    # 0. settings.json TRƯỚC khi xóa alp.py: hook trỏ vào file đã xóa sẽ chặn mọi tool call
+    s = man.get("settings") or {}
+    keys = list(s.get("keys", []))
+    agent_value = s.get("agent")
+    if man.get("forced"):  # không manifest: `agent` chỉ gỡ nếu đang trỏ vào ghế SLP
+        keys, agent_value = ["agent"], (load_json(lay.settings, {}) or {}).get("agent")
+        if agent_value not in SEATS:
+            keys = []
+    r = unmerge_settings(lay, s.get("created", False), keys, agent_value)
+    ok("settings.json: %s" % {"deleted": "SLP tạo và giờ rỗng → xóa", "updated": "gỡ key/hook SLP, key khác giữ nguyên",
+                              "missing": "không có"}[r])
 
     # 1. sinh ra trong .claude/
     gen = load_json(lay.generated, {}) or {}
@@ -811,12 +938,6 @@ def cmd_uninstall(args):
             else:
                 warn("giữ %s (memory của ghế; --force để xóa)" % m)
     prune_empty(os.path.join(lay.claude, "agent-memory-local"), lay.claude)
-
-    # 5. settings.json
-    s = man.get("settings") or {}
-    if s.get("keys") or s.get("created"):
-        r = unmerge_settings(lay, s.get("created", False), s.get("keys", []))
-        ok("settings.json: %s" % {"deleted": "SLP tạo và giờ rỗng → xóa", "updated": "gỡ key/hook SLP, key khác giữ nguyên", "missing": "đã không còn"}[r])
 
     # 6. ALP.md / CLAUDE.md — chỉ khi SLP tạo và chưa sửa
     docs = dict(man.get("docs") or {})

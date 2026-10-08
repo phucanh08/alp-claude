@@ -31,7 +31,9 @@ def run(args, cwd, stdin=None, env=None):
     return subprocess.run([sys.executable] + args, cwd=cwd, input=stdin, capture_output=True, env=env or ENV)
 
 
-class AdapterTest(unittest.TestCase):
+class Installed(unittest.TestCase):
+    """Repo tạm đã cài SLP; helper chung."""
+
     def setUp(self):
         self.root = tempfile.mkdtemp(prefix="alp-test-")
         subprocess.run(["git", "init", "-q", self.root], check=True)
@@ -52,6 +54,9 @@ class AdapterTest(unittest.TestCase):
         data = json.dumps(dict(payload, hook_event_name=event, cwd=self.root), ensure_ascii=False).encode("utf-8")
         return run([self.p(".claude", "slp", "alp.py"), "hook", event], self.root, stdin=data, env=env)
 
+
+
+class AdapterTest(Installed):
     # ---- layout ----
 
     def test_layout_matches_alp_paseo(self):
@@ -71,8 +76,10 @@ class AdapterTest(unittest.TestCase):
         st = json.loads(read(self.p(".claude", "settings.json")))
         self.assertEqual(st["agent"], "main")
         self.assertEqual(st["env"]["CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS"], "1")
-        for ev in ["SessionStart", "UserPromptSubmit", "PreToolUse", "PostToolUse", "Stop"]:
-            self.assertIn("slp/alp.py", json.dumps(st["hooks"][ev]), ev)
+        # chỉ đăng ký thứ cần: sync lúc mở session + chặn skill; event khác khi có hooks/ của ghế
+        self.assertEqual(sorted(st["hooks"]), ["PreToolUse", "SessionStart"])
+        self.assertEqual(st["hooks"]["PreToolUse"][0]["matcher"], "Skill")
+        self.assertIn("slp/alp.py", json.dumps(st["hooks"]["SessionStart"]))
 
     # ---- skill guard ----
 
@@ -184,6 +191,109 @@ class AdapterTest(unittest.TestCase):
         self.assertTrue(os.path.isfile(self.p("ALP.md")))
         self.assertTrue(os.path.isfile(self.p(".alp", "agents", "lead", "AGENT.md")))
         self.assertFalse(os.path.exists(self.p(".claude", "agents")))
+
+
+class ReviewFixesTest(Installed):
+    """Các lỗi review PR #22 tìm ra."""
+
+    def settings(self):
+        return json.loads(read(self.p(".claude", "settings.json")))
+
+    def test_hooks_registered_on_demand(self):
+        write(self.p(".alp", "agents", "peer", "hooks", "PostToolUse.py"), "import sys\nsys.stdin.read()\n")
+        r = self.hook("SessionStart", {})
+        self.assertIn("settings.json:hooks", r.stdout.decode("utf-8"))
+        st = self.settings()
+        self.assertEqual(st["hooks"]["PostToolUse"][0]["matcher"], "*")
+        self.assertNotIn("Stop", st["hooks"])
+        os.remove(self.p(".alp", "agents", "peer", "hooks", "PostToolUse.py"))
+        self.hook("SessionStart", {})
+        self.assertNotIn("PostToolUse", self.settings()["hooks"])
+
+    @unittest.skipIf(os.name == "nt", "lệnh hook chạy bằng sh của Claude Code; POSIX đủ để kiểm")
+    def test_hook_command_fails_open_when_adapter_missing(self):
+        cmd = self.settings()["hooks"]["PreToolUse"][0]["hooks"][0]["command"]
+        os.remove(self.p(".claude", "slp", "alp.py"))
+        r = subprocess.run(["sh", "-c", cmd], input=b"{}", capture_output=True,
+                           env=dict(ENV, CLAUDE_PROJECT_DIR=self.root))
+        self.assertEqual(r.returncode, 0, r.stderr)
+
+    def test_force_uninstall_without_manifest_strips_hooks(self):
+        os.remove(self.p(".claude", "slp-manifest.json"))
+        r = run([ADAPTER, "uninstall", "--dir", self.root, "--force"], self.root)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        st = self.settings()  # không manifest → không biết SLP tạo file, nhưng hook + agent phải đi
+        self.assertNotIn("hooks", st)
+        self.assertNotIn("agent", st)
+
+    def test_user_hook_in_same_entry_survives(self):
+        st = self.settings()
+        st["hooks"]["PreToolUse"][0]["hooks"].append({"type": "command", "command": "echo mine"})
+        write(self.p(".claude", "settings.json"), json.dumps(st))
+        self.assertEqual(self.install().returncode, 0)
+        self.assertIn("echo mine", json.dumps(self.settings()["hooks"]))
+        run([ADAPTER, "uninstall", "--dir", self.root], self.root)
+        self.assertIn("echo mine", json.dumps(self.settings()["hooks"]))
+        self.assertNotIn("slp/alp.py", read(self.p(".claude", "settings.json")))
+
+    def test_multiple_seat_hooks_emit_one_json(self):
+        hooks = self.p(".alp", "agents", "lead", "hooks")
+        write(os.path.join(hooks, "PreToolUse.a.py"),
+              "import sys\nsys.stdin.read()\nprint('{\"hookSpecificOutput\": {\"additionalContext\": \"A\"}}')\n")
+        write(os.path.join(hooks, "PreToolUse.b.py"),
+              "import sys\nsys.stdin.read()\nprint('{\"hookSpecificOutput\": {\"permissionDecision\": \"deny\"}}')\n")
+        write(os.path.join(hooks, "PreToolUse.c.py.bak"), "raise SystemExit(2)\n")  # file backup: bỏ qua
+        r = self.hook("PreToolUse", {"agent_type": "lead", "tool_name": "Bash", "tool_input": {"command": "ls"}})
+        self.assertEqual(r.returncode, 0, r.stderr)
+        out = json.loads(r.stdout.decode("utf-8"))  # đúng một object JSON
+        self.assertEqual(out["hookSpecificOutput"]["permissionDecision"], "deny")
+
+    def test_identical_user_skill_is_not_adopted(self):
+        gen_path = self.p(".claude", "slp", "generated.json")
+        gen = json.loads(read(gen_path))
+        del gen["skills"]["xia"]  # coi như .claude/skills/xia là của anh, trùng nội dung
+        write(gen_path, json.dumps(gen))
+        run([ADAPTER, "sync", "--dir", self.root], self.root)
+        self.assertNotIn("xia", json.loads(read(gen_path))["skills"])
+        run([ADAPTER, "uninstall", "--dir", self.root], self.root)
+        self.assertTrue(os.path.isfile(self.p(".claude", "skills", "xia", "SKILL.md")))
+
+    def test_user_agent_choice_is_respected(self):
+        st = self.settings()
+        st["agent"] = "lead"
+        write(self.p(".claude", "settings.json"), json.dumps(st))
+        write(self.p(".alp", "settings.json"), json.dumps({"defaultAgent": "peer"}))
+        self.hook("SessionStart", {})
+        self.assertEqual(self.settings()["agent"], "lead")
+        run([ADAPTER, "uninstall", "--dir", self.root], self.root)
+        self.assertEqual(self.settings()["agent"], "lead")
+
+    def test_default_agent_follows_alp_settings(self):
+        write(self.p(".alp", "settings.json"), json.dumps({"defaultAgent": "lead"}))
+        self.hook("SessionStart", {})
+        self.assertEqual(self.settings()["agent"], "lead")
+
+    def test_subdirectory_install_uses_template(self):
+        write(self.p("ALP.md"), "# contract của repo gốc\n")
+        sub = self.p("packages", "api")
+        os.makedirs(sub)
+        r = run([ADAPTER, "install", "--src", REPO, "--dir", sub], sub)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertEqual(read(os.path.join(sub, "ALP.md")), read(os.path.join(REPO, "templates", "ALP.md")))
+
+    def test_dropped_shipped_file_is_removed(self):
+        man_path = self.p(".claude", "slp-manifest.json")
+        man = json.loads(read(man_path))
+        old = self.p(".alp", "agents", "peer", "skills", "retired", "SKILL.md")
+        os.makedirs(os.path.dirname(old))
+        write(old, "---\nname: retired\ndescription: x\n---\n")
+        import hashlib
+        with open(old, "rb") as fh:
+            man["alp"]["agents/peer/skills/retired/SKILL.md"] = hashlib.sha256(fh.read()).hexdigest()
+        write(man_path, json.dumps(man))
+        self.assertEqual(self.install().returncode, 0)
+        self.assertFalse(os.path.exists(os.path.dirname(old)))
+        self.assertFalse(os.path.exists(self.p(".claude", "skills", "retired")))
 
 
 class LegacyUpgradeTest(unittest.TestCase):

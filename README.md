@@ -111,12 +111,14 @@ trong `.claude/settings.json` (đã kiểm với Claude Code 2.1.294: hook nhậ
 
 | Hook | Làm gì |
 |---|---|
-| `SessionStart` | `sync`: sinh lại `.claude/agents` + `.claude/skills` nếu `.alp/` đổi (định nghĩa agent mới có hiệu lực từ session sau) |
-| `PreToolUse` (`Skill`) | chặn ghế gọi skill SLP không có trong `.alp/agents/<ghế>/skills/` — ví dụ Peer gọi `goal-griller` bị chặn kèm lý do. Skill ngoài SLP, agent ngoài SLP (Explore…) không bị đụng; `ALP_SKILL_GUARD=0` để tắt |
-| `SessionStart`, `UserPromptSubmit`, `PreToolUse`, `PostToolUse`, `Stop` | chạy `.alp/agents/<agent_type>/hooks/<Event>*` của **đúng ghế đang chạy** (stdin = JSON hook; exit 2 = chặn). Không có `agent_type` → `defaultAgent` |
+| `SessionStart` | `sync`: sinh lại `.claude/agents` + `.claude/skills` và phần hook trong `settings.json` nếu `.alp/` đổi (có hiệu lực từ session sau) |
+| `PreToolUse` (matcher `Skill`) | chặn ghế gọi skill SLP không có trong `.alp/agents/<ghế>/skills/` — ví dụ Peer gọi `goal-griller` bị chặn kèm lý do. Skill ngoài SLP, agent ngoài SLP (Explore…) không bị đụng; `ALP_SKILL_GUARD=0` để tắt |
+| `UserPromptSubmit`, `PreToolUse`/`PostToolUse` (matcher `*`), `Stop` | **chỉ đăng ký khi có ghế** đặt `.alp/agents/<ghế>/hooks/<Event>*` (đỡ tốn một tiến trình Python mỗi tool call); chạy hook của **đúng ghế đang chạy** (stdin = JSON hook; exit 2 = chặn). Không có `agent_type` → `defaultAgent`. Nhiều hook cùng in JSON → JSON chặn (`deny`/`block`) thắng ngay, còn lại lấy cái đầu. File `~`, `.bak`, `.orig`, `.swp`, `.disabled` bị bỏ qua |
 
-Frontmatter `hooks:` trong file agent không chạy trong thử nghiệm của bản này, nên hook từng ghế đi
-qua dispatcher thay vì frontmatter. Cần `python3` trong PATH (cả Windows).
+Lệnh hook có dạng `f=".../.claude/slp/alp.py"; [ ! -f "$f" ] || python3 "$f" hook <Event>`: thiếu
+adapter (đã gỡ, hoặc clone chưa có `.claude/slp/`) thì hook thoát 0, không chặn nhầm tool nào. Trên
+Windows lệnh ghi đúng interpreter đã chạy installer thay cho `python3`. Frontmatter `hooks:` trong
+file agent không chạy trong thử nghiệm của bản này, nên hook từng ghế đi qua dispatcher.
 
 Installer (`adapters/claude/alp.py install`, ghi lại trong `.claude/slp-manifest.json`):
 
@@ -125,7 +127,8 @@ Installer (`adapters/claude/alp.py install`, ghi lại trong `.claude/slp-manife
 | `.alp/` | điền file thiếu; file SLP ship mà **chưa sửa** → cập nhật bản mới; **đã sửa** → giữ, bản mới để ở `.claude/backups/slp-<ts>/upstream/` (`--force` ghi đè, có backup); `.alp/settings.json` chỉ tạo nếu chưa có |
 | `ALP.md`, `CLAUDE.md` | chỉ tạo nếu **chưa có**. Repo có sẵn `CLAUDE.md` không import `@ALP.md` (layout cũ) → giữ nguyên làm contract, không tạo `ALP.md` |
 | `.claude/agents`, `.claude/skills` | sinh từ `.alp/`; file cùng tên do bản cũ cài → backup vào `.claude/backups/slp-<ts>/`; file của anh không do SLP tạo → giữ, cảnh báo |
-| `.claude/settings.json` | **merge**: `env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`, `teammateMode=in-process`, `agent=main` (project) nếu chưa có; thêm hook dispatcher; key khác giữ nguyên |
+| `.claude/settings.json` | **merge**: `env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`, `teammateMode=in-process`, `agent=main` (project) nếu chưa có — đổi `defaultAgent` trong `.alp/settings.json` thì `agent` theo, trừ khi anh đã tự đặt giá trị khác; thêm hook dispatcher (chỉ gỡ hook object của SLP, hook của anh trong cùng entry giữ nguyên); key khác giữ nguyên |
+| bỏ khỏi bản mới | file `.alp/` bản trước ship mà bản này không còn (vd. `role-skills.json` bớt skill) → xóa nếu chưa sửa, giữ nếu đã sửa |
 | `.claude/slp-supervisor.settings.json` | dùng qua `--settings` cho Supervisor: `Read(//**)` + sandbox Bash + hook chặn `Write`/`Edit` ngoài memory của chính nó |
 | `.claude/slp-mail/`, `slp-mail.settings.json` | hộp thư MCP + hook chặn Bash giả `from` |
 | bản cũ | `.claude/skills/ask-alp` (< 0.10.0) → backup |

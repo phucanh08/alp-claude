@@ -66,14 +66,17 @@ claude plugin validate .claude/agents && claude plugin validate .claude/skills
 
 File đã tồn tại → **merge** key `env`, không overwrite (installer làm đúng vậy). Installer còn thêm
 `"agent": "main"` (session `claude` thường chạy ghế main — mode Smart; `--agent lead` vẫn đè được)
-và hook dispatcher `python3 "$CLAUDE_PROJECT_DIR/.claude/slp/alp.py" hook <Event>` cho
-`SessionStart`, `UserPromptSubmit`, `PreToolUse`, `PostToolUse`, `Stop`:
+và hook dispatcher `f="$CLAUDE_PROJECT_DIR/.claude/slp/alp.py"; [ ! -f "$f" ] || python3 "$f" hook <Event>`
+(thiếu adapter → thoát 0, không chặn nhầm; Windows ghi đúng interpreter đã cài thay `python3`).
+Luôn có `SessionStart` và `PreToolUse` matcher `Skill`; `UserPromptSubmit`, `PreToolUse`/`PostToolUse`
+matcher `*`, `Stop` chỉ được thêm (bởi sync) khi có ghế đặt hook cho event đó:
 
 - `PreToolUse` + `Skill`: ghế gọi skill SLP không có trong `.alp/agents/<agent_type>/skills/` → exit 2
   kèm lý do (Claude Code đưa `agent_type` vào hook cho cả `--agent` lẫn subagent; không có →
   `defaultAgent`). Skill/agent ngoài SLP không bị đụng. Tắt: `ALP_SKILL_GUARD=0`.
-- Mọi event trên: chạy `.alp/agents/<agent_type>/hooks/<Event>` hoặc `<Event>.<ext>` (`.sh`, `.py`,
-  `.js`, `.ps1`, hoặc file thực thi) với stdin là JSON hook; exit 2 = chặn, stdout chuyển tiếp. Ví dụ
+- Mọi event trên: chạy `.alp/agents/<agent_type>/hooks/<Event>` hoặc `<Event>.<ext>` (`.sh` — Git Bash
+  trên Windows, `.py`, `.js`, `.ps1`, hoặc file thực thi) với stdin là JSON hook; exit 2 = chặn. Stdout
+  gửi Claude Code đúng một object JSON (JSON chặn thắng ngay; còn lại lấy cái đầu) hoặc text thường. Ví dụ
   chặn Peer `git push`: `.alp/agents/peer/hooks/PreToolUse.sh` đọc stdin, `exit 2` khi lệnh Bash có
   `git push`.
 

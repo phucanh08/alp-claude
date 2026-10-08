@@ -9,8 +9,8 @@
 #
 # Same as install.sh: download the bundle, then hand over to adapters/claude/alp.py (ALP.md, CLAUDE.md
 # `@ALP.md`, .alp/{settings.json, WORKFLOW.md, agents/<seat>/...}, .claude/ generated from .alp/,
-# settings.json + hook dispatcher, manifest). Needs Python 3; SLP hooks call `python3`, so a
-# `python3` command must be on the PATH Claude Code sees.
+# settings.json + hook dispatcher, manifest). Needs Python 3; on Windows the hooks call the exact
+# interpreter that ran the install (the `python3` there is often the WindowsApps stub).
 #
 # Keep this file ASCII-only: Windows PowerShell 5.1 reads a BOM-less script as ANSI (Vietnamese bytes
 # turn into smart quotes and break parsing), while a BOM breaks `irm | iex`. User-facing text is
@@ -42,7 +42,6 @@ Env: SLP_REPO (default phucanh08/alp-claude), SLP_REF (branch/tag, default main)
 }
 
 function Log($m) { Write-Host "  $m" }
-function Warn($m) { Write-Host -NoNewline -ForegroundColor Yellow '! '; Write-Host $m }
 function Die($m) { throw "x $m" }
 
 # Python 3: python3 -> python -> py -3
@@ -62,9 +61,6 @@ $Tmp = $null
 try {
   $Py = Find-Python
   if (-not $Py) { Die "can Python 3 (python3 / python / py -3) - adapter + hook cua SLP chay bang Python" }
-  if (-not (Get-Command python3 -ErrorAction SilentlyContinue)) {
-    Warn "khong thay lenh 'python3' - hook trong .claude/settings.json goi python3; tao alias/shim python3 truoc khi mo claude."
-  }
 
   $scriptDir = if ($PSCommandPath) { Split-Path -Parent $PSCommandPath } else { $null }
   if ($scriptDir -and (Test-Path (Join-Path $scriptDir 'adapters/claude/alp.py')) -and (Test-Path (Join-Path $scriptDir 'templates/role-skills.json'))) {
