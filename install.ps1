@@ -1,4 +1,4 @@
-# SLP cho Claude Code Agent Teams — installer (Windows PowerShell 5.1+ / pwsh 7), layout alp-paseo.
+﻿# SLP cho Claude Code Agent Teams — installer (Windows PowerShell 5.1+ / pwsh 7), layout alp-paseo.
 #
 # One-line (project-level, chạy tại repo root):
 #   irm https://raw.githubusercontent.com/phucanh08/alp-claude/main/install.ps1 | iex

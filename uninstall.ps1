@@ -1,4 +1,4 @@
-# SLP cho Claude Code Agent Teams — uninstaller (Windows PowerShell 5.1+ / pwsh 7).
+﻿# SLP cho Claude Code Agent Teams — uninstaller (Windows PowerShell 5.1+ / pwsh 7).
 #
 # One-line (project-level, chạy tại repo root):
 #   irm https://raw.githubusercontent.com/phucanh08/alp-claude/main/uninstall.ps1 | iex

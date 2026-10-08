@@ -386,15 +386,33 @@ def agent_hooks(lay, agent, event):
     return out
 
 
+def find_bash():
+    """bash cho hook .sh. Windows: Git Bash, không lấy System32\\bash.exe (WSL)."""
+    if os.name != "nt":
+        return "bash"
+    git = shutil.which("git")
+    if git:  # <Git>/cmd/git.exe hoặc <Git>/mingw64/bin/git.exe
+        base = os.path.dirname(os.path.dirname(git))
+        for cand in (os.path.join(base, "bin", "bash.exe"), os.path.join(os.path.dirname(base), "bin", "bash.exe")):
+            if os.path.isfile(cand):
+                return cand
+    for d in os.environ.get("PATH", "").split(os.pathsep):
+        cand = os.path.join(d, "bash.exe")
+        if os.path.isfile(cand) and "system32" not in d.lower() and "windowsapps" not in d.lower():
+            return cand
+    return "bash"
+
+
 def hook_cmd(path):
     if path.endswith(".py"):
         return [sys.executable, path]
     if path.endswith(".sh"):
-        return ["bash", path]
+        return [find_bash(), path]
     if path.endswith(".js") or path.endswith(".mjs"):
         return ["node", path]
     if path.endswith(".ps1"):
-        return ["pwsh", "-NoProfile", "-File", path]
+        ps = "pwsh" if shutil.which("pwsh") else "powershell"
+        return [ps, "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", path]
     return [path]
 
 

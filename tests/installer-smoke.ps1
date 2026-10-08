@@ -1,4 +1,4 @@
-# Smoke test install.ps1 / uninstall.ps1 (Windows PowerShell 5.1 và pwsh 7).
+﻿# Smoke test install.ps1 / uninstall.ps1 (Windows PowerShell 5.1 và pwsh 7).
 #   ./tests/installer-smoke.ps1                 # dùng clone hiện tại
 #   ./tests/installer-smoke.ps1 -Remote <ref>   # thêm: irm .../install.ps1 | iex với SLP_REF=<ref> (tải bundle từ GitHub)
 param([string]$Remote = "")
