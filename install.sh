@@ -28,7 +28,6 @@ SLP_REPO="${SLP_REPO:-phucanh08/alp-claude}"
 SLP_REF="${SLP_REF:-main}"
 export SLP_REF
 ARGS=()
-GLOBAL=0
 
 usage() {
   cat <<'USAGE'
@@ -42,7 +41,7 @@ USAGE
 
 while [ $# -gt 0 ]; do
   case "$1" in
-    --global) GLOBAL=1; ARGS+=(--global) ;;
+    --global) ARGS+=(--global) ;;
     --dir) ARGS+=(--dir "${2:-}"); shift ;;
     --force) ARGS+=(--force) ;;
     -h|--help) usage; exit 0 ;;
@@ -81,19 +80,5 @@ else
 fi
 [ -f "$SRC/adapters/claude/alp.py" ] || die "bundle thiếu adapters/claude/alp.py"
 
-python3 "$SRC/adapters/claude/alp.py" install --src "$SRC" "${ARGS[@]+"${ARGS[@]}"}"
+SLP_REPO="$SLP_REPO" python3 "$SRC/adapters/claude/alp.py" install --src "$SRC" --shell sh "${ARGS[@]+"${ARGS[@]}"}"
 
-cat <<EOF
-
-Xong. Bước tiếp theo:
-  1. $( [ "$GLOBAL" -eq 0 ] && echo "Điền ALP.md (contract boundary, lệnh test, path cấm sửa, external side-effect policy). CLAUDE.md chỉ import nó." || echo "Mỗi repo vẫn cần ALP.md + CLAUDE.md (@ALP.md) riêng — template: templates/ALP.md" )
-  2. Smart (mặc định): mở 'claude' như thường — session chạy ghế main (.claude/settings.json → agent: main).
-     Supervised: cd <repo root> && claude --agent lead --name lead      # workspace nhiều repo: --name lead-<repo>
-  3. (tuỳ chọn) Supervisor — thư mục trung lập, đọc mọi file, sandbox chặn ghi:
-       mkdir -p ~/slp-supervisor && cd ~/slp-supervisor
-       claude --agent supervisor --name supervisor --settings <root>/.claude/slp-supervisor.settings.json   # docs/SETUP.md §10
-  4. Tuỳ biến ghế ở .alp/agents/<ghế>/ (AGENT.md, skills/, hooks/<Event>.sh|.py, .mcp.json); hook SessionStart tự sinh lại .claude/.
-     Quy trình: .alp/WORKFLOW.md. Lab: docs/labs/README.md.
-
-Gỡ: curl -fsSL https://raw.githubusercontent.com/${SLP_REPO}/${SLP_REF}/uninstall.sh | bash$( [ "$GLOBAL" -eq 1 ] && echo " -s -- --global" )
-EOF

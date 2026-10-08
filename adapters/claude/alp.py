@@ -698,7 +698,37 @@ def cmd_install(args):
         for d in ("agents", "skills"):
             r = subprocess.run(["claude", "plugin", "validate", os.path.join(lay.claude, d)], capture_output=True)
             (ok if r.returncode == 0 else warn)("claude plugin validate %s: %s" % (d, "passed" if r.returncode == 0 else "lỗi — chạy lại lệnh để xem"))
+    print_next_steps(lay, args.shell)
     return 0
+
+
+def print_next_steps(lay, shell):
+    repo = os.environ.get("SLP_REPO", "phucanh08/alp-claude")
+    ref = os.environ.get("SLP_REF", "main")
+    if shell == "ps1":
+        sup = r"<root>\.claude\slp-supervisor.settings.json"
+        cd_sup = r"mkdir ~\slp-supervisor -Force; cd ~\slp-supervisor"
+        undo = "& ([scriptblock]::Create((irm https://raw.githubusercontent.com/%s/%s/uninstall.ps1)))%s" % (
+            repo, ref, " -Global" if lay.is_global else "")
+    else:
+        sup = "<root>/.claude/slp-supervisor.settings.json"
+        cd_sup = "mkdir -p ~/slp-supervisor && cd ~/slp-supervisor"
+        undo = "curl -fsSL https://raw.githubusercontent.com/%s/%s/uninstall.sh | bash%s" % (
+            repo, ref, " -s -- --global" if lay.is_global else "")
+    first = ("Mỗi repo vẫn cần ALP.md + CLAUDE.md (@ALP.md) riêng — template: templates/ALP.md" if lay.is_global else
+             "Điền ALP.md (contract boundary, lệnh test, path cấm sửa, external side-effect policy). CLAUDE.md chỉ import nó.")
+    print("""
+Xong. Bước tiếp theo:
+  1. %s
+  2. Smart (mặc định): mở 'claude' như thường — session chạy ghế main (.claude/settings.json → agent: main).
+     Supervised: cd <repo root>; claude --agent lead --name lead      # workspace nhiều repo: --name lead-<repo>
+  3. (tuỳ chọn) Supervisor — thư mục trung lập, đọc mọi file, sandbox chặn ghi:
+       %s
+       claude --agent supervisor --name supervisor --settings %s   # docs/SETUP.md §10
+  4. Tuỳ biến ghế ở .alp/agents/<ghế>/ (AGENT.md, skills/, hooks/<Event>.sh|.py|.ps1, .mcp.json);
+     hook SessionStart tự sinh lại .claude/. Quy trình: .alp/WORKFLOW.md. Lab: docs/labs/README.md.
+
+Gỡ: %s""" % (first, cd_sup, sup, undo))
 
 
 # ---- uninstall ----------------------------------------------------------------------------
@@ -834,6 +864,7 @@ def main(argv=None):
     p = sub.add_parser("install", help="scaffold .alp/, cài adapter, merge settings, sync")
     p.add_argument("--src", required=True, help="thư mục bundle alp-claude")
     p.add_argument("--force", action="store_true", help="ghi đè file .alp/ đã sửa (có backup)")
+    p.add_argument("--shell", choices=["sh", "ps1"], default="sh", help="cú pháp lệnh trong phần 'Bước tiếp theo'")
     target(p)
     p = sub.add_parser("sync", help="sinh .claude/agents + .claude/skills từ .alp/")
     p.add_argument("--quiet", action="store_true")

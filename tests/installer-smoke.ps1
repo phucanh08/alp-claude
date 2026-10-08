@@ -1,12 +1,13 @@
-﻿# Smoke test install.ps1 / uninstall.ps1 (Windows PowerShell 5.1 và pwsh 7).
-#   ./tests/installer-smoke.ps1                 # dùng clone hiện tại
-#   ./tests/installer-smoke.ps1 -Remote <ref>   # thêm: irm .../install.ps1 | iex với SLP_REF=<ref> (tải bundle từ GitHub)
+# Smoke test install.ps1 / uninstall.ps1 (Windows PowerShell 5.1 and pwsh 7). ASCII-only (see install.ps1).
+#   ./tests/installer-smoke.ps1                 # use this clone
+#   ./tests/installer-smoke.ps1 -Remote <ref>   # also: irm .../install.ps1 | iex with SLP_REF=<ref> (bundle from GitHub)
 param([string]$Remote = "")
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version 2
 $RepoRoot = Split-Path -Parent $PSScriptRoot
 $Py = if (Get-Command python3 -ErrorAction SilentlyContinue) { 'python3' } else { 'python' }
 $env:PYTHONIOENCODING = 'utf-8'
+[Console]::OutputEncoding = New-Object System.Text.UTF8Encoding $false
 Write-Host "PowerShell $($PSVersionTable.PSVersion) ($($PSVersionTable.PSEdition)), python: $Py"
 
 function Assert($cond, $msg) { if (-not $cond) { throw "FAIL: $msg" } else { Write-Host "  ok  $msg" } }
@@ -27,42 +28,43 @@ function Invoke-Hook($repo, $json) {
 }
 function Test-Installed($repo) {
   foreach ($f in 'ALP.md', 'CLAUDE.md', '.alp\settings.json', '.alp\WORKFLOW.md', '.claude\slp\alp.py', '.claude\slp-manifest.json') {
-    Assert (Test-Path (Join-Path $repo $f)) "có $f"
+    Assert (Test-Path (Join-Path $repo $f)) "co $f"
   }
   foreach ($a in 'main', 'lead', 'peer', 'supervisor', 'oracle', 'reviewer') {
     Assert (Test-Path (Join-Path $repo ".alp\agents\$a\AGENT.md")) ".alp/agents/$a/AGENT.md"
     Assert (Test-Path (Join-Path $repo ".claude\agents\$a.md")) ".claude/agents/$a.md"
   }
   Assert ((Get-ChildItem (Join-Path $repo '.claude\skills') -Directory).Count -eq 6) "6 skill trong .claude/skills"
-  Assert ((Get-ChildItem (Join-Path $repo '.alp\agents\peer\skills') -Directory).Count -eq 3) "peer có 3 skill"
+  Assert ((Get-ChildItem (Join-Path $repo '.alp\agents\peer\skills') -Directory).Count -eq 3) "peer co 3 skill"
   $st = Get-Content -Raw (Join-Path $repo '.claude\settings.json') | ConvertFrom-Json
   Assert ($st.agent -eq 'main') "settings agent = main"
-  Assert ($null -ne $st.hooks.PreToolUse) "settings có hook PreToolUse"
+  Assert ($null -ne $st.hooks.PreToolUse) "settings co hook PreToolUse"
   $r = Invoke-Hook $repo '{"agent_type":"peer","tool_name":"Skill","tool_input":{"skill":"goal-griller"}}'
-  Assert ($r.Code -eq 2) "hook chặn peer gọi goal-griller (exit $($r.Code))"
-  Assert ($r.Out -match 'ghế `peer`') "lý do chặn in đúng tiếng Việt: $($r.Out.Substring(0, [Math]::Min(80, $r.Out.Length)))"
+  Assert ($r.Code -eq 2) "hook chan peer goi goal-griller (exit $($r.Code))"
+  $seat = "gh$([char]0x1EBF) ``peer``"   # "ghe `peer`" with Vietnamese diacritic: UTF-8 survives the console
+  Assert ($r.Out.Contains($seat)) "block reason is proper UTF-8 Vietnamese"
   $r = Invoke-Hook $repo '{"agent_type":"peer","tool_name":"Skill","tool_input":{"skill":"xia"}}'
-  Assert ($r.Code -eq 0) "hook cho peer gọi xia"
+  Assert ($r.Code -eq 0) "hook cho peer goi xia"
 }
 function Test-Clean($repo) {
   $left = @(Get-ChildItem -Force $repo | Where-Object { $_.Name -ne '.git' } | ForEach-Object { $_.Name })
-  Assert ($left.Count -eq 0) "gỡ sạch (còn: $($left -join ', '))"
+  Assert ($left.Count -eq 0) "go sach (con: $($left -join ', '))"
 }
 
 Write-Host "== local clone: install.ps1 -Dir"
 $repo = New-Repo
 & (Join-Path $RepoRoot 'install.ps1') -Dir $repo
 Test-Installed $repo
-Write-Host "== cài lại: giữ file .alp đã sửa"
+Write-Host "== cai lai: giu file .alp da sua"
 Add-Content -LiteralPath (Join-Path $repo '.alp\agents\peer\AGENT.md') -Value 'custom-line'
 & (Join-Path $RepoRoot 'install.ps1') -Dir $repo
-Assert ((Get-Content -Raw (Join-Path $repo '.alp\agents\peer\AGENT.md')) -match 'custom-line') "giữ AGENT.md đã sửa"
-Assert ((Get-Content -Raw (Join-Path $repo '.claude\agents\peer.md')) -match 'custom-line') ".claude/agents/peer.md sinh từ bản đã sửa"
+Assert ((Get-Content -Raw (Join-Path $repo '.alp\agents\peer\AGENT.md')) -match 'custom-line') "giu AGENT.md da sua"
+Assert ((Get-Content -Raw (Join-Path $repo '.claude\agents\peer.md')) -match 'custom-line') ".claude/agents/peer.md sinh tu ban da sua"
 Write-Host "== uninstall.ps1 -Dir -Force"
 & (Join-Path $RepoRoot 'uninstall.ps1') -Dir $repo -Force
 Test-Clean $repo
 
-Write-Host "== cwd mặc định + uninstall không -Force"
+Write-Host "== cwd mac dinh + uninstall khong -Force"
 $repo2 = New-Repo
 Push-Location $repo2
 try {
