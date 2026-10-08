@@ -54,33 +54,64 @@ trên hộp thư `slp-mail`).
 
 ## Cài
 
+Bản ổn định mới nhất: **[v0.10.0](https://github.com/phucanh08/alp-claude/releases/tag/v0.10.0)**.
+Khuyến nghị cài đúng bản này: script lấy từ tag và `SLP_REF` cùng trỏ vào tag, nên installer và
+bundle khớp nhau. Lệnh với `main` cài bản mới nhất chưa phát hành.
+
+Yêu cầu: **Python 3** (adapter + hook), `git`, `curl` + `tar` (macOS/Linux) hoặc PowerShell 5.1+ /
+pwsh 7 (Windows). Claude Code ≥ 2.1 (Agent Teams experimental).
+
+### macOS / Linux
+
 Project-level (khuyến nghị — chạy tại repo root, không đổi config toàn máy):
 
 ```bash
+curl -fsSL https://raw.githubusercontent.com/phucanh08/alp-claude/v0.10.0/install.sh | SLP_REF=v0.10.0 bash
+```
+
+Global (`~/.alp` + `~/.claude`, agents dùng chung mọi repo, không tạo `ALP.md`/`CLAUDE.md`):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/phucanh08/alp-claude/v0.10.0/install.sh | SLP_REF=v0.10.0 bash -s -- --global
+```
+
+Cài vào repo khác / bản mới nhất trên `main`:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/phucanh08/alp-claude/v0.10.0/install.sh | SLP_REF=v0.10.0 bash -s -- --dir /path/to/repo
 curl -fsSL https://raw.githubusercontent.com/phucanh08/alp-claude/main/install.sh | bash
 ```
 
-Global (`~/.claude/agents`, dùng chung mọi repo):
+### Windows
 
-```bash
-curl -fsSL https://raw.githubusercontent.com/phucanh08/alp-claude/main/install.sh | bash -s -- --global
-```
-
-Pin version / cài vào repo khác:
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/phucanh08/alp-claude/main/install.sh | SLP_REF=v0.1.0 bash
-curl -fsSL https://raw.githubusercontent.com/phucanh08/alp-claude/main/install.sh | bash -s -- --dir /path/to/repo
-```
-
-Windows (PowerShell 5.1+ hoặc pwsh 7, cần Python 3 — hook gọi `python3`):
+PowerShell 5.1+ hoặc pwsh 7, cần Python 3 (`python3`, `python` hoặc `py -3`); hook ghi đúng
+interpreter đã chạy installer, không phụ thuộc lệnh `python3`:
 
 ```powershell
-irm https://raw.githubusercontent.com/phucanh08/alp-claude/main/install.ps1 | iex                                               # project
-& ([scriptblock]::Create((irm https://raw.githubusercontent.com/phucanh08/alp-claude/main/install.ps1))) -Global                # global
-$env:SLP_REF='v0.1.0'; irm https://raw.githubusercontent.com/phucanh08/alp-claude/main/install.ps1 | iex                        # pin version
-& ([scriptblock]::Create((irm https://raw.githubusercontent.com/phucanh08/alp-claude/main/install.ps1))) -Dir C:\path\to\repo    # repo khác
+$env:SLP_REF='v0.10.0'; irm https://raw.githubusercontent.com/phucanh08/alp-claude/v0.10.0/install.ps1 | iex                                            # project
+$env:SLP_REF='v0.10.0'; & ([scriptblock]::Create((irm https://raw.githubusercontent.com/phucanh08/alp-claude/v0.10.0/install.ps1))) -Global             # global
+$env:SLP_REF='v0.10.0'; & ([scriptblock]::Create((irm https://raw.githubusercontent.com/phucanh08/alp-claude/v0.10.0/install.ps1))) -Dir C:\path\to\repo # repo khác
+irm https://raw.githubusercontent.com/phucanh08/alp-claude/main/install.ps1 | iex                                                                       # bản mới nhất
 ```
+
+### Từ clone
+
+```bash
+git clone --branch v0.10.0 https://github.com/phucanh08/alp-claude && ./alp-claude/install.sh --dir /path/to/repo
+```
+
+Windows: `.\alp-claude\install.ps1 -Dir C:\path\to\repo`. Thêm `--force` / `-Force` để ghi đè file
+`.alp/` anh đã sửa (có backup).
+
+### Kiểm sau khi cài
+
+```bash
+grep '"version"\|"ref"' .claude/slp-manifest.json   # "version": "0.10.0", "ref": "v0.10.0"
+ls .alp/agents                                      # lead  main  oracle  peer  reviewer  supervisor
+```
+
+Tiếp theo: điền `ALP.md`, rồi mở `claude` (mode Smart, ghế `main`) hoặc `claude --agent lead --name
+lead` (mode Supervised) — § Dùng.
 
 ## Layout trong project
 
@@ -134,23 +165,23 @@ Installer (`adapters/claude/alp.py install`, ghi lại trong `.claude/slp-manife
 | bản cũ | `.claude/skills/ask-alp` (< 0.10.0) → backup |
 | validate | `claude plugin validate` cho `.claude/agents` và `.claude/skills` nếu có lệnh `claude` |
 
-Yêu cầu: `python3` (adapter + hook), `curl` + `tar` khi cài từ GitHub (Windows `install.ps1`:
-PowerShell + Python 3). Claude Code ≥ 2.1 (Agent Teams experimental).
-
 ## Cập nhật
 
-Chạy lại installer đúng kiểu đã cài (xem kiểu và bản đang dùng: `grep '"version"'
-.claude/slp-manifest.json`, hoặc `~/.claude/slp-manifest.json` nếu cài `--global`):
+Chạy lại installer đúng kiểu đã cài, với bản muốn lên (xem kiểu và bản đang dùng: `grep
+'"version"\|"mode"' .claude/slp-manifest.json`, hoặc `~/.claude/slp-manifest.json` nếu cài `--global`).
+Lên v0.10.0:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/phucanh08/alp-claude/main/install.sh | bash                 # project
-curl -fsSL https://raw.githubusercontent.com/phucanh08/alp-claude/main/install.sh | bash -s -- --global  # global
+curl -fsSL https://raw.githubusercontent.com/phucanh08/alp-claude/v0.10.0/install.sh | SLP_REF=v0.10.0 bash                 # project
+curl -fsSL https://raw.githubusercontent.com/phucanh08/alp-claude/v0.10.0/install.sh | SLP_REF=v0.10.0 bash -s -- --global  # global
 ```
 
 ```powershell
-irm https://raw.githubusercontent.com/phucanh08/alp-claude/main/install.ps1 | iex                                  # project
-& ([scriptblock]::Create((irm https://raw.githubusercontent.com/phucanh08/alp-claude/main/install.ps1))) -Global   # global
+$env:SLP_REF='v0.10.0'; irm https://raw.githubusercontent.com/phucanh08/alp-claude/v0.10.0/install.ps1 | iex                                  # project
+$env:SLP_REF='v0.10.0'; & ([scriptblock]::Create((irm https://raw.githubusercontent.com/phucanh08/alp-claude/v0.10.0/install.ps1))) -Global   # global
 ```
+
+Các release: <https://github.com/phucanh08/alp-claude/releases> — đổi `v0.10.0` thành tag muốn cài.
 
 File `.alp/` chưa sửa được cập nhật; file đã sửa được giữ, bản mới để ở
 `.claude/backups/slp-<timestamp>/upstream/` để chép phần cần. `.claude/agents` + `.claude/skills` sinh
