@@ -200,10 +200,18 @@ Authority              được sửa gì, cấm gì; push/deploy/external side 
 Concurrency             read-only | exclusive-writer
 Commit lease            required | n/a
 Verification            lệnh cụ thể phải chạy; có/không chiếm port, DB, full suite
+Resources               port dịch vụ/CDP + scratch/TMPDIR/profile riêng + tài nguyên độc quyền, hoặc none
 Model                    BẮT BUỘC: sonnet | opus | … + một dòng lý do (§ Chọn model); inherit không phải lựa chọn
 Handoff contract         candidate SHA + base nếu có write + file đổi + lệnh/kết quả + risk + ownership
 Required skills          (tuỳ chọn) skill phương pháp Peer phải gọi, vd. bug-loop; bỏ trống = chỉ skill theo disposition
 ```
+
+Lane chạy server/emulator/browser: cấp bảng tài nguyên không trùng trước khi spawn, gồm mọi
+port cần dùng (kể cả port phụ của emulator), CDP, scratch riêng theo session/task/peer, `TMPDIR`
+và Chrome profile. Áp dụng cả Reviewer/Scout chạy verification, không chỉ writer. Thiết bị/DB
+không tách được thì cấp độc quyền theo lượt. Peer báo xung đột → bạn cập nhật allocation và
+brief; không để peer tự đổi port. Chỉ cấp lại tài nguyên khi owner cũ đã xác nhận dừng hoặc bàn
+giao; worktree riêng không tự tách port hay thư mục tạm của tiến trình.
 
 Brief phải **trung lập**, không pre-solve. Plan chỉ là bản đồ tạm cho một lượt Peer.
 `Required skills` chỉ định *phương pháp*, không chỉ định *lời giải* — nên không phá trung lập;
@@ -277,6 +285,10 @@ checkout chính. Điều kiện cứng trước khi parallelize: **file/interfac
 `git worktree remove`. Pattern này chưa có lab tham chiếu — lần đầu dùng, kiểm như Lab 6.
 
 Nhiều writer mà không có worktree riêng → không phải song song, là xếp hàng.
+
+Khi kiểm worktree của Peer, giữ cwd của Lead ở root ban đầu: dùng `git -C <abs-worktree> …`
+và đường dẫn tuyệt đối để đọc file; không `cd` vào worktree của Peer. Lệnh verification cần cwd
+riêng phải chạy trong subprocess với cwd riêng, không đổi primary working directory của session.
 
 **Khi nào phải chạy song song, không được xếp hàng** (điều kiện kích hoạt, không phải tuỳ chọn):
 
@@ -444,8 +456,10 @@ polling** task list hoặc transcript chỉ để xem “xong chưa”. Mốc h�
 phải polling: một lần thức, kiểm một lần, nhắn một tin.
 
 Peer gửi `HEARTBEAT` theo `peer.md` (mục tiêu mỗi 10 phút; luôn có ô `Evidence` là đường dẫn
-file số liệu). Mỗi heartbeat bạn làm đúng một việc: **đếm chéo** — `wc -l`/`stat` file evidence,
-`git status` ở root của writer — khớp với `Tiến độ` peer khai thì thôi; lệch (peer nói "0 mẫu",
+file log/số liệu có nội dung, không phải thư mục hoặc `—`). Heartbeat đầu có thể trỏ tới
+`start.log`: chỉ chứng minh nhận brief, không chứng minh verification đã chạy. Mỗi heartbeat
+bạn làm đúng một việc: **đếm chéo** — đọc log/output tương ứng claim, `wc -l`/`stat` file evidence,
+`git -C <root của writer> status` — khớp với `Tiến độ` peer khai thì thôi; lệch (peer nói "0 mẫu",
 file có 400 dòng, hoặc ngược lại) thì hỏi peer đúng một câu vào cơ chế, không chờ handoff.
 
 **Tin tới peer đang chạy — hai đường, hai độ trễ.** Peer có hộp thư và đã arm `Monitor`
@@ -524,6 +538,8 @@ Ownership          write/commit lease đã trả hay còn giữ và vì sao
 Trước khi accept writer:
 
 - [ ] Peer đã trả `Ownership: released`.
+- [ ] Handoff ghi brief đang dùng và mốc kiểm inbox; mọi tin đổi scope bạn gửi đã được đối chiếu.
+      Còn thay đổi chưa áp dụng → chưa accept theo scope mới, yêu cầu peer hoàn tất phần thiếu.
 - [ ] SHA tồn tại: `git cat-file -e "$sha^{commit}"`.
 - [ ] Base đúng: `git merge-base --is-ancestor "$base" "$sha"` và base khớp brief.
 - [ ] `git show --stat "$sha"` (hoặc `git diff --stat "$base" "$sha"`) khớp scope Peer khai.
@@ -562,6 +578,9 @@ Peer đã hỏi về bộ phanh chứ không chỉ nghe số gram dù đã giả
 
 Sau khi chốt, shutdown teammate không còn việc. Team runtime không phải artifact bền; SHA + brief +
 accept summary mới là checkpoint bền.
+Kiểm tài nguyên lane đã dừng hoặc có owner nhận bàn giao. Peer báo lỗi `shutdown_response` →
+ghi rõ chưa shutdown, nhờ Human dừng bằng agent panel; không coi tin "đã dừng làm việc" hoặc
+idle là xác nhận process đã thoát, không để peer thử lặp nhiều định dạng hay kill process chung.
 
 ## Supervisor — session khác, không phải Human, nhưng có quyền được giao
 
