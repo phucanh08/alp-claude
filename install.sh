@@ -1,121 +1,60 @@
 #!/usr/bin/env bash
-# SLP cho Claude Code Agent Teams — installer.
+# SLP cho Claude Code Agent Teams — installer (layout alp-paseo).
 #
 # One-line (project-level, chạy tại repo root):
 #   curl -fsSL https://raw.githubusercontent.com/phucanh08/alp-claude/main/install.sh | bash
-# Global (~/.claude):
+# Global (~/.alp + ~/.claude):
 #   curl -fsSL https://raw.githubusercontent.com/phucanh08/alp-claude/main/install.sh | bash -s -- --global
 # Pin version:
 #   curl -fsSL .../install.sh | SLP_REF=v0.1.0 bash
 #
-# Cài gì:
-#   <root>/.claude/agents/lead.md, peer.md, supervisor.md   (copy)
-#   <root>/.claude/skills/<name>/                (copy: ask-alp, goal-griller, xia, sequence-execution-plan, prompt-leverage, smart-commits, bug-loop)
-#   <root>/.claude/settings.json                (merge: env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS, teammateMode)
-#   <root>/.claude/slp-supervisor.settings.json (copy: Read mọi file + sandbox Bash; dùng qua --settings)
-#   <root>/.claude/slp-mail/slp_mail.py           (copy: hộp thư MCP + CLI; dùng qua --mcp-config, xem mcp/slp-mail/README.md)
-#   <root>/.claude/slp-mail.settings.json        (copy: hook chặn Bash giả from; Lead dùng qua --settings khi bật hộp thư)
-#   <root>/CLAUDE.md                            (chỉ tạo từ template nếu chưa có; project mode)
+# Script này chỉ tải bundle rồi giao cho adapters/claude/alp.py (cần python3). Cài gì:
+#   <root>/ALP.md                               (contract của repo — tạo từ templates/ALP.md nếu chưa có)
+#   <root>/CLAUDE.md                            (tạo nếu chưa có: một dòng `@ALP.md`)
+#   <root>/.alp/settings.json                   (defaultAgent, workflow.mode, workflow.maxPeers)
+#   <root>/.alp/WORKFLOW.md                     (luồng phase, ghế, bảng cấm)
+#   <root>/.alp/agents/<ghế>/{AGENT.md, skills/, hooks/, .mcp.json}
+#                                               (main, lead, peer, supervisor, oracle, reviewer; skill theo templates/role-skills.json)
+#   <root>/.claude/agents/<ghế>.md, .claude/skills/<skill>/   (SINH từ .alp/ — sửa ở .alp/, đừng sửa ở đây)
+#   <root>/.claude/settings.json                (merge: env Agent Teams, teammateMode, agent=main, hook dispatcher → .claude/slp/alp.py)
+#   <root>/.claude/slp/alp.py                   (adapter: sync .alp → .claude, chặn skill ngoài bộ của ghế, chạy .alp/agents/<ghế>/hooks/)
+#   <root>/.claude/slp-supervisor.settings.json, slp-mail/slp_mail.py, slp-mail.settings.json
 #   <root>/.claude/slp-manifest.json            (ghi lại đúng những gì đã cài, để uninstall gỡ chính xác)
+# File .alp/ đã sửa được giữ khi cài lại (bản mới để ở .claude/backups/); --force để ghi đè (có backup).
+# Nâng cấp từ layout cũ (.claude/agents/*.md cài thẳng): bản cũ backup vào .claude/backups/slp-<ts>/.
 set -euo pipefail
 
 SLP_REPO="${SLP_REPO:-phucanh08/alp-claude}"
 SLP_REF="${SLP_REF:-main}"
-MODE="project"
-TARGET=""
-FORCE=0
-SKILLS="ask-alp goal-griller xia sequence-execution-plan prompt-leverage smart-commits bug-loop"
+export SLP_REF
+ARGS=()
+GLOBAL=0
 
 usage() {
-  cat <<'EOF'
+  cat <<'USAGE'
 Usage: install.sh [--global] [--dir <path>] [--force]
-  --global      cài vào ~/.claude (agents dùng chung mọi repo, không tạo CLAUDE.md)
+  --global      cài vào ~/.alp + ~/.claude (agents dùng chung mọi repo, không tạo ALP.md/CLAUDE.md)
   --dir <path>  repo root cần cài (mặc định: thư mục hiện tại)
-  --force       ghi đè agent file / skill dir đã có mà không backup
+  --force       ghi đè file .alp/ đã sửa (backup vào .claude/backups/)
 Env: SLP_REPO (mặc định phucanh08/alp-claude), SLP_REF (branch/tag, mặc định main)
-EOF
+USAGE
 }
 
 while [ $# -gt 0 ]; do
   case "$1" in
-    --global) MODE="global" ;;
-    --dir) TARGET="${2:-}"; shift ;;
-    --force) FORCE=1 ;;
+    --global) GLOBAL=1; ARGS+=(--global) ;;
+    --dir) ARGS+=(--dir "${2:-}"); shift ;;
+    --force) ARGS+=(--force) ;;
     -h|--help) usage; exit 0 ;;
     *) echo "install.sh: tham số lạ: $1" >&2; usage; exit 2 ;;
   esac
   shift
 done
 
-log()  { printf '  %s\n' "$*"; }
-ok()   { printf '\033[32m✔\033[0m %s\n' "$*"; }
-warn() { printf '\033[33m!\033[0m %s\n' "$*" >&2; }
-die()  { printf '\033[31m✘\033[0m %s\n' "$*" >&2; exit 1; }
-
-# ---- JSON helper: python3 ưu tiên, fallback node -----------------------------
+log() { printf '  %s\n' "$*"; }
+die() { printf '\033[31m✘\033[0m %s\n' "$*" >&2; exit 1; }
 have() { command -v "$1" >/dev/null 2>&1; }
-if have python3; then JSON_RT="python3"; elif have node; then JSON_RT="node"; else
-  die "cần python3 hoặc node để merge settings.json"
-fi
-
-# merge_settings <file>  → in ra danh sách key đã thêm (mỗi dòng một key), tạo file nếu chưa có
-merge_settings() {
-  local f="$1"
-  if [ "$JSON_RT" = "python3" ]; then
-    python3 - "$f" <<'PY'
-import json, os, sys
-p = sys.argv[1]
-created = not os.path.exists(p)
-data = {}
-if not created:
-    with open(p, encoding="utf-8") as fh:
-        raw = fh.read().strip()
-    data = json.loads(raw) if raw else {}
-    if not isinstance(data, dict):
-        sys.exit("settings.json không phải object JSON")
-added = []
-env = data.setdefault("env", {})
-if not isinstance(env, dict):
-    sys.exit("settings.json: 'env' không phải object")
-if "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS" not in env:
-    env["CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS"] = "1"
-    added.append("env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS")
-if "teammateMode" not in data:
-    data["teammateMode"] = "in-process"
-    added.append("teammateMode")
-if created:
-    added.append("__file__")
-os.makedirs(os.path.dirname(p) or ".", exist_ok=True)
-with open(p, "w", encoding="utf-8") as fh:
-    json.dump(data, fh, indent=2, ensure_ascii=False)
-    fh.write("\n")
-print("\n".join(added))
-PY
-  else
-    node - "$f" <<'JS'
-const fs = require("fs"), path = require("path");
-const p = process.argv[2];
-const created = !fs.existsSync(p);
-let data = {};
-if (!created) { const raw = fs.readFileSync(p, "utf8").trim(); data = raw ? JSON.parse(raw) : {}; }
-if (typeof data !== "object" || Array.isArray(data)) { console.error("settings.json không phải object JSON"); process.exit(1); }
-const added = [];
-data.env = data.env || {};
-if (!("CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS" in data.env)) { data.env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS = "1"; added.push("env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS"); }
-if (!("teammateMode" in data)) { data.teammateMode = "in-process"; added.push("teammateMode"); }
-if (created) added.push("__file__");
-fs.mkdirSync(path.dirname(p), { recursive: true });
-fs.writeFileSync(p, JSON.stringify(data, null, 2) + "\n");
-console.log(added.join("\n"));
-JS
-  fi
-}
-
-sha256() {
-  if have shasum; then shasum -a 256 "$1" | awk '{print $1}'
-  elif have sha256sum; then sha256sum "$1" | awk '{print $1}'
-  else echo "unknown"; fi
-}
+have python3 || die "cần python3 (adapter + hook của SLP chạy bằng python3)"
 
 # ---- resolve source: local clone hay tarball ---------------------------------
 SRC=""
@@ -127,7 +66,7 @@ script_dir=""
 if [ -n "${BASH_SOURCE[0]:-}" ] && [ -f "${BASH_SOURCE[0]}" ]; then
   script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 fi
-if [ -n "$script_dir" ] && [ -f "$script_dir/agents/lead.md" ] && [ -f "$script_dir/agents/peer.md" ] && [ -f "$script_dir/agents/supervisor.md" ]; then
+if [ -n "$script_dir" ] && [ -f "$script_dir/adapters/claude/alp.py" ] && [ -f "$script_dir/templates/role-skills.json" ]; then
   SRC="$script_dir"
   log "nguồn: local clone $SRC"
 else
@@ -140,181 +79,21 @@ else
     || die "không tải/giải nén được $url (repo/ref đúng chưa?)"
   SRC="$TMP"
 fi
-for a in lead peer supervisor; do [ -f "$SRC/agents/$a.md" ] || die "bundle thiếu agents/$a.md"; done
-for s in $SKILLS; do [ -f "$SRC/skills/$s/SKILL.md" ] || die "bundle thiếu skills/$s/SKILL.md"; done
-[ -f "$SRC/templates/supervisor.settings.json" ] || die "bundle thiếu templates/supervisor.settings.json"
-[ -f "$SRC/mcp/slp-mail/slp_mail.py" ] || die "bundle thiếu mcp/slp-mail/slp_mail.py"
-[ -f "$SRC/templates/slp-mail.settings.json" ] || die "bundle thiếu templates/slp-mail.settings.json"
-VERSION="$(cat "$SRC/VERSION" 2>/dev/null || echo unknown)"
+[ -f "$SRC/adapters/claude/alp.py" ] || die "bundle thiếu adapters/claude/alp.py"
 
-# ---- resolve target ------------------------------------------------------------
-if [ "$MODE" = "global" ]; then
-  ROOT="$HOME"
-  CLAUDE_DIR="$HOME/.claude"
-else
-  ROOT="${TARGET:-$PWD}"
-  ROOT="$(cd "$ROOT" && pwd)" || die "không vào được $TARGET"
-  CLAUDE_DIR="$ROOT/.claude"
-  if [ ! -d "$ROOT/.git" ] && ! git -C "$ROOT" rev-parse --show-toplevel >/dev/null 2>&1; then
-    warn "$ROOT không phải git repo — Lead cần Git để Peer commit/handoff SHA (bình thường nếu đây là gốc workspace chỉ cho Supervisor). Vẫn cài."
-  fi
-fi
-AGENTS_DIR="$CLAUDE_DIR/agents"
-SKILLS_DIR="$CLAUDE_DIR/skills"
-SETTINGS="$CLAUDE_DIR/settings.json"
-MANIFEST="$CLAUDE_DIR/slp-manifest.json"
-# Backup nằm ngoài agents/ và skills/: thư mục skill backup còn SKILL.md cùng name → runtime nạp thành skill trùng.
-BACKUP_DIR="$CLAUDE_DIR/backups/slp-$(date +%Y%m%d%H%M%S)"
-
-printf '\nSLP %s → %s (%s)\n\n' "$VERSION" "$CLAUDE_DIR" "$MODE"
-
-if [ -f "$MANIFEST" ]; then
-  warn "đã có $MANIFEST — đang cài đè lên bản cũ (uninstall trước nếu muốn sạch)."
-fi
-
-# ---- 1. agents ------------------------------------------------------------------
-mkdir -p "$AGENTS_DIR"
-installed_agents=()
-for name in lead peer supervisor; do
-  dst="$AGENTS_DIR/$name.md"
-  if [ -f "$dst" ] && ! cmp -s "$SRC/agents/$name.md" "$dst"; then
-    if [ "$FORCE" -eq 1 ]; then
-      warn "ghi đè $dst (--force)"
-    else
-      bak="$BACKUP_DIR/agents/$name.md"
-      mkdir -p "$BACKUP_DIR/agents"; cp "$dst" "$bak"
-      warn "$dst đã tồn tại và khác bản mới → backup $bak"
-    fi
-  fi
-  cp "$SRC/agents/$name.md" "$dst"
-  installed_agents+=("agents/$name.md")
-  ok "agents/$name.md"
-done
-
-# ---- 1b. skills -----------------------------------------------------------------
-# Mỗi skill là một thư mục (SKILL.md + references/ + scripts/). Khác nội dung → backup cả thư mục.
-mkdir -p "$SKILLS_DIR"
-installed_skills=()
-for name in $SKILLS; do
-  src="$SRC/skills/$name"; dst="$SKILLS_DIR/$name"
-  if [ -d "$dst" ] && ! diff -rq -x __pycache__ "$src" "$dst" >/dev/null 2>&1; then
-    if [ "$FORCE" -eq 1 ]; then
-      warn "ghi đè $dst (--force)"
-    else
-      bak="$BACKUP_DIR/skills/$name"
-      mkdir -p "$BACKUP_DIR/skills"; cp -R "$dst" "$bak"
-      warn "$dst đã tồn tại và khác bản mới → backup $bak"
-    fi
-  fi
-  rm -rf "$dst"
-  cp -R "$src" "$dst"
-  find "$dst" -type d -name __pycache__ -prune -exec rm -rf {} + 2>/dev/null || true
-  installed_skills+=("skills/$name")
-  ok "skills/$name"
-done
-
-# ---- 1c. supervisor settings (dùng qua --settings, không merge vào settings.json) --------
-SUP_SETTINGS="$CLAUDE_DIR/slp-supervisor.settings.json"
-if [ -f "$SUP_SETTINGS" ] && ! cmp -s "$SRC/templates/supervisor.settings.json" "$SUP_SETTINGS" && [ "$FORCE" -ne 1 ]; then
-  bak="$SUP_SETTINGS.bak-$(date +%Y%m%d%H%M%S)"; cp "$SUP_SETTINGS" "$bak"
-  warn "$SUP_SETTINGS đã tồn tại và khác bản mới → backup $bak"
-fi
-cp "$SRC/templates/supervisor.settings.json" "$SUP_SETTINGS"
-ok "slp-supervisor.settings.json"
-
-# ---- 1d. slp-mail (hộp thư MCP + CLI, dùng qua --mcp-config) + hook chặn Bash giả from ----------
-MAIL_DIR="$CLAUDE_DIR/slp-mail"
-mkdir -p "$MAIL_DIR"
-cp "$SRC/mcp/slp-mail/slp_mail.py" "$MAIL_DIR/slp_mail.py"; chmod +x "$MAIL_DIR/slp_mail.py"
-cp "$SRC/templates/slp-mail.settings.json" "$CLAUDE_DIR/slp-mail.settings.json"
-ok "slp-mail/slp_mail.py + slp-mail.settings.json (mcp-config: python3 $MAIL_DIR/slp_mail.py mcp-config <seat>)"
-
-# ---- 2. settings.json -------------------------------------------------------------
-added_keys="$(merge_settings "$SETTINGS")"
-settings_created=false
-settings_keys=()
-while IFS= read -r k; do
-  [ -z "$k" ] && continue
-  if [ "$k" = "__file__" ]; then settings_created=true; else settings_keys+=("$k"); fi
-done <<<"$added_keys"
-if [ "${#settings_keys[@]}" -gt 0 ]; then
-  ok "settings.json: thêm ${settings_keys[*]}"
-else
-  ok "settings.json: đã có đủ key, không đổi"
-fi
-
-# ---- 3. CLAUDE.md (project only) -------------------------------------------------
-claude_md_created=false
-claude_md_sha=""
-if [ "$MODE" = "project" ]; then
-  if [ -f "$ROOT/CLAUDE.md" ]; then
-    log "CLAUDE.md đã có — giữ nguyên. Kiểm nó có đủ 4 mục: contract boundaries, verification, generated/cấm sửa, external side effects."
-  else
-    # linked worktree (worktree của writer/Lead monorepo, hoặc Supervisor chạy trong worktree) mà repo chưa commit CLAUDE.md → lấy bản thật từ main worktree
-    common="$(git -C "$ROOT" rev-parse --path-format=absolute --git-common-dir 2>/dev/null || true)"
-    main_root=""
-    [ -n "$common" ] && [ "$common" != "$ROOT/.git" ] && main_root="$(dirname "$common")"
-    if [ -n "$main_root" ] && [ -f "$main_root/CLAUDE.md" ]; then
-      cp "$main_root/CLAUDE.md" "$ROOT/CLAUDE.md"
-      claude_md_created=true
-      claude_md_sha="$(sha256 "$ROOT/CLAUDE.md")"
-      ok "CLAUDE.md copy từ main worktree $main_root (linked worktree, file chưa commit)"
-    else
-      cp "$SRC/templates/CLAUDE.template.md" "$ROOT/CLAUDE.md"
-      claude_md_created=true
-      claude_md_sha="$(sha256 "$ROOT/CLAUDE.md")"
-      ok "CLAUDE.md tạo từ template — ĐIỀN repo-specific contract trước khi chạy Lead"
-    fi
-  fi
-fi
-
-# ---- 4. manifest ------------------------------------------------------------------
-{
-  printf '{\n'
-  printf '  "schemaVersion": 1,\n'
-  printf '  "app": "alp-claude-slp",\n'
-  printf '  "version": "%s",\n' "$VERSION"
-  printf '  "ref": "%s",\n' "$SLP_REF"
-  printf '  "mode": "%s",\n' "$MODE"
-  printf '  "installedAt": "%s",\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-  printf '  "agents": ['
-  first=1; for a in "${installed_agents[@]}"; do [ $first -eq 1 ] || printf ', '; printf '"%s"' "$a"; first=0; done
-  printf '],\n'
-  printf '  "skills": ['
-  first=1; for k in "${installed_skills[@]}"; do [ $first -eq 1 ] || printf ', '; printf '"%s"' "$k"; first=0; done
-  printf '],\n'
-  printf '  "files": ["slp-supervisor.settings.json", "slp-mail/slp_mail.py", "slp-mail.settings.json"],\n'
-  printf '  "settings": { "created": %s, "keys": [' "$settings_created"
-  first=1; for k in "${settings_keys[@]+"${settings_keys[@]}"}"; do [ $first -eq 1 ] || printf ', '; printf '"%s"' "$k"; first=0; done
-  printf '] },\n'
-  printf '  "claudeMd": { "created": %s, "sha256": "%s" }\n' "$claude_md_created" "$claude_md_sha"
-  printf '}\n'
-} > "$MANIFEST"
-ok "manifest: $MANIFEST"
-
-# ---- 5. validate ------------------------------------------------------------------
-if have claude; then
-  for d in "$AGENTS_DIR" "$SKILLS_DIR"; do
-    if claude plugin validate "$d" >/dev/null 2>&1; then
-      ok "claude plugin validate $(basename "$d"): passed"
-    else
-      warn "claude plugin validate báo lỗi — chạy: claude plugin validate $d"
-    fi
-  done
-else
-  warn "không thấy lệnh 'claude' trong PATH — bỏ qua validate"
-fi
+python3 "$SRC/adapters/claude/alp.py" install --src "$SRC" "${ARGS[@]+"${ARGS[@]}"}"
 
 cat <<EOF
 
 Xong. Bước tiếp theo:
-  1. $( [ "$MODE" = "project" ] && echo "Điền CLAUDE.md (contract boundary, lệnh test, path cấm sửa, external side-effect policy)." || echo "Mỗi repo vẫn cần CLAUDE.md riêng — template: $SRC/templates/CLAUDE.template.md" )
-  2. cd <repo root> && claude --agent lead --name lead      # workspace nhiều repo: --name lead-<repo>
-  3. (tuỳ chọn) Supervisor — thư mục trung lập không chứa repo, không cần worktree; đọc mọi file, sandbox chặn ghi:
+  1. $( [ "$GLOBAL" -eq 0 ] && echo "Điền ALP.md (contract boundary, lệnh test, path cấm sửa, external side-effect policy). CLAUDE.md chỉ import nó." || echo "Mỗi repo vẫn cần ALP.md + CLAUDE.md (@ALP.md) riêng — template: templates/ALP.md" )
+  2. Smart (mặc định): mở 'claude' như thường — session chạy ghế main (.claude/settings.json → agent: main).
+     Supervised: cd <repo root> && claude --agent lead --name lead      # workspace nhiều repo: --name lead-<repo>
+  3. (tuỳ chọn) Supervisor — thư mục trung lập, đọc mọi file, sandbox chặn ghi:
        mkdir -p ~/slp-supervisor && cd ~/slp-supervisor
-       claude --agent supervisor --name supervisor --settings $SUP_SETTINGS   # docs/SETUP.md §10
-     Workspace nhiều repo: agents cần thấy từ mọi repo → cài --global; CLAUDE.md chung: templates/WORKSPACE.CLAUDE.template.md
-  4. Quy trình theo phase + skill: gõ /ask-alp (router; bản dài ở .claude/skills/ask-alp/references/workflow.md). Lab: docs/labs/README.md (mục lục, bắt đầu từ Lab 1).
+       claude --agent supervisor --name supervisor --settings <root>/.claude/slp-supervisor.settings.json   # docs/SETUP.md §10
+  4. Tuỳ biến ghế ở .alp/agents/<ghế>/ (AGENT.md, skills/, hooks/<Event>.sh|.py, .mcp.json); hook SessionStart tự sinh lại .claude/.
+     Quy trình: .alp/WORKFLOW.md. Lab: docs/labs/README.md.
 
-Gỡ: curl -fsSL https://raw.githubusercontent.com/${SLP_REPO}/${SLP_REF}/uninstall.sh | bash$( [ "$MODE" = "global" ] && echo " -s -- --global" )
+Gỡ: curl -fsSL https://raw.githubusercontent.com/${SLP_REPO}/${SLP_REF}/uninstall.sh | bash$( [ "$GLOBAL" -eq 1 ] && echo " -s -- --global" )
 EOF

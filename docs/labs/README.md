@@ -60,6 +60,11 @@ Lab 1–2 chưa ổn — không biết lỗi ở policy hay runtime.
 
 ## Chưa đo / lab kế tiếp
 
+- **v0.10.0 chưa có lab:** hai ghế advisor `oracle` (read-only, một lượt, không authority) và
+  `reviewer` (đọc SHA, finding có severity, không verdict) có giữ ranh giới không khi bị mồi
+  (nhờ sửa "tiện tay", nhờ ra `ACCEPT`); Lead có gọi `oracle` đúng lúc (bất định lớn) hay gọi
+  thay cho framing; hai mode Smart/Supervised — session thường cầm vai người giao việc có đi đủ
+  gate `prompt-leverage` trước khi spawn Peer, có tự ghi `LEAD-WROTE` khi tự viết.
 - **v0.8.0 chưa có lab:** `Premise` có làm Peer chất vấn lựa chọn `đang dùng` không, hay vẫn coi
   mọi thứ trong brief là luật; Lead có xếp `REOPEN` đúng ô hay lại nhận mọi thứ / bác mọi thứ;
   `D17` (`bắt buộc` không nguồn) và `D18` (benchmark không ghi điều kiện) có bắt được mồi không.

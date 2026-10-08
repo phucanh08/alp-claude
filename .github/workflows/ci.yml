@@ -1,0 +1,98 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  adapter:
+    name: adapter tests (${{ matrix.os }}, py${{ matrix.python }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: ubuntu-latest, python: "3.8" }
+          - { os: ubuntu-latest, python: "3.12" }
+          - { os: macos-latest, python: "3.12" }
+          - { os: windows-latest, python: "3.8" }
+          - { os: windows-latest, python: "3.12" }
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: unittest adapters/claude/alp.py
+        run: python -W error::ResourceWarning -m unittest discover -s tests -v
+      - name: prompt-leverage script tests
+        run: python templates/skills/prompt-leverage/scripts/test_augment_prompt.py
+
+  slp-mail:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python mcp/slp-mail/slp_mail.py selftest
+
+  installer-windows:
+    name: install.ps1 (${{ matrix.shell }})
+    strategy:
+      fail-fast: false
+      matrix:
+        shell: [powershell, pwsh]
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: smoke (local clone + irm | iex từ commit này)
+        shell: ${{ matrix.shell }}
+        run: ./tests/installer-smoke.ps1 -Remote ${{ github.event_name == 'push' && github.sha || '' }}
+
+  installer-unix:
+    name: install.sh (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: smoke
+        shell: bash
+        env:
+          REMOTE: ${{ github.event_name == 'push' && github.sha || '' }}
+        run: |
+          set -euo pipefail
+          check() {
+            d="$1"
+            for f in ALP.md CLAUDE.md .alp/settings.json .alp/WORKFLOW.md .claude/slp/alp.py .claude/agents/main.md .claude/skills/xia/SKILL.md; do
+              test -f "$d/$f" || { echo "thiếu $f"; exit 1; }
+            done
+            set +e
+            echo '{"agent_type":"peer","tool_name":"Skill","tool_input":{"skill":"goal-griller"}}' \
+              | CLAUDE_PROJECT_DIR="$d" python3 "$d/.claude/slp/alp.py" hook PreToolUse
+            code=$?; set -e
+            test "$code" = 2 || { echo "guard không chặn (exit $code)"; exit 1; }
+          }
+          clean() { left="$(ls -A "$1" | grep -v '^\.git$' || true)"; test -z "$left" || { echo "còn: $left"; exit 1; }; }
+
+          d="$(mktemp -d)"; git init -q "$d"
+          ./install.sh --dir "$d"; check "$d"
+          ./install.sh --dir "$d"                       # idempotent
+          ./uninstall.sh --dir "$d"; clean "$d"
+
+          if [ -n "$REMOTE" ]; then
+            d="$(mktemp -d)"; git init -q "$d"; cd "$d"
+            curl -fsSL "https://raw.githubusercontent.com/phucanh08/alp-claude/$REMOTE/install.sh" | SLP_REF="$REMOTE" bash
+            check "$d"
+            curl -fsSL "https://raw.githubusercontent.com/phucanh08/alp-claude/$REMOTE/uninstall.sh" | SLP_REF="$REMOTE" bash
+            clean "$d"
+          fi

@@ -2,17 +2,25 @@
 
 Bộ cài **SLP** (Supervisor / Lead / Peer separation-of-judgment) cho Claude Code Agent Teams
 native. Không cần Paseo; kênh tin giữa các ghế là hộp thư MCP `slp-mail` (tuỳ chọn, một file
-Python). Một `install.sh`, một `uninstall.sh`, ba agent definition, **năm skill
-theo phase + một skill phương pháp `bug-loop` + một router `ask-alp`**, template `CLAUDE.md` cho repo và cho workspace nhiều repo, và
-5 lab đã chạy thật + 1 lab cho Supervisor definition.
+Python). Một `install.sh`, một `uninstall.sh`, **sáu ghế** (`main` cho mode Smart, lead, peer,
+supervisor + hai ghế advisor `oracle`, `reviewer`), **năm skill theo phase + một skill phương pháp
+`bug-loop`** phân bổ theo ghế, doc quy trình `WORKFLOW.md`, hai mode **Smart / Supervised**, và
+các lab đã chạy thật.
+
+`templates/` theo đúng cấu trúc [`alp-paseo`](https://github.com/phucanh08/alp-paseo):
+`ALP.md`, `role-skills.json`, `agents/<ghế>/AGENT.md`, `skills/<skill>/`. Installer dựng trong
+project đúng layout của alp-paseo — `ALP.md` + `.alp/settings.json` +
+`.alp/agents/<ghế>/{AGENT.md, skills/, hooks/, .mcp.json}` — rồi adapter `.claude/slp/alp.py` sinh
+`.claude/agents/*.md` + `.claude/skills/` cho Claude Code và gắn hook (§ Layout trong project).
 
 ```text
 Human ── terminal của Lead, hoặc CLI slp_mail.py send (from: human) ─────────────────┐
   ↓                                                                                   ↓
 Lead session(s)  claude --agent lead --name lead[-<repo>] [--mcp-config]          Supervisor session (ngoài checkout mọi Lead)
   ↓  Agent(subagent_type=peer, name=...)                                    ←──    claude --agent supervisor [--mcp-config]
-Peer teammate(s)  Engineer | Architect | Reviewer | Scout                           1 Supervisor : N Lead; DRIFT/ESCALATE/NOTE + RULING S#;
+Peer teammate(s)  Engineer | Architect | Scout                                     1 Supervisor : N Lead; DRIFT/ESCALATE/NOTE + RULING S#;
   ↑  hộp thư slp-mail: from theo process; tin tới Peer từ ngoài team tự cc Lead      hỏi Peer được (Lead cc); bàn hướng đi với Human
+Advisor một lượt: Agent(oracle) cố vấn kỹ thuật · Agent(reviewer) soi diff — read-only, ngoài team, không verdict
 
 Phase:  intake ──▶ recon ──▶ sequence ──▶ brief ──▶ implement ──▶ commit ──▶ handoff ──▶ accept
 Skill:  goal-griller  xia    sequence-      prompt-    (peer.md)    smart-      (peer.md)   (lead.md)
@@ -36,7 +44,7 @@ trên hộp thư `slp-mail`).
 
 | # | Bất biến | Hiện thực |
 |---|---|---|
-| 1 | **Tách role**: Supervisor = governance, Lead = technical owner, Peer = một bounded outcome | 3 definition; `tools:` của Supervisor không có `Agent/Edit/Write`; Peer không có `Agent`; chỉ Lead có `Agent(peer)` |
+| 1 | **Tách role**: Supervisor = governance, Lead = technical owner, Peer = một bounded outcome, Oracle/Reviewer = advisor một lượt | 5 definition; `tools:` của Supervisor không có `Agent/Edit/Write`; Peer không có `Agent`; chỉ Lead có `Agent(peer)`; oracle/reviewer không có `Agent/Edit/Write/Skill` — read-only sinh ra từ cấu trúc |
 | 2 | **Bộ nhớ riêng theo role**, auth/skills/plugins chung | Lead `memory: local` → `.claude/agent-memory-local/lead` (không commit); Supervisor `memory: user` → `~/.claude/agent-memory/supervisor`, một file mỗi workspace; Peer **không** memory (memory `peer` dùng chung mọi instance sẽ phá lane mù); Supervisor chạy ngoài checkout của mọi Lead nên transcript tách, không đụng index; `~/.claude` chung |
 | 3 | **Một source of truth cho topology; can thiệp quay về trạng thái chung của Lead** | Mỗi root một Lead, Lead là native team lead duy nhất của team mình; Supervisor là session ngoài mọi team; tin từ ngoài team tới Peer chỉ đi qua hộp thư `slp-mail` và server **tự cc Lead**, Peer chỉ trả lời, đổi hướng do Lead gửi (`D19`); không nested team; Lead không ghi ra ngoài root đã `SLP-REGISTER` (`D14`) |
 | 4 | **Write ownership rõ** | mỗi moving scope một writer + commit lease; nhiều writer song song = Lead cấp worktree riêng mỗi writer, contract cho shared interface phải có trong brief trước |
@@ -65,7 +73,7 @@ curl -fsSL https://raw.githubusercontent.com/phucanh08/alp-claude/main/install.s
 curl -fsSL https://raw.githubusercontent.com/phucanh08/alp-claude/main/install.sh | bash -s -- --dir /path/to/repo
 ```
 
-Windows (PowerShell 5.1+ hoặc pwsh 7, không cần `python3`/`node`):
+Windows (PowerShell 5.1+ hoặc pwsh 7, cần Python 3 — hook gọi `python3`):
 
 ```powershell
 irm https://raw.githubusercontent.com/phucanh08/alp-claude/main/install.ps1 | iex                                               # project
@@ -74,18 +82,57 @@ $env:SLP_REF='v0.1.0'; irm https://raw.githubusercontent.com/phucanh08/alp-claud
 & ([scriptblock]::Create((irm https://raw.githubusercontent.com/phucanh08/alp-claude/main/install.ps1))) -Dir C:\path\to\repo    # repo khác
 ```
 
-Installer làm đúng 6 việc và ghi lại trong `.claude/slp-manifest.json`:
+## Layout trong project
+
+```text
+your-repo/
+  ALP.md                          contract của repo (điền tay) — CLAUDE.md chỉ có dòng `@ALP.md`
+  CLAUDE.md
+  .alp/                           NGUỒN SỰ THẬT, sửa ở đây (giống alp-paseo)
+    settings.json                 { defaultAgent: main, workflow: { mode: smart, maxPeers: 2 } }
+    WORKFLOW.md                   luồng phase, ghế ↔ từ vựng authority, bảng cấm
+    agents/
+      main/  lead/  peer/  supervisor/  oracle/  reviewer/
+        AGENT.md                  frontmatter Claude Code + prompt của ghế
+        skills/<skill>/           bộ skill của ghế (templates/role-skills.json)
+        hooks/<Event>[.sh|.py|…]  hook riêng của ghế (tuỳ chọn)
+        .mcp.json                 MCP server riêng của ghế → frontmatter mcpServers
+  .claude/                        ADAPTER, sinh ra — đừng sửa tay
+    agents/<ghế>.md               = AGENT.md (+ mcpServers)
+    skills/<skill>/               = hợp bộ skill của mọi ghế
+    settings.json                 env Agent Teams, teammateMode, agent: main, hook dispatcher
+    slp/alp.py                    adapter: install · sync · hook · uninstall
+    slp-mail/, slp-*.settings.json, slp-manifest.json
+```
+
+Claude Code chỉ đọc `.claude/agents/*.md` và một thư mục skill chung, nên adapter bù bằng **hook**
+trong `.claude/settings.json` (đã kiểm với Claude Code 2.1.294: hook nhận `agent_type` cho cả
+`--agent` lẫn subagent):
+
+| Hook | Làm gì |
+|---|---|
+| `SessionStart` | `sync`: sinh lại `.claude/agents` + `.claude/skills` nếu `.alp/` đổi (định nghĩa agent mới có hiệu lực từ session sau) |
+| `PreToolUse` (`Skill`) | chặn ghế gọi skill SLP không có trong `.alp/agents/<ghế>/skills/` — ví dụ Peer gọi `goal-griller` bị chặn kèm lý do. Skill ngoài SLP, agent ngoài SLP (Explore…) không bị đụng; `ALP_SKILL_GUARD=0` để tắt |
+| `SessionStart`, `UserPromptSubmit`, `PreToolUse`, `PostToolUse`, `Stop` | chạy `.alp/agents/<agent_type>/hooks/<Event>*` của **đúng ghế đang chạy** (stdin = JSON hook; exit 2 = chặn). Không có `agent_type` → `defaultAgent` |
+
+Frontmatter `hooks:` trong file agent không chạy trong thử nghiệm của bản này, nên hook từng ghế đi
+qua dispatcher thay vì frontmatter. Cần `python3` trong PATH (cả Windows).
+
+Installer (`adapters/claude/alp.py install`, ghi lại trong `.claude/slp-manifest.json`):
 
 | Việc | Hành vi |
 |---|---|
-| `.claude/agents/lead.md`, `peer.md`, `supervisor.md` | copy; file cũ khác nội dung → backup vào `.claude/backups/slp-<timestamp>/agents/` (`--force` để bỏ backup) |
-| `.claude/skills/{goal-griller,xia,sequence-execution-plan,prompt-leverage,smart-commits}/` | copy cả thư mục; khác nội dung → backup vào `.claude/backups/slp-<timestamp>/skills/` |
-| `.claude/settings.json` | **merge**: thêm `env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` và `teammateMode=in-process` nếu chưa có; key khác giữ nguyên |
-| `.claude/slp-supervisor.settings.json` | copy; dùng qua `--settings` cho Supervisor: `Read(//**)` + sandbox Bash (chỉ ghi cwd/`$TMPDIR`) + hook chặn `Write`/`Edit` ngoài memory của chính nó → đọc mọi file, chỉ sửa memory mình |
-| `CLAUDE.md` | chỉ tạo từ template nếu **chưa có**; có rồi thì không đụng |
+| `.alp/` | điền file thiếu; file SLP ship mà **chưa sửa** → cập nhật bản mới; **đã sửa** → giữ, bản mới để ở `.claude/backups/slp-<ts>/upstream/` (`--force` ghi đè, có backup); `.alp/settings.json` chỉ tạo nếu chưa có |
+| `ALP.md`, `CLAUDE.md` | chỉ tạo nếu **chưa có**. Repo có sẵn `CLAUDE.md` không import `@ALP.md` (layout cũ) → giữ nguyên làm contract, không tạo `ALP.md` |
+| `.claude/agents`, `.claude/skills` | sinh từ `.alp/`; file cùng tên do bản cũ cài → backup vào `.claude/backups/slp-<ts>/`; file của anh không do SLP tạo → giữ, cảnh báo |
+| `.claude/settings.json` | **merge**: `env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`, `teammateMode=in-process`, `agent=main` (project) nếu chưa có; thêm hook dispatcher; key khác giữ nguyên |
+| `.claude/slp-supervisor.settings.json` | dùng qua `--settings` cho Supervisor: `Read(//**)` + sandbox Bash + hook chặn `Write`/`Edit` ngoài memory của chính nó |
+| `.claude/slp-mail/`, `slp-mail.settings.json` | hộp thư MCP + hook chặn Bash giả `from` |
+| bản cũ | `.claude/skills/ask-alp` (< 0.10.0) → backup |
 | validate | `claude plugin validate` cho `.claude/agents` và `.claude/skills` nếu có lệnh `claude` |
 
-Yêu cầu: `curl`, `tar`, `python3` **hoặc** `node` (Windows `install.ps1`: chỉ cần PowerShell). Claude Code ≥ 2.1 (Agent Teams experimental).
+Yêu cầu: `python3` (adapter + hook), `curl` + `tar` khi cài từ GitHub (Windows `install.ps1`:
+PowerShell + Python 3). Claude Code ≥ 2.1 (Agent Teams experimental).
 
 ## Cập nhật
 
@@ -102,8 +149,13 @@ irm https://raw.githubusercontent.com/phucanh08/alp-claude/main/install.ps1 | ie
 & ([scriptblock]::Create((irm https://raw.githubusercontent.com/phucanh08/alp-claude/main/install.ps1))) -Global   # global
 ```
 
-Agent/skill bị ghi đè; file anh đã tự sửa được backup vào `.claude/backups/slp-<timestamp>/` để chép lại phần riêng.
-`settings.json` chỉ thêm key còn thiếu, `CLAUDE.md` giữ nguyên. Session `claude --agent …` đang mở
+File `.alp/` chưa sửa được cập nhật; file đã sửa được giữ, bản mới để ở
+`.claude/backups/slp-<timestamp>/upstream/` để chép phần cần. `.claude/agents` + `.claude/skills` sinh
+lại. `settings.json` chỉ thêm key còn thiếu, `ALP.md`/`CLAUDE.md` giữ nguyên.
+
+**Từ layout cũ (≤ 0.9.x, agent/skill cài thẳng vào `.claude/`) lên 0.10.0**: chạy lại installer là
+đủ — nó dựng `.alp/`, backup bản cũ trong `.claude/` rồi sinh lại. `CLAUDE.md` cũ giữ nguyên làm
+contract; muốn theo layout ALP thì dời nội dung sang `ALP.md` và để `CLAUDE.md` chỉ còn `@ALP.md`. Session `claude --agent …` đang mở
 dùng bản cũ tới khi thoát — mở lại sau khi cập nhật.
 
 **Từ ≤ 0.4.x lên 0.5.0** — Supervisor không còn chạy trong worktree:
@@ -121,7 +173,7 @@ claude --agent supervisor --name supervisor --settings <repo>/.claude/slp-superv
 
 Lead chạy cùng permission mode với Supervisor (không `--dangerously-skip-permissions`), nếu không
 message giữa hai bên bị hold. Chuyển sang workspace nhiều repo: cài `--global`, đặt
-`templates/WORKSPACE.CLAUDE.template.md` thành `<workspace>/CLAUDE.md`, mỗi repo một Lead
+`adapters/claude/WORKSPACE.CLAUDE.md` thành `<workspace>/CLAUDE.md`, mỗi repo một Lead
 `--name lead-<repo>` — chi tiết `docs/SETUP.md` §10.
 
 ## Gỡ
@@ -139,7 +191,7 @@ irm https://raw.githubusercontent.com/phucanh08/alp-claude/main/uninstall.ps1 | 
 Uninstaller đọc manifest và gỡ **đúng những gì đã cài**: agent files; skill dirs; chỉ các key trong
 `settings.json` do SLP thêm (xóa file nếu SLP tạo và giờ rỗng); `CLAUDE.md` chỉ khi SLP tạo **và**
 chưa ai sửa (so sha256). Memory `.claude/agent-memory-local/{lead,supervisor}` (và `~/.claude/agent-memory/supervisor`
-khi gỡ `--global`) giữ lại, `--force` mới xóa. Không có manifest → từ chối, trừ `--force` (khi đó chỉ gỡ 3 agent file + 7 skill dir).
+khi gỡ `--global`) giữ lại, `--force` mới xóa. Không có manifest → từ chối, trừ `--force` (khi đó chỉ gỡ 5 agent file + skill dir, kể cả `ask-alp` cũ).
 
 ## Dùng
 
@@ -158,7 +210,7 @@ python3 <repo root>/.claude/slp-mail/slp_mail.py send --to lead "…"           
 ```
 
 Workspace nhiều repo (`project-a-workspace/{backend,webadmin,webclient,mobileapp,service-a…}`):
-cài `--global`, đặt `templates/WORKSPACE.CLAUDE.template.md` thành `project-a-workspace/CLAUDE.md`
+cài `--global`, đặt `adapters/claude/WORKSPACE.CLAUDE.md` thành `project-a-workspace/CLAUDE.md`
 (bảng part ↔ Lead + cross-repo contract), mỗi repo một Lead `--name lead-<repo>`, một Supervisor ở
 thư mục trung lập nghe tất cả (kể cả Lead của workspace khác). Chi tiết và monorepo: `docs/SETUP.md` §10.
 
@@ -171,11 +223,16 @@ transcript, gửi `DRIFT @<lead>` khi lệch.
 Không dùng `claude -p` (teammate cần interactive session). Không dùng
 `--dangerously-skip-permissions` cho lab đầu.
 
+**Mode Smart** (việc mới/nhỏ, mặc định): khỏi mở Lead — `claude` thường chạy ghế **`main`**
+(`.claude/settings.json` → `agent: main`), cầm vai *người giao việc* (soi phase ở `.alp/WORKFLOW.md`),
+spawn Peer trực tiếp, gọi được `oracle`/`reviewer`; tự viết code thì `LEAD-WROTE`. Mode chọn lúc
+mở phiên, không đổi giữa chừng — định nghĩa hai mode: `templates/WORKFLOW.md` § Mode.
+
 **Hướng dẫn dùng hằng ngày + 7 case thực tế** (prompt mẫu, cách đọc `ACCEPT`/`REJECT`/`BLOCKED`,
 Supervisor, lỗi hay gặp): [`docs/USAGE.md`](docs/USAGE.md).
 
-Luồng một task đi qua phase nào, skill nào, gate nào: gõ `/ask-alp` (router, Lead/Peer gọi được
-qua `Skill`); bản dài trong `skills/ask-alp/references/workflow.md`.
+Luồng một task đi qua phase nào, skill nào, gate nào: [`templates/WORKFLOW.md`](templates/WORKFLOW.md) (cài ra
+`.alp/WORKFLOW.md`, Main/Lead/Peer đọc bằng `Read`).
 
 ## Skills theo phase
 
@@ -205,8 +262,9 @@ thống, không làm xanh bằng mọi giá, proof level) nằm trong `peer.md`,
 Năm skill này **không gọi tên ghế**: chúng nói bằng từ vựng authority (*người yêu cầu* / *người
 giao việc* / *người nhận việc* / *người quan sát*) và điều kiện dùng (có kênh hỏi người yêu cầu,
 sở hữu topology, có write authority…). Ánh xạ ghế ↔ từ vựng, luồng chính, on-ramp và bảng "ghế
-nào cấm skill nào" nằm ở một chỗ duy nhất: router **`ask-alp`** (`skills/ask-alp/SKILL.md`, bản
-dài `references/workflow.md`). Nhờ vậy đổi ghế, đổi tên agent hay dùng skill ngoài SLP không phải
+nào cấm skill nào" nằm ở một chỗ duy nhất: **`templates/WORKFLOW.md`** (doc thường, cài ra
+`.alp/WORKFLOW.md`); bộ skill mỗi ghế ở `templates/role-skills.json` → `.alp/agents/<ghế>/skills/`,
+hook `PreToolUse` giữ ghế trong đúng bộ của mình. Nhờ vậy đổi ghế, đổi tên agent hay dùng skill ngoài SLP không phải
 sửa skill. Skill không cấp authority.
 
 ## Khi nào không dùng SLP
@@ -233,24 +291,33 @@ không suy ra "tăng phản biện gấp đôi".
 ## Cấu trúc repo
 
 ```text
-agents/lead.md              Lead — framing, delegation, review, acceptance (ACCEPT/REJECT)
-agents/peer.md              Peer — bounded co-worker; disposition trong brief; handoff = candidate
-agents/supervisor.md        Supervisor — governance; session riêng; 1..N Lead; DRIFT / ESCALATE / NOTE
-skills/<name>/SKILL.md      5 skill theo phase + bug-loop (+ references/, scripts/)
-skills/ask-alp/             router: ghế ↔ từ vựng authority, luồng, on-ramp, bảng cấm; references/workflow.md
-templates/CLAUDE.template.md  khung repo-specific contract
-templates/WORKSPACE.CLAUDE.template.md  khung workspace nhiều repo: part ↔ Lead, cross-repo contract
-templates/settings.json     env + teammateMode
-templates/slp-mail.settings.json  hook PreToolUse chặn Bash giả `from` (Lead dùng qua --settings khi bật hộp thư)
-mcp/slp-mail/slp_mail.py    hộp thư MCP + CLI, một file Python stdlib: from theo process, tự cc Lead, log chung; selftest
-mcp/slp-mail/README.md      cách chạy, tool, ba luật server, giới hạn
-docs/SETUP.md               setup chi tiết + cơ chế runtime cần biết
-docs/labs/README.md         mục lục lab (tầng 1): đo gì, trạng thái, lab đã đổi gì
-docs/labs/common.md         quy ước chung: ràng buộc cứng, đọc transcript, chạy headless
-docs/labs/lab-NN-*.md       mỗi lab một file: kết luận nhanh → quy trình → ghi chú lần chạy
-docs/USAGE.md               hướng dẫn dùng hằng ngày + case thực tế
-docs/WORKFLOW.md            con trỏ → skills/ask-alp/references/workflow.md
-install.sh / uninstall.sh
+templates/                          ← cùng cấu trúc alp-paseo/templates
+  ALP.md                            khung contract của repo (→ ALP.md)
+  WORKFLOW.md                       luồng phase, ghế ↔ từ vựng authority, on-ramp, bảng cấm (→ .alp/WORKFLOW.md)
+  role-skills.json                  ghế → skill (installer chép skill vào .alp/agents/<ghế>/skills/)
+  agents/main/AGENT.md              Main — ghế của session thường ở mode Smart, người giao việc
+  agents/lead/AGENT.md              Lead — framing, delegation, review, acceptance (ACCEPT/REJECT)
+  agents/peer/AGENT.md              Peer — bounded co-worker; disposition trong brief; handoff = candidate
+  agents/supervisor/AGENT.md        Supervisor — governance; session riêng; 1..N Lead; DRIFT / ESCALATE / NOTE
+  agents/oracle/AGENT.md            Oracle — cố vấn kỹ thuật read-only, một lượt, không authority
+  agents/reviewer/AGENT.md          Reviewer — soi một diff bằng SHA, finding có severity, không verdict
+  skills/<name>/SKILL.md            5 skill theo phase + bug-loop (+ references/, scripts/)
+adapters/claude/                    ← phần riêng Claude Code (alp-paseo: plugins/paseo)
+  alp.py                            install · sync .alp→.claude · hook dispatcher (skill guard, hooks/ từng ghế) · uninstall
+  CLAUDE.md                         `@ALP.md`
+  WORKSPACE.CLAUDE.md               khung workspace nhiều repo: part ↔ Lead, cross-repo contract
+  settings.json                     env + teammateMode (tham khảo; installer merge)
+  supervisor.settings.json          Read mọi file + sandbox + hook chỉ ghi memory (→ .claude/slp-supervisor.settings.json)
+  slp-mail.settings.json            hook PreToolUse chặn Bash giả `from` (Lead dùng qua --settings khi bật hộp thư)
+mcp/slp-mail/slp_mail.py            hộp thư MCP + CLI, một file Python stdlib: from theo process, tự cc Lead, log chung; selftest
+mcp/slp-mail/README.md              cách chạy, tool, ba luật server, giới hạn
+docs/SETUP.md                       setup chi tiết + cơ chế runtime cần biết
+docs/labs/README.md                 mục lục lab (tầng 1): đo gì, trạng thái, lab đã đổi gì
+docs/labs/common.md                 quy ước chung: ràng buộc cứng, đọc transcript, chạy headless
+docs/labs/lab-NN-*.md               mỗi lab một file: kết luận nhanh → quy trình → ghi chú lần chạy (path theo layout lúc chạy)
+docs/USAGE.md                       hướng dẫn dùng hằng ngày + case thực tế
+docs/WORKFLOW.md                    con trỏ → templates/WORKFLOW.md
+install.sh / uninstall.sh (+ .ps1)  lớp mỏng: tải bundle, gọi adapters/claude/alp.py
 VERSION
 ```
 
@@ -271,6 +338,7 @@ Mục lục, thứ tự chạy, lab đã đổi gì trong instruction: [`docs/la
 
 ## Tuning đã đưa vào `lead.md` từ lab
 
+- v0.10.0 (port từ [`phucanh08/alp-paseo`](https://github.com/phucanh08/alp-paseo), chưa có lab): **hai ghế advisor + hai mode + skill theo ghế + layout alp-paseo**. `agents/oracle.md`: cố vấn kỹ thuật read-only, một lượt, ý kiến là evidence không authority — Lead gọi khi bất định lớn (kiến trúc khó đảo ngược, bug đã thử chưa ra cơ chế, quyết định chưa tự tin phản biện). `agents/reviewer.md`: review độc lập một diff — đọc bằng SHA, finding có severity, không verdict; thay disposition Reviewer của Peer (`peer.md` giữ tương thích brief cũ, Lead không còn spawn Peer-Reviewer mới). Mode **Smart** (session thường của Human — ghế `main` — cầm vai người giao việc, spawn Peer trực tiếp) / **Supervised** (luồng Lead đầy đủ) — chọn lúc mở phiên; định nghĩa `templates/WORKFLOW.md` § Mode. **Layout alp-paseo**: `templates/{ALP.md, role-skills.json, agents/<ghế>/AGENT.md, skills/}` (dời từ `agents/*.md`, `skills/`, `CLAUDE.template.md`); project cài ra `ALP.md` + `CLAUDE.md` (`@ALP.md`) + `.alp/{settings.json, WORKFLOW.md, agents/<ghế>/{AGENT.md, skills/, hooks/, .mcp.json}}`; `role-skills.json` (`main` 6, lead 6, peer 3, supervisor/advisor rỗng) quyết skill nào chép vào package ghế nào. Adapter `adapters/claude/alp.py` (→ `.claude/slp/alp.py`) sinh `.claude/agents` + `.claude/skills` từ `.alp/` và gắn hook dispatcher: `SessionStart` sync, `PreToolUse(Skill)` chặn skill ngoài bộ của ghế (kiểm thật: `claude --agent peer` gọi `goal-griller` → bị chặn), `.alp/agents/<ghế>/hooks/<Event>*` chạy theo `agent_type`; `.mcp.json` của ghế → frontmatter `mcpServers`. Ghế mới `main` (Smart, `agent: main` trong settings). install/uninstall (sh + ps1) thu về lớp mỏng gọi adapter; nâng cấp từ layout cũ backup `.claude/agents|skills` cũ, giữ `CLAUDE.md` cũ. **Gỡ router `ask-alp`** như alp-paseo: skill đã tách theo ghế nên router thừa — nội dung (ánh xạ ghế, bảng cấm, on-ramp, workflow dài) gộp thành doc thường `templates/WORKFLOW.md` → `.alp/WORKFLOW.md`; installer dời `.claude/skills/ask-alp` cũ vào backup.
 - v0.9.0 (theo bài gốc, Lab 12): **Supervisor của bài — bàn hướng đi với Human, hỏi được Peer,
   can thiệp trong quyền được giao — trên hộp thư `slp-mail`.** `mcp/slp-mail`: MCP server + CLI
   một file Python stdlib; `from` gán theo `SLP_SEAT` của process; tin tới `<lead>/<peer>` từ seat

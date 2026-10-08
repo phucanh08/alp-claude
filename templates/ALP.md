@@ -1,4 +1,7 @@
-# Repository contract
+# Repository contract (ALP.md)
+
+Claude Code nạp file này qua `CLAUDE.md` (dòng `@ALP.md`); mọi chỗ agent/skill nói "`CLAUDE.md` của
+repo" là contract ở đây. Cấu hình ghế: `.alp/settings.json`; package từng ghế: `.alp/agents/<ghế>/`.
 
 ## Purpose
 Mô tả ngắn project này làm gì và outcome quan trọng nhất.
@@ -49,8 +52,8 @@ config toàn cục nếu Human chưa cấp authority rõ ràng.
 - Memory theo role: Lead ở `.claude/agent-memory-local/lead/` (không commit); Supervisor ở
   `~/.claude/agent-memory/supervisor/` (scope user, một file mỗi workspace); Peer không có memory bền.
 - Repo nằm trong workspace nhiều repo → cross-repo contract ở `CLAUDE.md` của workspace
-  (`templates/WORKSPACE.CLAUDE.template.md`); Lead session tên `lead-<repo>`.
+  (`adapters/claude/WORKSPACE.CLAUDE.md`); Lead session tên `lead-<repo>`.
 - Skills theo phase (`.claude/skills/`): `goal-griller` (intake) → `xia` (Scout) →
-  `sequence-execution-plan` → `prompt-leverage` (brief) → `smart-commits` (commit gate); router
-  `ask-alp` trả lời ghế nào dùng gì, cấm gì. Skill không cấp authority; push chỉ khi mục External
+  `sequence-execution-plan` → `prompt-leverage` (brief) → `smart-commits` (commit gate); ghế nào
+  dùng gì, cấm gì: `.alp/WORKFLOW.md`; bộ skill mỗi ghế là `.alp/agents/<ghế>/skills/` (hook chặn skill ngoài bộ). Skill không cấp authority; push chỉ khi mục External
   side effects cho phép.

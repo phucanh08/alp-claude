@@ -10,7 +10,7 @@ không viết brief, không giao writer khi chưa trả lời được *xong là
 Skill này là cuộc phỏng vấn ngắn theo vòng: mỗi vòng hỏi hết các câu hỏi được ngay, mỗi câu kèm đáp
 án đề xuất, tự tra repo trước khi hỏi.
 
-Điều kiện dùng (ghế nào ứng với gì: `/ask-alp`):
+Điều kiện dùng (ghế nào ứng với gì: `.alp/WORKFLOW.md`):
 
 - Bạn có **kênh hỏi người yêu cầu** và **quyền chẻ việc** — mặc định, tại intake, trước
   `sequence-execution-plan` và trước mọi brief.

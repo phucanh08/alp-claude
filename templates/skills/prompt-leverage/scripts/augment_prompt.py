@@ -180,7 +180,7 @@ def build_prompt(raw_prompt: str) -> str:
         - Tra được từ repo thì tra, không đoán. Không push/deploy/gọi ngoài nếu chưa được cấp.
 
         Output Contract:
-        - Luồng SLP: Task Contract (goal-griller) → sequence → brief → handoff 6 ô → ACCEPT/REJECT <sha>; ghế nào làm gì: /ask-alp.
+        - Luồng SLP: Task Contract (goal-griller) → sequence → brief → handoff 6 ô → ACCEPT/REJECT <sha>; ghế nào làm gì: .alp/WORKFLOW.md.
 
         Verification:
         - Proof: <TODO: lệnh + kết quả mong đợi>
